@@ -13,9 +13,7 @@ public class FuncionarioMapper {
 
     private final EnderecoMapper enderecoMapper;
 
-    public Funcionario toEntity(
-            FuncionarioRequest request,
-            Endereco endereco) {
+    public Funcionario toEntity(FuncionarioRequest request, Endereco endereco) {
 
         return Funcionario.builder()
                 .cpf(request.cpf())
@@ -29,8 +27,7 @@ public class FuncionarioMapper {
                 .build();
     }
 
-    public FuncionarioResponse toResponse(
-            Funcionario funcionario) {
+    public FuncionarioResponse toResponse(Funcionario funcionario) {
 
         return new FuncionarioResponse(
                 funcionario.getIdFuncionario(),

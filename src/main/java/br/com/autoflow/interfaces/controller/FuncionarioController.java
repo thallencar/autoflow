@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-        import java.util.List;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -20,9 +20,7 @@ public class FuncionarioController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public FuncionarioResponse criar(
-            @RequestBody @Valid FuncionarioRequest request) {
-
+    public FuncionarioResponse criar(@RequestBody @Valid FuncionarioRequest request) {
         return service.criar(request);
     }
 
@@ -32,25 +30,18 @@ public class FuncionarioController {
     }
 
     @GetMapping("/{id}")
-    public FuncionarioResponse buscar(
-            @PathVariable UUID id) {
-
+    public FuncionarioResponse buscar(@PathVariable UUID id) {
         return service.buscar(id);
     }
 
     @PutMapping("/{id}")
-    public FuncionarioResponse atualizar(
-            @PathVariable UUID id,
-            @RequestBody @Valid FuncionarioRequest request) {
-
+    public FuncionarioResponse atualizar(@PathVariable UUID id, @RequestBody @Valid FuncionarioRequest request) {
         return service.atualizar(id, request);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletar(
-            @PathVariable UUID id) {
-
+    public void deletar(@PathVariable UUID id) {
         service.deletar(id);
     }
 }

@@ -13,9 +13,9 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(FuncionarioNaoEncontradoException.class)
+    @ExceptionHandler(EntidadeNaoEncontradaException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFound(
-            FuncionarioNaoEncontradoException ex) {
+            EntidadeNaoEncontradaException ex) {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ApiErrorResponse(
@@ -25,21 +25,9 @@ public class GlobalExceptionHandler {
                 ));
     }
 
-    @ExceptionHandler(CpfJaCadastradoException.class)
+    @ExceptionHandler(DadosJaCadastradosException.class)
     public ResponseEntity<ApiErrorResponse> handleCpf(
-            CpfJaCadastradoException ex) {
-
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ApiErrorResponse(
-                        LocalDateTime.now(),
-                        HttpStatus.CONFLICT.value(),
-                        ex.getMessage()
-                ));
-    }
-
-    @ExceptionHandler(EmailJaCadastradoException.class)
-    public ResponseEntity<ApiErrorResponse> handleEmail(
-            EmailJaCadastradoException ex) {
+            DadosJaCadastradosException ex) {
 
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ApiErrorResponse(
@@ -64,19 +52,8 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(errors);
     }
-    @ExceptionHandler(EnderecoNaoEncontradoException.class)
-    public ResponseEntity<ApiErrorResponse> handleEnderecoNaoEncontrado(
-            EnderecoNaoEncontradoException ex) {
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(new ApiErrorResponse(
-                        LocalDateTime.now(),
-                        HttpStatus.NOT_FOUND.value(),
-                        ex.getMessage()
-                ));
-    }
-    @ExceptionHandler(FuncionarioMenorDeIdadeException.class)
-    public ResponseEntity<ApiErrorResponse> handleFuncionarioMenorDeIdade(FuncionarioMenorDeIdadeException ex) {
+    @ExceptionHandler(RegraNegocioException.class)
+    public ResponseEntity<ApiErrorResponse> handleFuncionarioMenorDeIdade(RegraNegocioException ex) {
         ApiErrorResponse error = new ApiErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
