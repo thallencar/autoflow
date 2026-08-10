@@ -1,8 +1,10 @@
-package com.autoflow.interfaces.controller;
+package br.com.autoflow.interfaces.controller;
 
-import com.autoflow.application.dto.EstoqueRequest;
-import com.autoflow.application.dto.EstoqueResponse;
-import com.autoflow.application.service.EstoqueService;
+import br.com.autoflow.application.dto.AdicionarEstoqueRequest;
+import br.com.autoflow.application.dto.AtualizarValorEstoqueRequest;
+import br.com.autoflow.application.dto.EstoqueRequest;
+import br.com.autoflow.application.dto.EstoqueResponse;
+import br.com.autoflow.application.service.EstoqueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,42 +18,35 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EstoqueController {
 
-    private final EstoqueService estoqueService;
+        private final EstoqueService estoqueService;
 
-    @PostMapping
-    public ResponseEntity<EstoqueResponse> criar(@RequestBody EstoqueRequest request) {
-        EstoqueResponse response = estoqueService.criar(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
+        @PostMapping
+        public ResponseEntity<EstoqueResponse> criar(@RequestBody EstoqueRequest request) {
+                return ResponseEntity.status(HttpStatus.CREATED).body(estoqueService.criar(request));
+        }
 
-    @GetMapping
-    public ResponseEntity<List<EstoqueResponse>> listarTodos() {
-        return ResponseEntity.ok(estoqueService.listarTodos());
-    }
+        @GetMapping
+        public ResponseEntity<List<EstoqueResponse>> listarTodos() {
+                return ResponseEntity.ok(estoqueService.listarTodos());
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<EstoqueResponse> buscarPorId(@PathVariable UUID id) {
-        return ResponseEntity.ok(estoqueService.buscarPorId(id));
-    }
+        @GetMapping("/{id}")
+        public ResponseEntity<EstoqueResponse> buscarPorId(@PathVariable UUID id) {
+                return ResponseEntity.ok(estoqueService.buscarPorId(id));
+        }
 
-    @PatchMapping("/{id}/adicionar-quantidade")
-    public ResponseEntity<EstoqueResponse> adicionarQuantidade(
-            @PathVariable UUID id,
-            @RequestBody AdicionarEstoqueRequest request) {
-        return ResponseEntity.ok(estoqueService.adicionarQuantidade(id, request));
-    }
+        @PatchMapping("/{id}/adicionar-quantidade")
+        public ResponseEntity<EstoqueResponse> adicionarQuantidade(@PathVariable UUID id, @RequestBody AdicionarEstoqueRequest request) {
+                return ResponseEntity.ok(estoqueService.adicionarQuantidade(id, request));
+        }
 
-    @PatchMapping("/{id}/valor-unitario")
-    public ResponseEntity<EstoqueResponse> atualizarValorUnitario(
-            @PathVariable UUID id,
-            @RequestBody AtualizarValorEstoqueRequest request) {
-        return ResponseEntity.ok(estoqueService.atualizarValorUnitario(id, request));
-    }
+        @PatchMapping("/{id}/valor-unitario")
+        public ResponseEntity<EstoqueResponse> atualizarValorUnitario(@PathVariable UUID id, @RequestBody AtualizarValorEstoqueRequest request) {
+                return ResponseEntity.ok(estoqueService.atualizarValorUnitario(id, request));
+        }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<EstoqueResponse> atualizar(
-            @PathVariable UUID id,
-            @RequestBody EstoqueRequest request) {
-        return ResponseEntity.ok(estoqueService.atualizar(id, request));
-    }
+        @PutMapping("/{id}")
+        public ResponseEntity<EstoqueResponse> atualizar(@PathVariable UUID id, @RequestBody EstoqueRequest request) {
+                return ResponseEntity.ok(estoqueService.atualizar(id, request));
+        }
 }

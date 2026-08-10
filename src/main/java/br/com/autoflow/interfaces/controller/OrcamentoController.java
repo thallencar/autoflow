@@ -1,8 +1,8 @@
-package com.autoflow.interfaces.controller;
+package br.com.autoflow.interfaces.controller;
 
-import com.autoflow.application.dto.OrcamentoRequest;
-import com.autoflow.application.dto.OrcamentoResponse;
-import com.autoflow.application.service.OrcamentoService;
+import br.com.autoflow.application.dto.OrcamentoRequest;
+import br.com.autoflow.application.dto.OrcamentoResponse;
+import br.com.autoflow.application.service.OrcamentoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +20,7 @@ public class OrcamentoController {
 
     @PostMapping
     public ResponseEntity<OrcamentoResponse> criar(@RequestBody OrcamentoRequest request) {
-        OrcamentoResponse response = orcamentoService.criar(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(orcamentoService.criar(request));
     }
 
     @GetMapping

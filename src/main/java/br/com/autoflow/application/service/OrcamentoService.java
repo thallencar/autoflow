@@ -1,10 +1,10 @@
-package com.autoflow.application.service;
+package br.com.autoflow.application.service;
 
-import com.autoflow.application.dto.OrcamentoRequest;
-import com.autoflow.application.dto.OrcamentoResponse;
-import com.autoflow.domain.model.Orcamento;
-import com.autoflow.domain.repository.OrcamentoRepository;
-import com.autoflow.infrastructure.mapper.OrcamentoMapper;
+import br.com.autoflow.application.dto.OrcamentoRequest;
+import br.com.autoflow.application.dto.OrcamentoResponse;
+import br.com.autoflow.domain.model.Orcamento;
+import br.com.autoflow.domain.repository.OrcamentoRepository;
+import br.com.autoflow.infrastructure.mapper.OrcamentoMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,11 +24,11 @@ public class OrcamentoService {
     public OrcamentoResponse criar(OrcamentoRequest request) {
         Orcamento orcamento = orcamentoMapper.toEntity(request);
 
-        // Relaciona os itens com o orçamento pai antes de salvar
         if (orcamento.getItens() != null) {
-            orcamento.getItens().forEach(item -> item.setOrcamento(orcamento));
+            for (var item : orcamento.getItens()) {
+                item.setOrcamento(orcamento);
+            }
         }
-
         orcamento = orcamentoRepository.save(orcamento);
         return orcamentoMapper.toResponse(orcamento);
     }

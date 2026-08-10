@@ -1,4 +1,4 @@
-package com.autoflow.domain.model;
+package br.com.autoflow.domain.model;
 
 import jakarta.persistence.*;
 import lombok.*;

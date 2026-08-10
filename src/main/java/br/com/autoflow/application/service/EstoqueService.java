@@ -1,10 +1,12 @@
-package com.autoflow.application.service;
+package br.com.autoflow.application.service;
 
-import com.autoflow.application.dto.EstoqueRequest;
-import com.autoflow.application.dto.EstoqueResponse;
-import com.autoflow.domain.model.Estoque;
-import com.autoflow.domain.repository.EstoqueRepository;
-import com.autoflow.infrastructure.mapper.EstoqueMapper;
+import br.com.autoflow.application.dto.AdicionarEstoqueRequest;
+import br.com.autoflow.application.dto.AtualizarValorEstoqueRequest;
+import br.com.autoflow.application.dto.EstoqueRequest;
+import br.com.autoflow.application.dto.EstoqueResponse;
+import br.com.autoflow.domain.model.Estoque;
+import br.com.autoflow.domain.repository.EstoqueRepository;
+import br.com.autoflow.infrastructure.mapper.EstoqueMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,52 +38,34 @@ public class EstoqueService {
 
     @Transactional(readOnly = true)
     public EstoqueResponse buscarPorId(UUID id) {
-        Estoque estoque = estoqueRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Item de estoque não encontrado"));
-        return estoqueMapper.toResponse(estoque);
+        return estoqueMapper.toResponse(buscarEntidadePorId(id));
     }
-    /**
-     * Adiciona/Soma mais quantidade ao estoque existente
-     */
+
     @Transactional
     public EstoqueResponse adicionarQuantidade(UUID id, AdicionarEstoqueRequest request) {
         Estoque estoque = buscarEntidadePorId(id);
-
         int quantidadeAtual = estoque.getQuantidadeEstoque() != null ? estoque.getQuantidadeEstoque() : 0;
         estoque.setQuantidadeEstoque(quantidadeAtual + request.quantidade());
-
-        estoque = estoqueRepository.save(estoque);
-        return estoqueMapper.toResponse(estoque);
+        return estoqueMapper.toResponse(estoqueRepository.save(estoque));
     }
 
-    /**
-     * Atualiza o valor unitário do item no estoque
-     */
     @Transactional
     public EstoqueResponse atualizarValorUnitario(UUID id, AtualizarValorEstoqueRequest request) {
         Estoque estoque = buscarEntidadePorId(id);
         estoque.setValorUnitario(request.valorUnitario());
-
-        estoque = estoqueRepository.save(estoque);
-        return estoqueMapper.toResponse(estoque);
+        return estoqueMapper.toResponse(estoqueRepository.save(estoque));
     }
 
-    /**
-     * Atualiza dados gerais do item de estoque (nome, marca, valor, etc.)
-     */
     @Transactional
     public EstoqueResponse atualizar(UUID id, EstoqueRequest request) {
         Estoque estoque = buscarEntidadePorId(id);
-
         estoque.setNomeItem(request.nomeItem());
         estoque.setNomeMarca(request.nomeMarca());
         estoque.setValorUnitario(request.valorUnitario());
         estoque.setQuantidadeEstoque(request.quantidadeEstoque());
         estoque.setQuantidadeMinima(request.quantidadeMinima());
         estoque.setTipoCategoria(request.tipoCategoria());
-
-        estoque = estoqueRepository.save(estoque);
-        return estoqueMapper.toResponse(estoque);
+        return estoqueMapper.toResponse(estoqueRepository.save(estoque));
     }
 
     private Estoque buscarEntidadePorId(UUID id) {

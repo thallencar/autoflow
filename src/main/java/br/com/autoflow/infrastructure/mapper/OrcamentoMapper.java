@@ -1,11 +1,11 @@
-package com.autoflow.infrastructure.mapper;
+package br.com.autoflow.infrastructure.mapper;
 
-import com.autoflow.application.dto.OrcamentoRequest;
-import com.autoflow.application.dto.OrcamentoResponse;
-import com.autoflow.application.dto.OrcamentoItemRequest;
-import com.autoflow.application.dto.OrcamentoItemResponse;
-import com.autoflow.domain.model.Orcamento;
-import com.autoflow.domain.model.OrcamentoItem;
+import br.com.autoflow.application.dto.OrcamentoRequest;
+import br.com.autoflow.application.dto.OrcamentoResponse;
+import br.com.autoflow.application.dto.OrcamentoItemRequest;
+import br.com.autoflow.application.dto.OrcamentoItemResponse;
+import br.com.autoflow.domain.model.Orcamento;
+import br.com.autoflow.domain.model.OrcamentoItem;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

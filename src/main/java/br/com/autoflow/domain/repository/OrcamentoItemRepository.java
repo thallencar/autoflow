@@ -1,6 +1,6 @@
-package com.projeto.repository;
+package br.com.autoflow.domain.repository;
 
-import com.projeto.model.OrcamentoItem;
+import br.com.autoflow.domain.model.OrcamentoItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
