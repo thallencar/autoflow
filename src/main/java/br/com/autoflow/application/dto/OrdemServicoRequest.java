@@ -18,6 +18,7 @@ public record OrdemServicoRequest(
         StatusOS stOs,
         String stPagamento,
         String dsMotivoCancelamento,
+        String placaVeiculo,
 
         @NotNull(message = "O ID do cliente é obrigatório")
         UUID idCliente,

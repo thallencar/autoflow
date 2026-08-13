@@ -30,8 +30,9 @@ public class OrdemServicoController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public OrdemServicoResponse criar(@RequestBody @Valid OrdemServicoRequest request) {
-        return service.criar(request);
+    public OrdemServicoResponse criar(@RequestBody @Valid OrdemServicoRequest request,
+                                      @RequestParam(defaultValue = "false") boolean agendamento ) {
+        return service.criar(request, request.placaVeiculo(), agendamento);
     }
 
     @PutMapping("/{id}")

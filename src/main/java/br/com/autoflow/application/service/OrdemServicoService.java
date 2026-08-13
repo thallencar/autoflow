@@ -2,6 +2,7 @@ package br.com.autoflow.application.service;
 
 import br.com.autoflow.application.dto.OrdemServicoRequest;
 import br.com.autoflow.application.dto.OrdemServicoResponse;
+import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.infrastructure.mapper.OrdemServicoMapper;
 import br.com.autoflow.domain.entity.OrdemServico;
 import br.com.autoflow.domain.repository.OrdemServicoRepository;
@@ -19,6 +20,7 @@ public class OrdemServicoService {
 
     private final OrdemServicoRepository repository;
     private final OrdemServicoMapper mapper;
+    private final OrdemServicoValidator validator;
 
     @Transactional(readOnly = true)
     public List<OrdemServicoResponse> listarTodas() {
@@ -35,7 +37,9 @@ public class OrdemServicoService {
     }
 
     @Transactional
-    public OrdemServicoResponse criar(OrdemServicoRequest request) {
+    public OrdemServicoResponse criar(OrdemServicoRequest request, String placaVeiculo, boolean possuiAgendamento) {
+        Long carrosNoPatio = repository.countByStOsNot(StatusOS.ENTREGUE);
+        validator.validarCriacao(request, placaVeiculo, possuiAgendamento, carrosNoPatio);
         OrdemServico os = mapper.toEntity(request);
         return mapper.toResponse(repository.save(os));
     }
@@ -45,6 +49,8 @@ public class OrdemServicoService {
         OrdemServico os = repository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", id));
 
+        validator.validarCliente(request.idCliente());
+        validator.validarOrcamentoParaOS(request.idOrcamento());
         mapper.updateEntityFromRequest(os, request);
         return mapper.toResponse(repository.save(os));
     }
