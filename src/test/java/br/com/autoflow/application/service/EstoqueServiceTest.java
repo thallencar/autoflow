@@ -60,15 +60,12 @@ public class EstoqueServiceTest {
                 TipoItemEstoque.INSUMO
         );
 
-        // Ensinando o Mockito como o Mapper e o Repository devem se comportar
         when(estoqueMapper.toEntity(request)).thenReturn(estoqueEntity);
         when(estoqueRepository.save(any(Estoque.class))).thenReturn(estoqueSalvo);
         when(estoqueMapper.toResponse(estoqueSalvo)).thenReturn(responseEsperado);
 
-        // 2. Ação (When)
         EstoqueResponse resultado = estoqueService.criar(request);
 
-        // 3. Verificação (Then)
         assertNotNull(resultado);
         assertEquals("Filtro de óleo", resultado.nomeItem());
         assertEquals(TipoItemEstoque.INSUMO, resultado.tipoCategoria());
