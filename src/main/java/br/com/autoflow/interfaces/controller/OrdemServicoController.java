@@ -1,5 +1,6 @@
 package br.com.autoflow.interfaces.controller;
 
+import br.com.autoflow.application.dto.AtualizarStatusOSRequest;
 import br.com.autoflow.application.dto.OrdemServicoRequest;
 import br.com.autoflow.application.dto.OrdemServicoResponse;
 import br.com.autoflow.application.service.OrdemServicoService;
@@ -32,7 +33,7 @@ public class OrdemServicoController {
     @ResponseStatus(HttpStatus.CREATED)
     public OrdemServicoResponse criar(@RequestBody @Valid OrdemServicoRequest request,
                                       @RequestParam(defaultValue = "false") boolean agendamento ) {
-        return service.criar(request, request.placaVeiculo(), agendamento);
+        return service.criar(request, agendamento);
     }
 
     @PutMapping("/{id}")
@@ -41,6 +42,14 @@ public class OrdemServicoController {
             @RequestBody @Valid OrdemServicoRequest request
     ) {
         return service.atualizar(id, request);
+    }
+    @PatchMapping("/{id}/status")
+    @ResponseStatus(HttpStatus.OK)
+    public OrdemServicoResponse atualizarStatus(
+            @PathVariable UUID id,
+            @RequestBody @Valid AtualizarStatusOSRequest request
+    ) {
+        return service.atualizarStatus(id, request);
     }
 
     @DeleteMapping("/{id}")

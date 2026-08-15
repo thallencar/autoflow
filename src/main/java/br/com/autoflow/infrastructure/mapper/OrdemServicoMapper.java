@@ -2,67 +2,55 @@ package br.com.autoflow.infrastructure.mapper;
 
 import br.com.autoflow.application.dto.OrdemServicoRequest;
 import br.com.autoflow.application.dto.OrdemServicoResponse;
-import br.com.autoflow.domain.entity.OrdemServico;
-import br.com.autoflow.domain.enums.StatusOS;
-import org.springframework.stereotype.Component;
+import br.com.autoflow.domain.model.Orcamento;
+import br.com.autoflow.domain.model.OrdemServico;
+import org.mapstruct.*;
 
-@Component
-public class OrdemServicoMapper {
+import java.util.List;
+import java.util.UUID;
 
-    public OrdemServico toEntity(OrdemServicoRequest request) {
-        if (request == null) return null;
+@Mapper(
+        componentModel = "spring",
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
+public interface OrdemServicoMapper {
 
-        return OrdemServico.builder()
-                .dsRelatoCliente(request.dsRelatoCliente())
-                .dsDiagnostico(request.dsDiagnostico())
-                .stTermoAceito(request.stTermoAceito() != null ? request.stTermoAceito() : false)
-                .dtAceiteTermo(request.dtAceiteTermo())
-                .nrKmEntrada(request.nrKmEntrada())
-                .stOs(request.stOs() != null ? request.stOs() : StatusOS.RECEBIDA)
-                .stPagamento(request.stPagamento() != null ? request.stPagamento() : "Pendente")
-                .idCliente(request.idCliente())
-                .idVeiculo(request.idVeiculo())
-                .idFuncionario(request.idFuncionario())
-                .idOrcamento(request.idOrcamento())
-                .build();
-    }
+        @Mapping(target = "idOs", ignore = true)
+        @Mapping(target = "statusOS", constant = "RECEBIDA")
+        @Mapping(target = "dtAberturaOs", ignore = true)
+        @Mapping(target = "dtInicioDiagnostico", ignore = true)
+        @Mapping(target = "dtFimDiagnostico", ignore = true)
+        @Mapping(target = "dtAprovacaoOrcamento", ignore = true)
+        @Mapping(target = "dtEncerramentoOs", ignore = true)
+        @Mapping(target = "dtReagendamentoOs", ignore = true)
+        @Mapping(target = "dsMotivoCancelamento", ignore = true)
+        @Mapping(target = "idsOrcamento", ignore = true)
+        OrdemServico toEntity(OrdemServicoRequest request);
 
-    public OrdemServicoResponse toResponse(OrdemServico os) {
-        if (os == null) return null;
+        OrdemServicoResponse toResponse(OrdemServico os);
 
-        return new OrdemServicoResponse(
-                os.getIdOs(),
-                os.getStOs(),
-                os.getDsRelatoCliente(),
-                os.getDsDiagnostico(),
-                os.getStTermoAceito(),
-                os.getDtAceiteTermo(),
-                os.getNrKmEntrada(),
-                os.getDtAberturaOs(),
-                os.getDtIncioDiagnostico(),
-                os.getDtFimDiagnostico(),
-                os.getDtAprovacaoOrcamento(),
-                os.getDtEncerramentoOs(),
-                os.getDtReagendamentoOs(),
-                os.getStPagamento(),
-                os.getDsMotivoCancelamento(),
-                os.getIdCliente(),
-                os.getIdVeiculo(),
-                os.getIdFuncionario(),
-                os.getIdOrcamento()
-        );
-    }
+        List<OrdemServicoResponse> toResponseList(List<OrdemServico> orders);
 
-    public void updateEntityFromRequest(OrdemServico os, OrdemServicoRequest request) {
-        if (os == null || request == null) return;
+        @Mapping(target = "idOs", ignore = true)
+        @Mapping(target = "statusOS", ignore = true)
+        @Mapping(target = "dtAberturaOs", ignore = true)
+        @Mapping(target = "stTermoAceito", ignore = true)
+        @Mapping(target = "dtAceiteTermo", ignore = true)
+        @Mapping(target = "dtInicioDiagnostico", ignore = true)
+        @Mapping(target = "dtFimDiagnostico", ignore = true)
+        @Mapping(target = "dtAprovacaoOrcamento", ignore = true)
+        @Mapping(target = "dtEncerramentoOs", ignore = true)
+        @Mapping(target = "dtReagendamentoOs", ignore = true)
+        @Mapping(target = "dsMotivoCancelamento", ignore = true)
+        @Mapping(target = "idsOrcamento", ignore = true)
+        void updateEntityFromRequest(@MappingTarget OrdemServico os, OrdemServicoRequest request);
 
-        os.setDsRelatoCliente(request.dsRelatoCliente());
-        os.setDsDiagnostico(request.dsDiagnostico());
-        if (request.stTermoAceito() != null) os.setStTermoAceito(request.stTermoAceito());
-        os.setDtAceiteTermo(request.dtAceiteTermo());
-        os.setNrKmEntrada(request.nrKmEntrada());
-        if (request.stOs() != null) os.setStOs(request.stOs());
-        if (request.stPagamento() != null) os.setStPagamento(request.stPagamento());
-        os.setDsMotivoCancelamento(request.dsMotivoCancelamento());
-    }
+        // O MapStruct usará este método automaticamente para converter a lista de Orcamento para UUID
+        default UUID map(Orcamento orcamento) {
+                if (orcamento == null) {
+                        return null;
+                }
+                return orcamento.getId(); // Certifique-se do nome exato do getter do ID em Orcamento
+        }
 }

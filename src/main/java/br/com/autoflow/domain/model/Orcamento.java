@@ -50,4 +50,8 @@ public class Orcamento {
     @Builder.Default
     @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrcamentoItem> itens = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_os", nullable = false)
+    private OrdemServico ordemServico;
 }

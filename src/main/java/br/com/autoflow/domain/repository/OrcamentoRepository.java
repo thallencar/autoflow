@@ -8,5 +8,5 @@ import java.util.UUID;
 
 @Repository
 public interface OrcamentoRepository extends JpaRepository<Orcamento, UUID> {
-
+    boolean existsByIdAndIdOsIsNotNull(UUID idOrcamento);
 }

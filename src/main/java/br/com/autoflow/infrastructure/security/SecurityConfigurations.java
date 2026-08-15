@@ -29,9 +29,9 @@ public class SecurityConfigurations {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/ordens-servico/**").hasAnyRole("ADMIN", "MECANICO", "CLIENTE")
-                        .requestMatchers(HttpMethod.POST, "/ordens-servico/**", "/veiculos/**").hasAnyRole("ADMIN", "MECANICO")
-                        .requestMatchers(HttpMethod.PUT, "/ordens-servico/**", "/veiculos/**").hasAnyRole("ADMIN", "MECANICO")
+                        .requestMatchers(HttpMethod.GET, "/ordens-servico/**", "/orcamentos/**").hasAnyRole("ADMIN", "MECANICO", "CLIENTE")
+                        .requestMatchers(HttpMethod.POST, "/ordens-servico/**", "/veiculos/**", "/orcamentos", "/orcamentos/**").hasAnyRole("ADMIN", "MECANICO")
+                        .requestMatchers(HttpMethod.PUT, "/ordens-servico/**", "/veiculos/**", "/orcamentos/**").hasAnyRole("ADMIN", "MECANICO")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
