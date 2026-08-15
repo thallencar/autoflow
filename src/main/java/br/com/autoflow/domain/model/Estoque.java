@@ -1,6 +1,7 @@
 package br.com.autoflow.domain.model;
 
 import br.com.autoflow.domain.enums.TipoItemEstoque;
+import br.com.autoflow.domain.enums.TipoItemEstoqueConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -38,6 +39,6 @@ public class Estoque {
     private Integer quantidadeMinima = 0;
 
     @Column(name = "tp_categoria", length = 20, nullable = false)
-    @Enumerated(EnumType.STRING)
+    @Convert(converter = TipoItemEstoqueConverter.class)
     private TipoItemEstoque tipoCategoria;
 }

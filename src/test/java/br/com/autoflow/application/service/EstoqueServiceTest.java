@@ -161,11 +161,11 @@ public class EstoqueServiceTest {
         Estoque estoque = new Estoque();
 
         EstoqueRequest request = new EstoqueRequest(
-                "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PEÇA
+                "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PECA
         );
 
         EstoqueResponse response = new EstoqueResponse(
-                id, "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PEÇA
+                id, "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PECA
         );
 
         when(estoqueRepository.findById(id)).thenReturn(Optional.of(estoque));
