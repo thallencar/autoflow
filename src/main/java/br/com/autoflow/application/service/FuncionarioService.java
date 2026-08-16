@@ -66,23 +66,19 @@ public class FuncionarioService {
 
     @Transactional
     public FuncionarioResponse atualizar(UUID id, FuncionarioRequest request) {
+        funcionarioValidator.validarParaAtualizar(id, request);
 
         Funcionario funcionario = repository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", id));
 
-        funcionario.atualizarDados(request);
-        Funcionario funcionarioAtualizado = repository.save(funcionario);
+        funcionarioMapper.updateEntityFromDto(request, funcionario);
+        usuarioRepository.findByFuncionario(funcionario)
+                .ifPresent(usuario -> usuario.atualizarDadosAcesso(
+                        funcionario.getEmail(),
+                        definirPerfilPorCargo(funcionario.getCargo())
+                ));
 
-        usuarioRepository.findByFuncionario(funcionarioAtualizado)
-                .ifPresent(usuario -> {
-                    usuario.atualizarDadosAcesso(
-                            funcionarioAtualizado.getEmail(),
-                            definirPerfilPorCargo(funcionarioAtualizado.getCargo())
-                    );
-                    usuarioRepository.save(usuario);
-                });
-
-        return funcionarioMapper.toResponse(funcionarioAtualizado);
+        return funcionarioMapper.toResponse(funcionario);
     }
 
     @Transactional
