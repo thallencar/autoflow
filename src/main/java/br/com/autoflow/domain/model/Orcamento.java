@@ -1,5 +1,8 @@
 package br.com.autoflow.domain.model;
 
+import br.com.autoflow.domain.enums.StatusOrcamento;
+import br.com.autoflow.domain.enums.StatusReservaEstoque;
+import br.com.autoflow.exception.RegraNegocioException;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -25,9 +28,9 @@ public class Orcamento {
     @Column(name = "tp_orcamento", length = 20, nullable = false)
     private String tipoOrcamento;
 
-    @Builder.Default
-    @Column(name = "st_orcamento", length = 15, nullable = false)
-    private String status = "Pendente";
+    @Enumerated(EnumType.STRING)
+    @Column(name = "st_orcamento", nullable = false, length = 15)
+    private StatusOrcamento status = StatusOrcamento.PENDENTE;
 
     @Column(name = "dt_criacao", nullable = false)
     private LocalDateTime dataCriacao;
@@ -54,4 +57,53 @@ public class Orcamento {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_os", nullable = false)
     private OrdemServico ordemServico;
+
+    public void aprovar() {
+        validarMudancaStatus();
+        this.status = StatusOrcamento.APROVADO;
+        this.dataDecisao = LocalDateTime.now();
+
+        if (this.itens != null) {
+            this.itens.forEach(item ->
+                    item.setStatusReserva(StatusReservaEstoque.valueOf(String.valueOf(StatusReservaEstoque.VENDIDO))));
+        }
+    }
+
+    public void recusar() {
+        validarMudancaStatus();
+        this.status = StatusOrcamento.RECUSADO;
+        this.dataDecisao = LocalDateTime.now();
+
+        if (this.itens != null) {
+            this.itens.forEach(item ->
+                    item.setStatusReserva(StatusReservaEstoque.valueOf(String.valueOf(StatusReservaEstoque.CANCELADO))));
+        }
+    }
+
+    public void aplicarNovoStatus(StatusOrcamento novoStatus) {
+        validarMudancaStatus();
+        if (this.status == StatusOrcamento.CANCELADO) {
+            throw new RegraNegocioException("Este orçamento expirou e seu status foi atualizado para CANCELADO.");
+        }
+        if (novoStatus == StatusOrcamento.APROVADO) {
+            aprovar();
+        } else if (novoStatus == StatusOrcamento.RECUSADO) {
+            recusar();
+        } else {
+            throw new RegraNegocioException("Transição de status não permitida.");
+        }
+    }
+
+    private void validarMudancaStatus() {
+        if (this.dataExpiracao != null && LocalDateTime.now().isAfter(this.dataExpiracao)) {
+            this.status = StatusOrcamento.CANCELADO;
+            if (this.itens != null) {
+                this.itens.forEach(item -> item.setStatusReserva(StatusReservaEstoque.CANCELADO));
+            }
+            return;
+        }
+        if (this.status != StatusOrcamento.PENDENTE) {
+            throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
+        }
+    }
 }

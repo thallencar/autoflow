@@ -2,6 +2,7 @@ package br.com.autoflow.application.service;
 
 import br.com.autoflow.application.dto.OrdemServicoRequest;
 import br.com.autoflow.domain.enums.StatusOS;
+import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.repository.*;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
@@ -88,7 +89,7 @@ public class OrdemServicoValidator {
         Orcamento orcamento = orcamentoRepository.findById(idOrcamento)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Orçamento", idOrcamento));
 
-        if (!"Aprovado".equalsIgnoreCase(orcamento.getStatus())) {
+        if (orcamento.getStatus() != StatusOrcamento.APROVADO) {
             throw new RegraNegocioException(
                     String.format("A Ordem de Serviço não pode ser iniciada. O Orçamento (ID: %s) precisa estar 'Aprovado' (Status atual: %s).",
                             idOrcamento, orcamento.getStatus())
@@ -104,7 +105,7 @@ public class OrdemServicoValidator {
     }
 
     public void validarOrcamentoSemOS(UUID idOrcamento) {
-        boolean orcamentoJaUtilizado = orcamentoRepository.existsByIdAndIdOsIsNotNull(idOrcamento);
+        boolean orcamentoJaUtilizado = orcamentoRepository.existsByIdAndOrdemServicoIsNotNull(idOrcamento);
         if (orcamentoJaUtilizado) {
             throw new RegraNegocioException(
                     String.format("O orçamento (ID: %s) já está vinculado a outra Ordem de Serviço.", idOrcamento)

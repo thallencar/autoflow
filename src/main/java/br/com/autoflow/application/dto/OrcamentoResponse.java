@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record OrcamentoResponse(
         UUID id,
+        UUID idOs,
         String tipoOrcamento,
         String status,
         LocalDateTime dataCriacao,

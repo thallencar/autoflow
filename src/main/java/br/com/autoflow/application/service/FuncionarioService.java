@@ -38,10 +38,7 @@ public class FuncionarioService {
     public FuncionarioResponse criar(FuncionarioRequest request) {
         funcionarioValidator.validarParaCriar(request);
 
-        Endereco endereco = enderecoMapper.toEntity(request.endereco());
-        endereco = enderecoRepository.save(endereco);
-
-        Funcionario funcionario = funcionarioMapper.toEntity(request, endereco);
+        Funcionario funcionario = funcionarioMapper.toEntity(request);
         funcionario = repository.save(funcionario);
 
         //criação automática de usuário

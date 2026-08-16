@@ -4,43 +4,20 @@ import br.com.autoflow.application.dto.FuncionarioRequest;
 import br.com.autoflow.application.dto.FuncionarioResponse;
 import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.model.Funcionario;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingConstants;
+import org.mapstruct.MappingTarget;
 
-@Component
-@RequiredArgsConstructor
-public class FuncionarioMapper {
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {EnderecoMapper.class})
+public interface FuncionarioMapper {
 
-    private final EnderecoMapper enderecoMapper;
+    @Mapping(target = "idFuncionario", ignore = true)
+    Funcionario toEntity(FuncionarioRequest request);
 
-    public Funcionario toEntity(FuncionarioRequest request, Endereco endereco) {
+    @Mapping(target = "id", source = "idFuncionario")
+    FuncionarioResponse toResponse(Funcionario funcionario);
 
-        return Funcionario.builder()
-                .cpf(request.cpf())
-                .nome(request.nome())
-                .telefone(request.telefone())
-                .email(request.email())
-                .genero(request.genero())
-                .cargo(request.cargo())
-                .dataNascimento(request.dataNascimento())
-                .endereco(endereco)
-                .build();
-    }
-
-    public FuncionarioResponse toResponse(Funcionario funcionario) {
-
-        return new FuncionarioResponse(
-                funcionario.getIdFuncionario(),
-                funcionario.getCpf(),
-                funcionario.getNome(),
-                funcionario.getTelefone(),
-                funcionario.getEmail(),
-                funcionario.getGenero(),
-                funcionario.getDataNascimento(),
-                funcionario.getCargo(),
-                enderecoMapper.toResponse(
-                        funcionario.getEndereco()
-                )
-        );
-    }
+    @Mapping(target = "idFuncionario", ignore = true)
+    void updateEntityFromDto(FuncionarioRequest request, @MappingTarget Funcionario funcionario);
 }

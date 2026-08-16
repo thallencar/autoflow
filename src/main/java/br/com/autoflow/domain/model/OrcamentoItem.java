@@ -1,5 +1,6 @@
 package br.com.autoflow.domain.model;
 
+import br.com.autoflow.domain.enums.StatusReservaEstoque;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -21,7 +22,8 @@ public class OrcamentoItem {
 
     @Builder.Default
     @Column(name = "st_reserva_estoque", length = 15, nullable = false)
-    private String statusReserva = "Vendido";
+    @Enumerated(EnumType.STRING)
+    private StatusReservaEstoque statusReserva = StatusReservaEstoque.RESERVADO;
 
     @Column(name = "qt_item", nullable = false)
     private Integer quantidade;
