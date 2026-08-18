@@ -92,7 +92,14 @@ public class ClienteService {
         Cliente cliente =
                 respository.findById(id)
                         .orElseThrow(() ->
-                                new EntidadeNaoEncontradaException("Cliente",id));
+                            new EntidadeNaoEncontradaException("Cliente",id));
+
+        usuarioRepository.findByCliente(cliente)
+            .ifPresent(usuario -> {
+                usuarioRepository.delete(usuario);
+                usuarioRepository.flush();
+        });
+
         respository.delete(cliente);
     }
 
