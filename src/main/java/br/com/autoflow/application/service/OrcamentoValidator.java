@@ -1,28 +1,38 @@
 package br.com.autoflow.application.service;
 
+import br.com.autoflow.application.dto.OrcamentoItemRequest;
 import br.com.autoflow.application.dto.OrcamentoRequest;
+import br.com.autoflow.application.dto.OrcamentoServicoRequest;
+import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
+import br.com.autoflow.domain.enums.StatusPagamento;
+import br.com.autoflow.domain.model.Estoque;
 import br.com.autoflow.domain.model.Orcamento;
-import br.com.autoflow.domain.repository.OrdemServicoRepository; // Ajuste conforme seu pacote
+import br.com.autoflow.domain.model.OrdemServico;
+import br.com.autoflow.domain.model.Servico;
+import br.com.autoflow.domain.repository.EstoqueRepository; // Adicionado para validar o estoque
+import br.com.autoflow.domain.repository.OrdemServicoRepository;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
-import br.com.autoflow.exception.RegraNegocioException; // Crie ou use sua exception de validação
+import br.com.autoflow.exception.RegraNegocioException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class OrcamentoValidator {
 
     private final OrdemServicoRepository ordemServicoRepository;
+    private final EstoqueRepository estoqueRepository;
+    private final ServicoValidator servicoValidator;
 
     public void validarCriacao(OrcamentoRequest request) {
         validarOrdemServico(request);
         validarDataExpiracao(request);
-        validarValores(request);
-        validarItens(request);
+        validarServicosRequest(request.servicos());
     }
 
     public void validarAtualizacaoStatus(StatusOrcamento novoStatus) {
@@ -36,9 +46,15 @@ public class OrcamentoValidator {
             throw new RegraNegocioException("O ID da Ordem de Serviço é obrigatório para criar um orçamento.");
         }
 
-        boolean osExiste = ordemServicoRepository.existsById(request.idOs());
-        if (!osExiste) {
-            throw new EntidadeNaoEncontradaException("Ordem de Serviço", request.idOs());
+        OrdemServico os = ordemServicoRepository.findById(request.idOs())
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", request.idOs()));
+
+        if (os.getStatusOS() == StatusOS.CANCELADA ||
+                os.getStatusOS() == StatusOS.FINALIZADA ||
+                os.getStatusOS() == StatusOS.ENTREGUE) {
+            throw new RegraNegocioException(
+                    String.format("Não é possível criar orçamento para uma Ordem de Serviço com status %s.", os.getStatusOS())
+            );
         }
     }
 
@@ -46,34 +62,72 @@ public class OrcamentoValidator {
         if (request.dataExpiracao() == null) {
             throw new RegraNegocioException("A data de expiração do orçamento é obrigatória.");
         }
-
         if (request.dataExpiracao().isBefore(LocalDateTime.now())) {
             throw new RegraNegocioException("A data de expiração não pode ser anterior à data atual.");
         }
     }
 
-    private void validarValores(OrcamentoRequest request) {
-        if (request.maoObra() != null && request.maoObra().compareTo(BigDecimal.ZERO) < 0) {
-            throw new RegraNegocioException("O valor da mão de obra não pode ser negativo.");
+    public void validarServicosRequest(List<OrcamentoServicoRequest> servicos) {
+        if (servicos == null || servicos.isEmpty()) {
+            throw new RegraNegocioException("O orçamento deve conter pelo menos um serviço.");
         }
-
-        if (request.subtotalPecas() != null && request.subtotalPecas().compareTo(BigDecimal.ZERO) < 0) {
-            throw new RegraNegocioException("O subtotal de peças não pode ser negativo.");
+        for (OrcamentoServicoRequest servico : servicos) {
+            validarEBuscarServico(servico);
+            if (servico.itens() != null) {
+                validarItensDoServico(servico.itens());
+            }
         }
     }
 
-    private void validarItens(OrcamentoRequest request) {
-        if (request.itens() == null || request.itens().isEmpty()) {
-            throw new RegraNegocioException("O orçamento deve conter pelo menos um item.");
+    public Servico validarEBuscarServico(OrcamentoServicoRequest request) {
+        if (request.idServico() == null) {
+            throw new RegraNegocioException("O ID do serviço é obrigatório.");
         }
+        if (request.maoDeObra() == null || request.maoDeObra().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RegraNegocioException("O valor da mão de obra deve ser maior que zero.");
+        }
+        return servicoValidator.buscarPorId(request.idServico());
+    }
 
-        request.itens().forEach(item -> {
+    private void validarItensDoServico(List<OrcamentoItemRequest> itens) {
+        itens.forEach(item -> {
+            if (item.idEstoque() == null) {
+                throw new RegraNegocioException("O ID da peça/estoque é obrigatório no item.");
+            }
             if (item.quantidade() == null || item.quantidade() <= 0) {
-                throw new RegraNegocioException("A quantidade de cada item deve ser maior que zero.");
+                throw new RegraNegocioException("A quantidade de cada item/peça deve ser maior que zero.");
             }
             if (item.valorUnitario() == null || item.valorUnitario().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new RegraNegocioException("O valor unitário do item deve ser maior que zero.");
+                throw new RegraNegocioException("O valor unitário do item/peça deve ser maior que zero.");
+            }
+            Estoque itemEstoque = estoqueRepository.findById(item.idEstoque())
+                    .orElseThrow(() -> new EntidadeNaoEncontradaException("Item de Estoque", item.idEstoque()));
+
+            if (itemEstoque.getQuantidadeEstoque() < item.quantidade()) {
+                throw new RegraNegocioException(
+                        String.format("Estoque insuficiente para a peça '%s'. Solicitado: %d, Disponível: %d.",
+                                itemEstoque.getNomeItem(), item.quantidade(), itemEstoque.getQuantidadeEstoque())
+                );
             }
         });
+    }
+
+    public void validarEstoqueDisponivel(Orcamento orcamento) {
+        if (orcamento.getServicos() == null) return;
+
+        orcamento.getServicos().stream()
+                .filter(servico -> servico.getItens() != null)
+                .flatMap(servico -> servico.getItens().stream())
+                .forEach(item -> {
+                    Estoque estoque = estoqueRepository.findById(item.getIdEstoque())
+                            .orElseThrow(() -> new EntidadeNaoEncontradaException("Item de Estoque", item.getIdEstoque()));
+
+                    if (estoque.getQuantidadeEstoque() < item.getQuantidade()) {
+                        throw new RegraNegocioException(
+                                String.format("Saldo insuficiente no estoque para a peça '%s'. Solicitado: %d, Disponível: %d.",
+                                        estoque.getNomeItem(), item.getQuantidade(), estoque.getQuantidadeEstoque())
+                        );
+                    }
+                });
     }
 }

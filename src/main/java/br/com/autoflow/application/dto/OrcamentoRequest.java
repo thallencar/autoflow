@@ -16,22 +16,14 @@ public record OrcamentoRequest(
 
         @NotNull(message = "O tipo do orçamento é obrigatório")
         String tipoOrcamento,
+
         @NotNull(message = "A data de expiração é obrigatória")
         LocalDateTime dataExpiracao,
 
-        @NotNull(message = "O valor subtotal das peças é obrigatório")
-        @PositiveOrZero(message = "O valor da mão de obra não pode ser negativo")
-        BigDecimal subtotalPecas,
+        @NotEmpty(message = "O orçamento deve conter pelo menos um serviço")
+        @Valid
+        List<OrcamentoServicoRequest> servicos,
 
-        @NotNull(message = "O valor da mão de obra é obrigatório")
-        @PositiveOrZero(message = "O valor da mão de obra não pode ser negativo")
-        BigDecimal maoObra,
-
-        @NotNull(message = "O valor total do orçamento é obrigatório")
-        @PositiveOrZero(message = "O valor da mão de obra não pode ser negativo")
-        BigDecimal total,
-
-        @NotEmpty(message = "O orçamento deve conter pelo menos um item")
         @Valid
         List<OrcamentoItemRequest> itens
 ) {}

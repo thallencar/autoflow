@@ -1,5 +1,6 @@
 package br.com.autoflow.infrastructure.mapper;
 
+import br.com.autoflow.application.dto.MetricaOsResponse;
 import br.com.autoflow.application.dto.OrdemServicoRequest;
 import br.com.autoflow.application.dto.OrdemServicoResponse;
 import br.com.autoflow.domain.model.Orcamento;
@@ -22,6 +23,8 @@ public interface OrdemServicoMapper {
         @Mapping(target = "dtInicioDiagnostico", ignore = true)
         @Mapping(target = "dtFimDiagnostico", ignore = true)
         @Mapping(target = "dtAprovacaoOrcamento", ignore = true)
+        @Mapping(target = "dataInicioExecucao", ignore = true)
+        @Mapping(target = "dataFimExecucao", ignore = true)
         @Mapping(target = "dtEncerramentoOs", ignore = true)
         @Mapping(target = "dtReagendamentoOs", ignore = true)
         @Mapping(target = "dsMotivoCancelamento", ignore = true)
@@ -31,6 +34,22 @@ public interface OrdemServicoMapper {
         OrdemServicoResponse toResponse(OrdemServico os);
 
         List<OrdemServicoResponse> toResponseList(List<OrdemServico> orders);
+
+        default MetricaOsResponse toMetricaResponse(OrdemServico os) {
+                if (os == null) {
+                        return null;
+                }
+
+                return new MetricaOsResponse(
+                        os.getIdOs(),
+                        os.getStatusOS() != null ? os.getStatusOS().name() : null,
+                        os.getTempoTotalEstimadoMinutos(),
+                        os.getTempoTotalExecucaoMinutos(),
+                        os.getDiferencaMinutos(),
+                        os.getDataInicioExecucao(),
+                        os.getDataFimExecucao()
+                );
+        }
 
         @Mapping(target = "idOs", ignore = true)
         @Mapping(target = "statusOS", ignore = true)
@@ -46,11 +65,10 @@ public interface OrdemServicoMapper {
         @Mapping(target = "idsOrcamento", ignore = true)
         void updateEntityFromRequest(@MappingTarget OrdemServico os, OrdemServicoRequest request);
 
-        // O MapStruct usará este método automaticamente para converter a lista de Orcamento para UUID
         default UUID map(Orcamento orcamento) {
                 if (orcamento == null) {
                         return null;
                 }
-                return orcamento.getId(); // Certifique-se do nome exato do getter do ID em Orcamento
+                return orcamento.getId();
         }
 }

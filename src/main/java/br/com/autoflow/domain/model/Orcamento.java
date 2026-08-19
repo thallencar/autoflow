@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -30,6 +31,7 @@ public class Orcamento {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "st_orcamento", nullable = false, length = 15)
+    @Builder.Default
     private StatusOrcamento status = StatusOrcamento.PENDENTE;
 
     @Column(name = "dt_criacao", nullable = false)
@@ -50,60 +52,78 @@ public class Orcamento {
     @Column(name = "vl_total", precision = 10, scale = 2, nullable = false)
     private BigDecimal total;
 
-    @Builder.Default
-    @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrcamentoItem> itens = new ArrayList<>();
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_os", nullable = false)
     private OrdemServico ordemServico;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrcamentoServico> servicos = new ArrayList<>();
 
     public void aprovar() {
         validarMudancaStatus();
         this.status = StatusOrcamento.APROVADO;
         this.dataDecisao = LocalDateTime.now();
-
-        if (this.itens != null) {
-            this.itens.forEach(item ->
-                    item.setStatusReserva(StatusReservaEstoque.valueOf(String.valueOf(StatusReservaEstoque.VENDIDO))));
-        }
+        atualizarStatusReservaItens(StatusReservaEstoque.VENDIDO);
     }
 
     public void recusar() {
         validarMudancaStatus();
         this.status = StatusOrcamento.RECUSADO;
         this.dataDecisao = LocalDateTime.now();
+        atualizarStatusReservaItens(StatusReservaEstoque.CANCELADO);
+    }
 
-        if (this.itens != null) {
-            this.itens.forEach(item ->
-                    item.setStatusReserva(StatusReservaEstoque.valueOf(String.valueOf(StatusReservaEstoque.CANCELADO))));
-        }
+    public void expirar() {
+        this.status = StatusOrcamento.CANCELADO;
+        this.dataDecisao = LocalDateTime.now();
+        atualizarStatusReservaItens(StatusReservaEstoque.CANCELADO);
     }
 
     public void aplicarNovoStatus(StatusOrcamento novoStatus) {
-        validarMudancaStatus();
-        if (this.status == StatusOrcamento.CANCELADO) {
-            throw new RegraNegocioException("Este orçamento expirou e seu status foi atualizado para CANCELADO.");
+        switch (novoStatus) {
+            case APROVADO -> aprovar();
+            case RECUSADO -> recusar();
+            default -> throw new RegraNegocioException(
+                    String.format("Transição para o status %s não é permitida.", novoStatus)
+            );
         }
-        if (novoStatus == StatusOrcamento.APROVADO) {
-            aprovar();
-        } else if (novoStatus == StatusOrcamento.RECUSADO) {
-            recusar();
-        } else {
-            throw new RegraNegocioException("Transição de status não permitida.");
+    }
+
+    private void atualizarStatusReservaItens(StatusReservaEstoque statusReserva) {
+        if (this.servicos != null) {
+            this.servicos.stream()
+                    .filter(s -> s.getItens() != null)
+                    .flatMap(s -> s.getItens().stream())
+                    .forEach(item -> item.setStatusReserva(statusReserva));
         }
     }
 
     private void validarMudancaStatus() {
-        if (this.dataExpiracao != null && LocalDateTime.now().isAfter(this.dataExpiracao)) {
-            this.status = StatusOrcamento.CANCELADO;
-            if (this.itens != null) {
-                this.itens.forEach(item -> item.setStatusReserva(StatusReservaEstoque.CANCELADO));
-            }
-            return;
-        }
         if (this.status != StatusOrcamento.PENDENTE) {
             throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
         }
+        if (this.dataExpiracao != null && LocalDateTime.now().isAfter(this.dataExpiracao)) {
+            throw new RegraNegocioException("Este orçamento está expirado e não pode mais ser alterado.");
+        }
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void recalcularTotais() {
+        this.maoObra = (this.servicos == null) ? BigDecimal.ZERO : this.servicos.stream()
+                .map(OrcamentoServico::getMaoDeObra)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        this.subtotalPecas = (this.servicos == null) ? BigDecimal.ZERO : this.servicos.stream()
+                .filter(s -> s.getItens() != null)
+                .flatMap(s -> s.getItens().stream())
+                .peek(OrcamentoItem::calcularTotal)
+                .map(OrcamentoItem::getValorTotal)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        this.total = this.maoObra.add(this.subtotalPecas);
     }
 }

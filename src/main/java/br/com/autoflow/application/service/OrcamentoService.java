@@ -4,14 +4,16 @@ import br.com.autoflow.application.dto.AtualizarStatusOrcamentoRequest;
 import br.com.autoflow.application.dto.OrcamentoRequest;
 import br.com.autoflow.application.dto.OrcamentoResponse;
 import br.com.autoflow.domain.enums.StatusOrcamento;
+import br.com.autoflow.domain.enums.StatusPagamento;
 import br.com.autoflow.domain.enums.StatusReservaEstoque;
+import br.com.autoflow.domain.model.Estoque;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.model.OrdemServico;
-import br.com.autoflow.domain.repository.OrcamentoRepository;
-import br.com.autoflow.domain.repository.OrdemServicoRepository;
+import br.com.autoflow.domain.repository.*;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.exception.RegraNegocioException;
 import br.com.autoflow.infrastructure.mapper.OrcamentoMapper;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class OrcamentoService {
     private final OrcamentoValidator orcamentoValidator;
     private final OrdemServicoRepository ordemServicoRepository;
     private final OrcamentoExpiradoService orcamentoExpiradoService;
+    private final EstoqueRepository estoqueRepository;
 
     @Transactional
     public OrcamentoResponse criar(OrcamentoRequest request) {
@@ -40,14 +43,21 @@ public class OrcamentoService {
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", request.idOs()));
         orcamento.setOrdemServico(ordemServico);
 
-        if (orcamento.getItens() != null) {
-            for (var item : orcamento.getItens()) {
-                item.setOrcamento(orcamento);
-                item.setStatusReserva(StatusReservaEstoque.RESERVADO);
+        if (orcamento.getServicos() != null) {
+            for (var servico : orcamento.getServicos()) {
+                servico.setOrcamento(orcamento);
+                if (servico.getItens() != null) {
+                    for (var item : servico.getItens()) {
+                        item.setOrcamentoServico(servico);
+                        item.setStatusReserva(StatusReservaEstoque.RESERVADO);
+                    }
+                }
             }
         }
+
         orcamento.setStatus(StatusOrcamento.PENDENTE);
         orcamento.setDataCriacao(LocalDateTime.now());
+
         orcamento = orcamentoRepository.save(orcamento);
         return orcamentoMapper.toResponse(orcamento);
     }
@@ -59,19 +69,22 @@ public class OrcamentoService {
 
         orcamentoValidator.validarAtualizacaoStatus(request.status());
 
-        try {
-            orcamento.aplicarNovoStatus(request.status());
-
-        } catch (RegraNegocioException e) {
-            if (orcamento.getStatus() == StatusOrcamento.CANCELADO) {
-                orcamentoExpiradoService.salvarOrcamentoExpirado(orcamento);
-            }
-            throw e;
+        if (orcamento.getDataExpiracao() != null && LocalDateTime.now().isAfter(orcamento.getDataExpiracao())) {
+            orcamento.expirar();
+            orcamentoExpiradoService.salvarOrcamentoExpirado(orcamento);
+            throw new RegraNegocioException("Não foi possível alterar o status: Este orçamento está expirado.");
         }
+
+        if (request.status() == StatusOrcamento.APROVADO) {
+            orcamentoValidator.validarEstoqueDisponivel(orcamento);
+            deduzirItensDoEstoque(orcamento);
+        }
+
+        orcamento.aplicarNovoStatus(request.status());
+
         orcamento = orcamentoRepository.save(orcamento);
         return orcamentoMapper.toResponse(orcamento);
     }
-
 
     @Transactional(readOnly = true)
     public List<OrcamentoResponse> listarTodos() {
@@ -98,10 +111,33 @@ public class OrcamentoService {
     }
 
     @Transactional
-    public void delete (UUID id){
-        if(!orcamentoRepository.existsById(id)) {
+    public void delete(UUID id) {
+        if (!orcamentoRepository.existsById(id)) {
             throw new EntidadeNaoEncontradaException("Orçamento", id);
         }
-        orcamentoRepository.deleteById(id);
+        orcamentoRepository.deletarItensDiretosPorOrcamento(id);
+        orcamentoRepository.deletarItensPorServicosDoOrcamento(id);
+        orcamentoRepository.deletarServicosPorOrcamento(id);
+    }
+
+    private void deduzirItensDoEstoque(Orcamento orcamento) {
+        if (orcamento.getServicos() == null) return;
+
+        orcamento.getServicos().stream()
+                .filter(servico -> servico.getItens() != null)
+                .flatMap(servico -> servico.getItens().stream())
+                .forEach(item -> {
+                    Estoque estoque = estoqueRepository.findById(item.getIdEstoque())
+                            .orElseThrow(() -> new EntidadeNaoEncontradaException("Item de Estoque", item.getIdEstoque()));
+
+                    if (estoque.getQuantidadeEstoque() < item.getQuantidade()) {
+                        throw new RegraNegocioException(
+                                String.format("Saldo insuficiente para a peça %s no momento da aprovação.", estoque.getNomeItem())
+                        );
+                    }
+
+                    estoque.setQuantidadeEstoque(estoque.getQuantidadeEstoque() - item.getQuantidade());
+                    estoqueRepository.save(estoque);
+                });
     }
 }

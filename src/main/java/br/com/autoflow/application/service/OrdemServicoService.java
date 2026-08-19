@@ -1,18 +1,23 @@
 package br.com.autoflow.application.service;
 
 import br.com.autoflow.application.dto.AtualizarStatusOSRequest;
+import br.com.autoflow.application.dto.MetricaOsResponse;
 import br.com.autoflow.application.dto.OrdemServicoRequest;
 import br.com.autoflow.application.dto.OrdemServicoResponse;
 import br.com.autoflow.domain.enums.StatusOS;
+import br.com.autoflow.domain.enums.StatusPagamento;
 import br.com.autoflow.exception.RegraNegocioException;
 import br.com.autoflow.infrastructure.mapper.OrdemServicoMapper;
 import br.com.autoflow.domain.model.OrdemServico;
 import br.com.autoflow.domain.repository.OrdemServicoRepository;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,6 +62,15 @@ public class OrdemServicoService {
     }
 
     @Transactional
+    public void atualizarStatusPagamento(UUID id, StatusPagamento novoStatus) {
+        OrdemServico ordemServico = repository.findById(id)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", id));
+        validator.validarAtualizacaoPagamento(ordemServico, novoStatus);
+        ordemServico.setStPagamento(novoStatus);
+        repository.save(ordemServico);
+    }
+
+    @Transactional
     public void deletar(UUID id) {
         if (!repository.existsById(id)) {
             throw new EntidadeNaoEncontradaException("Ordem de Serviço", id);
@@ -71,5 +85,25 @@ public class OrdemServicoService {
         OrdemServico osSalva = repository.save(os);
         OrdemServicoResponse response = mapper.toResponse(osSalva);
         return response;
+    }
+
+    @Transactional(readOnly = true)
+    public MetricaOsResponse obterMetricasPorOS(UUID idOs) {
+        OrdemServico ordemServico = repository.findById(idOs)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", idOs));
+
+        return mapper.toMetricaResponse(ordemServico);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MetricaOsResponse> buscarMetricasComFiltro(
+            LocalDateTime dataInicio,
+            LocalDateTime dataFim,
+            StatusOS status,
+            Pageable pageable) {
+
+        Page<OrdemServico> ordens = repository.findMetricasComFiltro(dataInicio, dataFim, status, pageable);
+
+        return ordens.map(mapper::toMetricaResponse);
     }
 }

@@ -34,10 +34,22 @@ public class OrcamentoItem {
     @Column(name = "vl_total", precision = 10, scale = 2, nullable = false)
     private BigDecimal valorTotal;
 
-    @Column(name = "id_estoque", nullable = false)
+    @Column(name = "id_estoque", nullable = true)
     private UUID idEstoque;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_orcamento_servicos", nullable = false)
+    private OrcamentoServico orcamentoServico;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_orcamento", nullable = false)
     private Orcamento orcamento;
+
+    @PrePersist
+    @PreUpdate
+    public void calcularTotal() {
+        if (this.valorUnitario != null && this.quantidade != null) {
+            this.valorTotal = this.valorUnitario.multiply(BigDecimal.valueOf(this.quantidade));
+        }
+    }
 }
