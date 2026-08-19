@@ -4,6 +4,7 @@ import br.com.autoflow.application.dto.OrdemServicoRequest;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusPagamento;
+import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.model.OrdemServico;
 import br.com.autoflow.domain.repository.*;
@@ -177,6 +178,18 @@ public class OrdemServicoValidator {
         }
         if (ordemServico.getStPagamento() == StatusPagamento.PAGO) {
             throw new RegraNegocioException("Não é possível alterar o status de um pagamento já finalizado.");
+        }
+    }
+
+    public void validarAlocacaoMecanico(UUID idFuncionarioReq, UUID idFuncionarioAtual) {
+        if (idFuncionarioReq == null && idFuncionarioAtual == null) {
+            throw new RegraNegocioException("É obrigatório informar um mecânico para iniciar o diagnóstico.");
+        }
+        UUID idParaChecar = idFuncionarioReq != null ? idFuncionarioReq : idFuncionarioAtual;
+        Funcionario mecanico = funcionarioRepository.findById(idParaChecar)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", idParaChecar));
+        if (mecanico.isOcupado() && (idFuncionarioAtual == null || !idFuncionarioAtual.equals(mecanico.getIdFuncionario()))) {
+            throw new RegraNegocioException("Este mecânico já está alocado em outro veículo no momento.");
         }
     }
 }

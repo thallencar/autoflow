@@ -44,4 +44,10 @@ public class FuncionarioController {
     public void deletar(@PathVariable UUID id) {
         service.deletar(id);
     }
+
+    @PatchMapping("/{id}/advertencia")
+    @ResponseStatus(HttpStatus.OK)
+    public String registrarAdvertencia(@PathVariable UUID id) {
+       return service.registrarAdvertencia(id);
+    }
 }

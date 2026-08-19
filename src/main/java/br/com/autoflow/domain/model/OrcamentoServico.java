@@ -43,12 +43,4 @@ public class OrcamentoServico {
             this.itens.forEach(item -> item.setOrcamento(orcamento));
         }
     }
-
-    public void adicionarItem(OrcamentoItem item) {
-        this.itens.add(item);
-        item.setOrcamentoServico(this);
-        if (this.orcamento != null) {
-            item.setOrcamento(this.orcamento);
-        }
-    }
 }

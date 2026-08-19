@@ -51,17 +51,25 @@ public class Funcionario {
     @JoinColumn(name = "id_endereco", nullable = false)
     private Endereco endereco;
 
-    public void atualizarDados(String nome,
-                               String telefone,
-                               String email,
-                               Genero genero,
-                               Cargo cargo,
-                               LocalDate dataNascimento) {
-        this.nome = nome;
-        this.telefone = telefone;
-        this.email = email;
-        this.genero = genero;
-        this.cargo = cargo;
-        this.dataNascimento = dataNascimento;
+    @Column(name = "st_ocupado")
+    private boolean ocupado = false;
+
+    @Column(name = "nr_advertencias")
+    private int nr_advertencias = 0;
+
+    public void ocupar() {
+        this.ocupado = true;
+    }
+
+    public void liberar() {
+        this.ocupado = false;
+    }
+
+    public void adicionarAdvertencia() {
+        this.nr_advertencias++;
+    }
+
+    public boolean deveSerDemitido() {
+        return this.nr_advertencias >= 3;
     }
 }

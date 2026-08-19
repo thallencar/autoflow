@@ -4,14 +4,11 @@ import br.com.autoflow.application.dto.FuncionarioRequest;
 import br.com.autoflow.application.dto.FuncionarioResponse;
 import br.com.autoflow.domain.enums.Cargo;
 import br.com.autoflow.domain.enums.Perfil;
-import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Usuario;
-import br.com.autoflow.domain.repository.EnderecoRepository;
 import br.com.autoflow.domain.repository.FuncionarioRepository;
 import br.com.autoflow.domain.repository.UsuarioRepository;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
-import br.com.autoflow.infrastructure.mapper.EnderecoMapper;
 import br.com.autoflow.infrastructure.mapper.FuncionarioMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,9 +24,7 @@ import java.util.UUID;
 public class FuncionarioService {
 
     private final FuncionarioRepository repository;
-    private final EnderecoRepository enderecoRepository;
     private final FuncionarioMapper funcionarioMapper;
-    private final EnderecoMapper enderecoMapper;
     private final FuncionarioValidator funcionarioValidator;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -89,6 +84,23 @@ public class FuncionarioService {
                         .orElseThrow(() ->
                                 new EntidadeNaoEncontradaException("Funcionário",id));
         repository.delete(funcionario);
+    }
+
+    @Transactional
+    public String registrarAdvertencia(UUID id) {
+        Funcionario funcionario = repository.findById(id)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", id));
+        funcionario.adicionarAdvertencia();
+        repository.save(funcionario);
+
+        int totalAdvertencias = funcionario.getNr_advertencias();
+
+        if (funcionario.deveSerDemitido()) {
+            return "Advertência registrada com sucesso. O funcionário atingiu " + totalAdvertencias +
+                    " advertências e deve ser encaminhado para falar com a direção (Risco de demissão).";
+        }
+
+        return "Advertência registrada com sucesso. Total atual de advertências: " + totalAdvertencias;
     }
 
     private Perfil definirPerfilPorCargo(Cargo cargo) {
