@@ -35,4 +35,6 @@ public interface OrdemServicoRepository extends JpaRepository<OrdemServico, UUID
             @Param("status") StatusOS status,
             Pageable pageable
     );
+
+    List<OrdemServico> findByStatusOS(StatusOS statusOS);
 }

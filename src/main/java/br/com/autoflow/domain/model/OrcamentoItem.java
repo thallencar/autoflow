@@ -41,7 +41,7 @@ public class OrcamentoItem {
     @JoinColumn(name = "id_orcamento_servicos", nullable = false)
     private OrcamentoServico orcamentoServico;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_orcamento", nullable = false)
     private Orcamento orcamento;
 

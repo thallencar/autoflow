@@ -5,12 +5,13 @@ import br.com.autoflow.application.dto.OrcamentoRequest;
 import br.com.autoflow.application.dto.OrcamentoServicoRequest;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
-import br.com.autoflow.domain.enums.StatusPagamento;
+import br.com.autoflow.domain.enums.TipoOrcamento;
 import br.com.autoflow.domain.model.Estoque;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.model.OrdemServico;
 import br.com.autoflow.domain.model.Servico;
-import br.com.autoflow.domain.repository.EstoqueRepository; // Adicionado para validar o estoque
+import br.com.autoflow.domain.repository.EstoqueRepository;
+import br.com.autoflow.domain.repository.OrcamentoRepository;
 import br.com.autoflow.domain.repository.OrdemServicoRepository;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.exception.RegraNegocioException;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -28,10 +30,41 @@ public class OrcamentoValidator {
     private final OrdemServicoRepository ordemServicoRepository;
     private final EstoqueRepository estoqueRepository;
     private final ServicoValidator servicoValidator;
+    private final OrcamentoRepository orcamentoRepository;
 
     public void validarCriacao(OrcamentoRequest request) {
         validarOrdemServico(request);
-        validarDataExpiracao(request);
+
+        List<Orcamento> orcamentosExistentes = orcamentoRepository.findByOrdemServicoIdOs(request.idOs());
+        boolean temOrcamentoAnterior = orcamentosExistentes != null && !orcamentosExistentes.isEmpty();
+
+        boolean ehComplementar = request.tipoOrcamento() != null &&
+                request.tipoOrcamento().equals(TipoOrcamento.COMPLEMENTAR);
+
+        if (ehComplementar) {
+            if (!temOrcamentoAnterior) {
+                throw new RegraNegocioException("Não é permitido criar um orçamento complementar sem antes existir um orçamento inicial para esta OS.");
+            }
+
+            List<UUID> servicosJaCadastrados = orcamentosExistentes.stream()
+                    .filter(o -> o.getServicos() != null)
+                    .flatMap(o -> o.getServicos().stream())
+                    .map(s -> s.getServico().getIdServico())
+                    .toList();
+
+            if (request.servicos() != null) {
+                for (var novoServico : request.servicos()) {
+                    if (servicosJaCadastrados.contains(novoServico.idServico())) {
+                        throw new RegraNegocioException(
+                                String.format("O serviço com ID %s já foi adicionado em outro orçamento desta OS.", novoServico.idServico())
+                        );
+                    }
+                }
+            }
+        } else {
+            validarDataExpiracao(request);
+        }
+
         validarServicosRequest(request.servicos());
     }
 

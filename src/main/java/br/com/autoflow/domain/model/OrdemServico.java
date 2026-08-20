@@ -7,6 +7,7 @@ import br.com.autoflow.exception.RegraNegocioException;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +78,10 @@ public class OrdemServico {
     @Column(name = "ds_motivo_cancelamento", length = 255)
     private String dsMotivoCancelamento;
 
+    @Column(name = "vl_taxa_permanencia", precision = 10, scale = 2)
+    @Builder.Default
+    private BigDecimal taxaPermanencia = BigDecimal.ZERO;
+
     @Column(name = "id_cliente", nullable = false)
     private UUID idCliente;
 
@@ -86,8 +91,7 @@ public class OrdemServico {
     @Column(name = "id_funcionario", nullable = true)
     private UUID idFuncionario;
 
-    @OneToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinColumn(name = "id_os")
+    @OneToMany(mappedBy = "ordemServico", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Orcamento> idsOrcamento = new ArrayList<>();
 
@@ -103,22 +107,30 @@ public class OrdemServico {
         if (this.stPagamento == null) {
             this.stPagamento = StatusPagamento.PENDENTE;
         }
+        if (this.taxaPermanencia == null) {
+            this.taxaPermanencia = BigDecimal.ZERO;
+        }
     }
 
     public void carregarServicosDosOrcamentosAprovados() {
-        this.servicosExecucao.clear();
-
-        this.idsOrcamento.stream()
+        List<Servico> servicosAprovados = this.idsOrcamento.stream()
                 .filter(orcamento -> orcamento.getStatus() == StatusOrcamento.APROVADO)
                 .flatMap(orcamento -> orcamento.getServicos().stream())
-                .forEach(orcamentoServico -> {
-                    OsServico osServico = OsServico.builder()
-                            .ordemServico(this)
-                            .servico(orcamentoServico.getServico())
-                            .build();
+                .map(OrcamentoServico::getServico)
+                .distinct()
+                .toList();
+        for (Servico servico : servicosAprovados) {
+            boolean jaExiste = this.servicosExecucao.stream()
+                    .anyMatch(osServico -> osServico.getServico().getIdServico().equals(servico.getIdServico()));
 
-                    this.servicosExecucao.add(osServico);
-                });
+            if (!jaExiste) {
+                OsServico osServico = OsServico.builder()
+                        .ordemServico(this)
+                        .servico(servico)
+                        .build();
+                this.servicosExecucao.add(osServico);
+            }
+        }
     }
 
     public void atualizarStatus(StatusOS novoStatus, String observacao) {
@@ -130,12 +142,11 @@ public class OrdemServico {
         }
         if (novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
             if (observacao != null && !observacao.isBlank()) {
-                this.dsDiagnostico = observacao;
-            }
-        }
-        if (novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
-            if (this.dsDiagnostico == null || this.dsDiagnostico.isBlank()) {
-                throw new RegraNegocioException("A descrição do diagnóstico do mecânico é obrigatória para finalizar a etapa de diagnóstico.");
+                if (this.dsDiagnostico != null && !this.dsDiagnostico.isBlank()) {
+                    this.dsDiagnostico = this.dsDiagnostico + " | " + observacao;
+                } else {
+                    this.dsDiagnostico = observacao;
+                }
             }
         }
         List<StatusOS> statusPosDiagnostico = List.of(
@@ -254,6 +265,31 @@ public class OrdemServico {
                     orcamento.recusar();
                 }
             });
+        }
+    }
+
+    public void verificarCancelamentoAutomatico(int diasLimite, BigDecimal valorDiaria) {
+        if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
+            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(this.dtFimDiagnostico, LocalDateTime.now());
+            if (diasDecorridos > diasLimite) {
+                long diasExcedidos = diasDecorridos - diasLimite;
+                this.statusOS = StatusOS.CANCELADA;
+                this.dtEncerramentoOs = LocalDateTime.now();
+                this.dsMotivoCancelamento = "Cancelado automaticamente após " + diasLimite + " dias sem retorno do orçamento (Art. 40 CDC).";
+                this.taxaPermanencia = valorDiaria.multiply(BigDecimal.valueOf(diasExcedidos));
+                recusarOrcamentosVinculados();
+            }
+        }
+    }
+
+    public void verificarAbandonoTecnico(int diasLimiteAbandono) {
+        if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
+            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(this.dtFimDiagnostico, LocalDateTime.now());
+            if (diasDecorridos >= diasLimiteAbandono) {
+                this.statusOS = StatusOS.ABANDONADO;
+                this.dtEncerramentoOs = LocalDateTime.now();
+                this.dsMotivoCancelamento = "Veículo considerado abandonado após " + diasLimiteAbandono + " dias sem manifestação do cliente.";
+            }
         }
     }
 }

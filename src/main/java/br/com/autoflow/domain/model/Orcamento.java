@@ -2,6 +2,7 @@ package br.com.autoflow.domain.model;
 
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusReservaEstoque;
+import br.com.autoflow.domain.enums.TipoOrcamento;
 import br.com.autoflow.exception.RegraNegocioException;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,8 +27,9 @@ public class Orcamento {
     @Column(name = "id_orcamento", updatable = false, nullable = false)
     private UUID id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "tp_orcamento", length = 20, nullable = false)
-    private String tipoOrcamento;
+    private TipoOrcamento tipoOrcamento;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "st_orcamento", nullable = false, length = 15)
@@ -59,6 +61,10 @@ public class Orcamento {
     @Builder.Default
     @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrcamentoServico> servicos = new ArrayList<>();
+
+    @Builder.Default
+    @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrcamentoItem> itens = new ArrayList<>();
 
     public void aprovar() {
         validarMudancaStatus();

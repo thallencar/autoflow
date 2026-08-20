@@ -3,8 +3,8 @@ package br.com.autoflow.application.service;
 import br.com.autoflow.application.dto.AtualizarStatusOrcamentoRequest;
 import br.com.autoflow.application.dto.OrcamentoRequest;
 import br.com.autoflow.application.dto.OrcamentoResponse;
+import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
-import br.com.autoflow.domain.enums.StatusPagamento;
 import br.com.autoflow.domain.enums.StatusReservaEstoque;
 import br.com.autoflow.domain.model.Estoque;
 import br.com.autoflow.domain.model.Orcamento;
@@ -13,12 +13,12 @@ import br.com.autoflow.domain.repository.*;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.exception.RegraNegocioException;
 import br.com.autoflow.infrastructure.mapper.OrcamentoMapper;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -54,9 +54,28 @@ public class OrcamentoService {
                 }
             }
         }
-
         orcamento.setStatus(StatusOrcamento.PENDENTE);
         orcamento.setDataCriacao(LocalDateTime.now());
+
+        boolean ehComplementar = request.tipoOrcamento() != null &&
+                request.tipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR");
+
+        if (ehComplementar) {
+            // Regra: Valida se já existe algum orçamento aprovado na OS antes de permitir o complementar
+            boolean temOrcamentoAprovado = ordemServico.getIdsOrcamento().stream()
+                    .anyMatch(o -> o.getStatus() == StatusOrcamento.APROVADO);
+
+            if (!temOrcamentoAprovado) {
+                throw new RegraNegocioException("Não é possível criar um orçamento complementar sem que o orçamento inicial esteja aprovado.");
+            }
+            orcamento.setDataExpiracao(LocalDateTime.now().plusHours(24));
+            ordemServico.atualizarStatus(StatusOS.AGUARDANDO_APROVACAO, "OS pausada: Aguardando aprovação de orçamento complementar.");
+            ordemServicoRepository.save(ordemServico);
+        } else {
+            if (orcamento.getDataExpiracao() == null) {
+                orcamento.setDataExpiracao(request.dataExpiracao());
+            }
+        }
 
         orcamento = orcamentoRepository.save(orcamento);
         return orcamentoMapper.toResponse(orcamento);
@@ -67,6 +86,9 @@ public class OrcamentoService {
         Orcamento orcamento = orcamentoRepository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Orçamento", id));
 
+        if (orcamento.getStatus() != StatusOrcamento.PENDENTE) {
+            throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
+        }
         orcamentoValidator.validarAtualizacaoStatus(request.status());
 
         if (orcamento.getDataExpiracao() != null && LocalDateTime.now().isAfter(orcamento.getDataExpiracao())) {
@@ -75,15 +97,39 @@ public class OrcamentoService {
             throw new RegraNegocioException("Não foi possível alterar o status: Este orçamento está expirado.");
         }
 
+        List<String> avisosEstoque = new ArrayList<>();
+
         if (request.status() == StatusOrcamento.APROVADO) {
-            orcamentoValidator.validarEstoqueDisponivel(orcamento);
-            deduzirItensDoEstoque(orcamento);
+            avisosEstoque = deduzirItensDoEstoque(orcamento);
+            orcamento.aprovar();
+            orcamento = orcamentoRepository.save(orcamento);
+            if (orcamento.getTipoOrcamento() != null &&
+                    orcamento.getTipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR")) {
+                OrdemServico ordemServico = orcamento.getOrdemServico();
+                ordemServico.atualizarStatus(StatusOS.EM_EXECUCAO, "Orçamento complementar aprovado. Retomando execução.");
+                ordemServico.carregarServicosDosOrcamentosAprovados();
+                ordemServicoRepository.save(ordemServico);
+            }
+        } else {
+            orcamento.aplicarNovoStatus(request.status());
+            orcamento = orcamentoRepository.save(orcamento);
         }
 
-        orcamento.aplicarNovoStatus(request.status());
-
-        orcamento = orcamentoRepository.save(orcamento);
-        return orcamentoMapper.toResponse(orcamento);
+        OrcamentoResponse response = orcamentoMapper.toResponse(orcamento);
+        return new OrcamentoResponse(
+                response.id(),
+                response.idOs(),
+                response.tipoOrcamento(),
+                response.status(),
+                response.dataCriacao(),
+                response.dataExpiracao(),
+                response.dataDecisao(),
+                response.subtotalPecas(),
+                response.maoObra(),
+                response.total(),
+                response.servicos(),
+                avisosEstoque
+        );
     }
 
     @Transactional(readOnly = true)
@@ -120,24 +166,33 @@ public class OrcamentoService {
         orcamentoRepository.deletarServicosPorOrcamento(id);
     }
 
-    private void deduzirItensDoEstoque(Orcamento orcamento) {
-        if (orcamento.getServicos() == null) return;
+    @Transactional
+    public List<String> deduzirItensDoEstoque(Orcamento orcamento) {
+        List<String> avisosEstoque = new ArrayList<>();
 
-        orcamento.getServicos().stream()
-                .filter(servico -> servico.getItens() != null)
-                .flatMap(servico -> servico.getItens().stream())
-                .forEach(item -> {
-                    Estoque estoque = estoqueRepository.findById(item.getIdEstoque())
-                            .orElseThrow(() -> new EntidadeNaoEncontradaException("Item de Estoque", item.getIdEstoque()));
+        orcamentoValidator.validarEstoqueDisponivel(orcamento);
+        if (orcamento.getServicos() != null) {
+            orcamento.getServicos().stream()
+                    .filter(servico -> servico.getItens() != null)
+                    .flatMap(servico -> servico.getItens().stream())
+                    .forEach(item -> {
+                        Estoque estoque = estoqueRepository.findById(item.getIdEstoque())
+                                .orElseThrow(() -> new EntidadeNaoEncontradaException("Item de Estoque", item.getIdEstoque()));
 
-                    if (estoque.getQuantidadeEstoque() < item.getQuantidade()) {
-                        throw new RegraNegocioException(
-                                String.format("Saldo insuficiente para a peça %s no momento da aprovação.", estoque.getNomeItem())
-                        );
-                    }
+                        if (estoque.getQuantidadeEstoque() < item.getQuantidade()) {
+                            throw new RegraNegocioException(
+                                    String.format("Saldo insuficiente para a peça %s no momento da aprovação.", estoque.getNomeItem())
+                            );
+                        }
+                        estoque.setQuantidadeEstoque(estoque.getQuantidadeEstoque() - item.getQuantidade());
+                        estoqueRepository.save(estoque);
 
-                    estoque.setQuantidadeEstoque(estoque.getQuantidadeEstoque() - item.getQuantidade());
-                    estoqueRepository.save(estoque);
-                });
+                        if (estoque.deveDispararAlertaEstoqueBaixo()) {
+                            avisosEstoque.add(String.format("ALERTA: O item '%s' atingiu nível crítico (%d restantes).",
+                                    estoque.getNomeItem(), estoque.getQuantidadeEstoque()));
+                        }
+                    });
+        }
+        return avisosEstoque;
     }
 }

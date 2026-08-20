@@ -39,6 +39,15 @@ public class Estoque {
 
     @Column(name = "tp_categoria", length = 20, nullable = false)
     @Enumerated(EnumType.STRING)
-    //@Convert(converter = TipoItemEstoqueConverter.class)
     private TipoItemEstoque tipoCategoria;
+
+    public boolean deveDispararAlertaEstoqueBaixo() {
+        boolean estoqueBaixo = this.quantidadeEstoque != null && this.quantidadeMinima != null
+                && this.quantidadeEstoque <= this.quantidadeMinima;
+
+        boolean ehInsumoOuPeca = this.tipoCategoria == TipoItemEstoque.INSUMO
+                || this.tipoCategoria == TipoItemEstoque.PECA;
+
+        return estoqueBaixo && ehInsumoOuPeca;
+    }
 }

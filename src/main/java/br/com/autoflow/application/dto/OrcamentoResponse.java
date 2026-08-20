@@ -16,5 +16,6 @@ public record OrcamentoResponse(
         BigDecimal subtotalPecas,
         BigDecimal maoObra,
         BigDecimal total,
-        List<OrcamentoServicoResponse> servicos
+        List<OrcamentoServicoResponse> servicos,
+        List<String> avisosEstoque
 ) {}
