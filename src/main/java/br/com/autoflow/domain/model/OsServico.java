@@ -40,4 +40,10 @@ public class OsServico {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "id_servico", nullable = false)
     private Servico servico;
+
+    @Column(name = "dt_inicio_servico")
+    private LocalDateTime dataInicioExecucao;
+
+    @Column(name = "dt_fim_servico")
+    private LocalDateTime dataFimExecucao;
 }

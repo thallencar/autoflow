@@ -109,4 +109,12 @@ public class FuncionarioService {
             case MECANICO, AUXILIAR_MECANICO -> Perfil.MECANICO;
         };
     }
+
+    @Transactional
+    public void deletarFuncionario(UUID id) {
+        Funcionario funcionario = repository.findById(id)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", id));
+        usuarioRepository.findByFuncionario_IdFuncionario(id).ifPresent(usuarioRepository::delete);
+        repository.delete(funcionario);
+    }
 }

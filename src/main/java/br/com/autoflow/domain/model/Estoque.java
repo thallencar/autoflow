@@ -42,12 +42,12 @@ public class Estoque {
     private TipoItemEstoque tipoCategoria;
 
     public boolean deveDispararAlertaEstoqueBaixo() {
-        boolean estoqueBaixo = this.quantidadeEstoque != null && this.quantidadeMinima != null
-                && this.quantidadeEstoque <= this.quantidadeMinima;
+        boolean estoqueBaixo = (this.quantidadeEstoque != null && this.quantidadeMinima != null)
+                && (this.quantidadeEstoque <= this.quantidadeMinima);
 
-        boolean ehInsumoOuPeca = this.tipoCategoria == TipoItemEstoque.INSUMO
-                || this.tipoCategoria == TipoItemEstoque.PECA;
+        boolean ehAlertaGeral = this.tipoCategoria == TipoItemEstoque.INSUMO
+                || this.tipoCategoria == TipoItemEstoque.PECA_COMPARTILHADA;
 
-        return estoqueBaixo && ehInsumoOuPeca;
+        return estoqueBaixo && ehAlertaGeral;
     }
 }

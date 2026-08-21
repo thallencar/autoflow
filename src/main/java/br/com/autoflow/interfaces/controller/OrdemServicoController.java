@@ -80,9 +80,22 @@ public class OrdemServicoController {
         service.atualizarStatusPagamento(id, request.stPagamento());
     }
 
+    @GetMapping("/veiculo/{idVeiculo}/historico")
+    @ResponseStatus(HttpStatus.OK)
+    public List<HistoricoVeiculoResponse> listarHistoricoPorVeiculo(@PathVariable UUID idVeiculo) {
+        return service.obterHistoricoPorVeiculo(idVeiculo);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletar(@PathVariable UUID id) {
         service.deletar(id);
     }
+
+    @PostMapping("/processar-cancelamentos")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void forcarCancelamentoAutomatico() {
+        service.processarCancelamentosAutomaticos();
+    }
+
 }

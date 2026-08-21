@@ -1,9 +1,6 @@
 package br.com.autoflow.application.service;
 
-import br.com.autoflow.application.dto.AtualizarStatusOSRequest;
-import br.com.autoflow.application.dto.MetricaOsResponse;
-import br.com.autoflow.application.dto.OrdemServicoRequest;
-import br.com.autoflow.application.dto.OrdemServicoResponse;
+import br.com.autoflow.application.dto.*;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusPagamento;
@@ -138,6 +135,18 @@ public class OrdemServicoService {
             Pageable pageable) {
         Page<OrdemServico> ordens = repository.findMetricasComFiltro(dataInicio, dataFim, status, pageable);
         return ordens.map(mapper::toMetricaResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HistoricoVeiculoResponse> obterHistoricoPorVeiculo(UUID idVeiculo) {
+        validator.validarVeiculoExiste(idVeiculo);
+        List<OrdemServico> ordens = repository.findByIdVeiculoOrderByDtAberturaOsDesc(idVeiculo);
+        if (ordens.isEmpty()) {
+            throw new EntidadeNaoEncontradaException("Veículo : ", idVeiculo);
+        }
+        return ordens.stream()
+                .map(mapper::toHistoricoResponse)
+                .toList();
     }
 
     @Scheduled(cron = "0 0 8 * * *")// Roda todo dia as 08:00 da manhã

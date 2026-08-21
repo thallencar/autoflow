@@ -1,9 +1,11 @@
 package br.com.autoflow.infrastructure.mapper;
 
+import br.com.autoflow.application.dto.HistoricoVeiculoResponse;
 import br.com.autoflow.application.dto.MetricaOsResponse;
 import br.com.autoflow.application.dto.OrdemServicoRequest;
 import br.com.autoflow.application.dto.OrdemServicoResponse;
 import br.com.autoflow.domain.model.Orcamento;
+import br.com.autoflow.domain.model.OrcamentoItem;
 import br.com.autoflow.domain.model.OrdemServico;
 import org.mapstruct.*;
 
@@ -39,7 +41,6 @@ public interface OrdemServicoMapper {
                 if (os == null) {
                         return null;
                 }
-
                 return new MetricaOsResponse(
                         os.getIdOs(),
                         os.getStatusOS() != null ? os.getStatusOS().name() : null,
@@ -70,5 +71,48 @@ public interface OrdemServicoMapper {
                         return null;
                 }
                 return orcamento.getId();
+        }
+
+        default HistoricoVeiculoResponse toHistoricoResponse(OrdemServico os) {
+                if (os == null) {
+                        return null;
+                }
+                return new HistoricoVeiculoResponse(
+                        os.getIdOs(),
+                        os.getStatusOS(),
+                        os.getDsRelatoCliente(),
+                        os.getDsDiagnostico(),
+                        os.getNrKmEntrada(),
+                        os.getDtAberturaOs(),
+                        os.getDtEncerramentoOs(),
+                        os.getServicosExecucao() != null ? os.getServicosExecucao().stream().map(se -> {
+                                List<HistoricoVeiculoResponse.PecaHistorico> pecas = new java.util.ArrayList<>();
+                                if (os.getIdsOrcamento() != null) {
+                                        for (Orcamento orcamento : os.getIdsOrcamento()) {
+                                                if (orcamento.getItens() != null) {
+                                                        for (OrcamentoItem item : orcamento.getItens()) {
+                                                                boolean pertenceAoServico = item.getOrcamentoServico() != null
+                                                                        && item.getOrcamentoServico().getServico() != null
+                                                                        && item.getOrcamentoServico().getServico().getIdServico().equals(se.getServico().getIdServico());
+                                                                if (pertenceAoServico) {
+                                                                        pecas.add(new HistoricoVeiculoResponse.PecaHistorico(
+                                                                                item.getIdEstoque(),
+                                                                                "Item de Estoque",
+                                                                                item.getQuantidade(),
+                                                                                item.getValorUnitario() != null ? item.getValorUnitario().doubleValue() : 0.0
+                                                                        ));
+                                                                }
+                                                        }
+                                                }
+                                        }
+                                }
+                                return new HistoricoVeiculoResponse.ServicoHistorico(
+                                        se.getServico().getIdServico(),
+                                        se.getServico().getDsServico(),
+                                        se.getServico().getVlServico() != null ? se.getServico().getVlServico().doubleValue() : 0.0,
+                                        pecas
+                                );
+                        }).toList() : List.of()
+                );
         }
 }

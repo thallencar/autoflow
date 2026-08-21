@@ -192,4 +192,12 @@ public class OrdemServicoValidator {
             throw new RegraNegocioException("Este mecânico já está alocado em outro veículo no momento.");
         }
     }
+    public void validarVeiculoExiste(UUID idVeiculo) {
+        if (idVeiculo == null) {
+            throw new RegraNegocioException("O ID do veículo é obrigatório.");
+        }
+        if (!veiculoRepository.existsById(idVeiculo)) {
+            throw new EntidadeNaoEncontradaException("Veículo", idVeiculo);
+        }
+    }
 }

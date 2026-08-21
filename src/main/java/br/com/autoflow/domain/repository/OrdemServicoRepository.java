@@ -18,9 +18,14 @@ import java.util.UUID;
 
 @Repository
 public interface OrdemServicoRepository extends JpaRepository<OrdemServico, UUID> {
+
     boolean existsByIdVeiculoAndStatusOSNotIn(UUID veiculoId, Collection<StatusOS> status);
+
     long countByStatusOSNot(StatusOS statusOs);
+
     Optional<OrdemServico> findTopByIdVeiculoOrderByDtAberturaOsDesc(UUID idVeiculo);
+
+    List<OrdemServico> findByIdVeiculoOrderByDtAberturaOsDesc(UUID idVeiculo);
 
     @Query("""
         SELECT os FROM OrdemServico os
