@@ -30,6 +30,9 @@ public class Veiculo {
     @Column(name = "nm_modelo", nullable = false)
     private String modelo;
 
+    @Column(name = "km_atual")
+    private Integer kmAtual;
+
     @Column(name = "nr_ano_fabricacao", nullable = false)
     private Short anoFabricacao;
 

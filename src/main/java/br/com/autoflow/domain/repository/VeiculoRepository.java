@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface VeiculoRepository extends JpaRepository<Veiculo, UUID> {
     boolean existsByPlaca(String placa);
     Optional<Veiculo> findByPlaca(String placa);
+    boolean existsByIdAndClienteId(UUID idCliente, UUID veiculoId);
 }
