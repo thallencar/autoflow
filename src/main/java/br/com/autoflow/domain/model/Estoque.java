@@ -50,4 +50,8 @@ public class Estoque {
 
         return estoqueBaixo && ehAlertaGeral;
     }
+
+    public boolean deveGerarAlertaEstoqueBaixo() {
+        return deveDispararAlertaEstoqueBaixo();
+    }
 }

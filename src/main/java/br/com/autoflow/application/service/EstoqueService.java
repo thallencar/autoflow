@@ -77,7 +77,7 @@ public class EstoqueService {
     @Transactional(readOnly = true)
     public List<EstoqueResponse> listarInsumosComEstoqueBaixo() {
         return estoqueRepository.findAll().stream()
-                .filter(Estoque::deveGerarAlertaEstoqueBaixo)
+                .filter(Estoque::deveDispararAlertaEstoqueBaixo)
                 .map(estoqueMapper::toResponse)
                 .collect(Collectors.toList());
     }

@@ -58,10 +58,10 @@ class VeiculoControllerTest {
     void deveCriarVeiculoComSucesso() throws Exception {
         UUID clienteId = UUID.randomUUID();
         VeiculoRequest request = new VeiculoRequest(
-                "ABC1D23", "Toyota", "Corolla", Short.valueOf("2022"), "Prata", clienteId
+                "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2022"), "Prata", clienteId
         );
         VeiculoResponse response = new VeiculoResponse(
-                UUID.randomUUID(), "ABC1D23", "Toyota", "Corolla", Short.valueOf("2022"), "Prata", clienteId
+                UUID.randomUUID(), "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2022"), "Prata", clienteId
         );
 
         when(veiculoService.criar(any())).thenReturn(response);
@@ -94,7 +94,7 @@ class VeiculoControllerTest {
         UUID id = UUID.randomUUID();
         UUID clienteId = UUID.randomUUID();
         VeiculoResponse response = new VeiculoResponse(
-                id, "ABC1D23", "Toyota", "Corolla", Short.valueOf("2022"), "Prata", clienteId
+                id, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2022"), "Prata", clienteId
         );
 
         when(veiculoService.buscarPorId(id)).thenReturn(response);
@@ -113,7 +113,7 @@ class VeiculoControllerTest {
         UUID id = UUID.randomUUID();
         UUID clienteId = UUID.randomUUID();
         VeiculoResponse response = new VeiculoResponse(
-                id, "ABC1D23", "Toyota", "Corolla", Short.valueOf("2022"), "Prata", clienteId
+                id, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2022"), "Prata", clienteId
         );
 
         when(veiculoService.listar()).thenReturn(List.of(response));
@@ -132,10 +132,10 @@ class VeiculoControllerTest {
         UUID id = UUID.randomUUID();
         UUID clienteId = UUID.randomUUID();
         VeiculoRequest request = new VeiculoRequest(
-                "ABC1D23", "Toyota", "Corolla Cross", Short.valueOf("2023"), "Preto", clienteId
+                "ABC1D23", "Toyota", "Corolla Cross", 12000, Short.valueOf("2023"), "Preto", clienteId
         );
         VeiculoResponse response = new VeiculoResponse(
-                id, "ABC1D23", "Toyota", "Corolla Cross", Short.valueOf("2023"), "Preto", clienteId
+                id, "ABC1D23", "Toyota", "Corolla Cross", 12000, Short.valueOf("2023"), "Preto", clienteId
         );
 
         when(veiculoService.atualizar(eq(id), any())).thenReturn(response);
