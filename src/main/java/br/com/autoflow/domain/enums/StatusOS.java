@@ -11,6 +11,7 @@ public enum StatusOS {
     ORCAMENTO_APROVADO("Orçamento Aprovado"),
     FINALIZADA("Finalizada"),
     ENTREGUE("Entregue"),
+    ABANDONADO("Abandonado"),
     CANCELADA("Cancelada");
 
     private final String descricao;
@@ -29,9 +30,9 @@ public enum StatusOS {
         return switch (this) {
             case RECEBIDA -> novoStatus == EM_DIAGNOSTICO;
             case EM_DIAGNOSTICO -> novoStatus == AGUARDANDO_APROVACAO;
-            case AGUARDANDO_APROVACAO -> novoStatus == ORCAMENTO_APROVADO;
+            case AGUARDANDO_APROVACAO -> novoStatus == ORCAMENTO_APROVADO || novoStatus == EM_EXECUCAO;
             case ORCAMENTO_APROVADO -> novoStatus == EM_EXECUCAO;
-            case EM_EXECUCAO -> novoStatus == FINALIZADA;
+            case EM_EXECUCAO -> novoStatus == FINALIZADA || novoStatus == AGUARDANDO_APROVACAO;
             case FINALIZADA -> novoStatus == ENTREGUE;
             default -> false;
         };

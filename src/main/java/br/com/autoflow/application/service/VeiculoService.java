@@ -51,7 +51,7 @@ public class VeiculoService {
         Veiculo veiculoExistente = veiculoValidator.buscarVeiculo(id);
         veiculoValidator.validarParaAtualizar(id, request);
         Cliente cliente = veiculoValidator.buscarCliente(request.clienteId());
-        veiculoExistente.atualizarDados(request, cliente);
+        veiculoMapper.updateEntity(request, veiculoExistente, cliente);
         veiculoExistente = veiculoRepository.save(veiculoExistente);
         return veiculoMapper.toResponse(veiculoExistente);
     }

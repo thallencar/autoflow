@@ -2,7 +2,11 @@ package br.com.autoflow.application.service;
 
 import br.com.autoflow.application.dto.OrdemServicoRequest;
 import br.com.autoflow.domain.enums.StatusOS;
+import br.com.autoflow.domain.enums.StatusOrcamento;
+import br.com.autoflow.domain.enums.StatusPagamento;
+import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Orcamento;
+import br.com.autoflow.domain.model.OrdemServico;
 import br.com.autoflow.domain.repository.*;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.exception.RegraNegocioException;
@@ -10,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,7 +46,7 @@ public class OrdemServicoValidator {
         boolean existeOsAberta = ordemServicoRepository
                 .existsByIdVeiculoAndStatusOSNotIn(
                         request.idVeiculo(),
-                        List.of(StatusOS.FINALIZADA, StatusOS.CANCELADA)
+                        List.of(StatusOS.ENTREGUE,StatusOS.FINALIZADA, StatusOS.CANCELADA)
                 );
         if (existeOsAberta) {
             throw new RegraNegocioException("Já existe uma Ordem de Serviço em andamento para este veículo.");
@@ -54,9 +59,12 @@ public class OrdemServicoValidator {
         }
     }
 
-    public void validarFuncionarioID(UUID funcionarioID) {
-        if (!funcionarioRepository.existsById(funcionarioID)) {
-            throw new EntidadeNaoEncontradaException("Funcionário", funcionarioID);
+    public void validarFuncionarioID(UUID funcionarioId) {
+        if (funcionarioId == null) {
+            return;
+        }
+        if (!funcionarioRepository.existsById(funcionarioId)) {
+            throw new EntidadeNaoEncontradaException("Funcionário  " ,funcionarioId);
         }
     }
 
@@ -74,7 +82,7 @@ public class OrdemServicoValidator {
 
     public List<Orcamento> validarECarregarOrcamentosParaOS(List<UUID> idsOrcamento) {
         if (idsOrcamento == null || idsOrcamento.isEmpty()) {
-            throw new RegraNegocioException("A Ordem de Serviço deve ter ao menos um orçamento associado.");
+            return Collections.emptyList();
         }
         return idsOrcamento.stream()
                 .map(this::validarOrcamentoParaOS)
@@ -88,7 +96,7 @@ public class OrdemServicoValidator {
         Orcamento orcamento = orcamentoRepository.findById(idOrcamento)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Orçamento", idOrcamento));
 
-        if (!"Aprovado".equalsIgnoreCase(orcamento.getStatus())) {
+        if (orcamento.getStatus() != StatusOrcamento.APROVADO) {
             throw new RegraNegocioException(
                     String.format("A Ordem de Serviço não pode ser iniciada. O Orçamento (ID: %s) precisa estar 'Aprovado' (Status atual: %s).",
                             idOrcamento, orcamento.getStatus())
@@ -104,7 +112,7 @@ public class OrdemServicoValidator {
     }
 
     public void validarOrcamentoSemOS(UUID idOrcamento) {
-        boolean orcamentoJaUtilizado = orcamentoRepository.existsByIdAndIdOsIsNotNull(idOrcamento);
+        boolean orcamentoJaUtilizado = orcamentoRepository.existsByIdAndOrdemServicoIsNotNull(idOrcamento);
         if (orcamentoJaUtilizado) {
             throw new RegraNegocioException(
                     String.format("O orçamento (ID: %s) já está vinculado a outra Ordem de Serviço.", idOrcamento)
@@ -155,6 +163,41 @@ public class OrdemServicoValidator {
             if (dtAceite.isAfter(LocalDateTime.now())) {
                 throw new RegraNegocioException("A data do aceite do termo não pode estar no futuro.");
             }
+        }
+    }
+
+    public void validarAtualizacaoPagamento(OrdemServico ordemServico, StatusPagamento novoStatus) {
+        if (ordemServico.getStPagamento() == novoStatus) {
+            throw new RegraNegocioException("A Ordem de Serviço já está com o status de pagamento " + novoStatus + ".");
+        }
+        if (ordemServico.getStatusOS() == StatusOS.CANCELADA) {
+            throw new RegraNegocioException("Não é possível alterar o pagamento de uma Ordem de Serviço cancelada.");
+        }
+        if (ordemServico.getStatusOS() != StatusOS.FINALIZADA) {
+            throw new RegraNegocioException("O pagamento só pode ser alterado após a Ordem de Serviço estar finalizada.");
+        }
+        if (ordemServico.getStPagamento() == StatusPagamento.PAGO) {
+            throw new RegraNegocioException("Não é possível alterar o status de um pagamento já finalizado.");
+        }
+    }
+
+    public void validarAlocacaoMecanico(UUID idFuncionarioReq, UUID idFuncionarioAtual) {
+        if (idFuncionarioReq == null && idFuncionarioAtual == null) {
+            throw new RegraNegocioException("É obrigatório informar um mecânico para iniciar o diagnóstico.");
+        }
+        UUID idParaChecar = idFuncionarioReq != null ? idFuncionarioReq : idFuncionarioAtual;
+        Funcionario mecanico = funcionarioRepository.findById(idParaChecar)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", idParaChecar));
+        if (mecanico.isOcupado() && (idFuncionarioAtual == null || !idFuncionarioAtual.equals(mecanico.getIdFuncionario()))) {
+            throw new RegraNegocioException("Este mecânico já está alocado em outro veículo no momento.");
+        }
+    }
+    public void validarVeiculoExiste(UUID idVeiculo) {
+        if (idVeiculo == null) {
+            throw new RegraNegocioException("O ID do veículo é obrigatório.");
+        }
+        if (!veiculoRepository.existsById(idVeiculo)) {
+            throw new EntidadeNaoEncontradaException("Veículo", idVeiculo);
         }
     }
 }

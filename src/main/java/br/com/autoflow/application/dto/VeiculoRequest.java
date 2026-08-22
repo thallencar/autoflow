@@ -24,6 +24,9 @@ public record VeiculoRequest(
         @Size(max = 50, message = "O modelo deve ter no máximo 50 caracteres.")
         String modelo,
 
+        @NotNull(message = "O km atual é obrigatória.")
+        Integer kmAtual,
+
         @NotNull(message = "O ano de fabricação é obrigatório.")
         @Min(value = 1900, message = "O ano de fabricação deve ser maior que 1900.")
         Short anoFabricacao,

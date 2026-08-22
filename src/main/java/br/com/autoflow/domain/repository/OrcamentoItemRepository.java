@@ -9,5 +9,4 @@ import java.util.UUID;
 
 @Repository
 public interface OrcamentoItemRepository extends JpaRepository<OrcamentoItem, UUID> {
-    List<OrcamentoItem> findByOrcamentoId(UUID idOrcamento);
 }

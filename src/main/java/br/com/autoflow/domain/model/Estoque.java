@@ -41,12 +41,13 @@ public class Estoque {
     @Column(name = "tp_categoria", length = 20, nullable = false)
     private TipoItemEstoque tipoCategoria;
 
-    public boolean deveGerarAlertaEstoqueBaixo() {
-        // Só gera alerta se for INSUMO e estiver abaixo ou igual ao mínimo
-        boolean ehInsumo = this.tipoCategoria == TipoItemEstoque.INSUMO;
-        if (!ehInsumo) {
-            return false;
-        }
-        return this.quantidadeEstoque <= this.quantidadeMinima;
+    public boolean deveDispararAlertaEstoqueBaixo() {
+        boolean estoqueBaixo = (this.quantidadeEstoque != null && this.quantidadeMinima != null)
+                && (this.quantidadeEstoque <= this.quantidadeMinima);
+
+        boolean ehAlertaGeral = this.tipoCategoria == TipoItemEstoque.INSUMO
+                || this.tipoCategoria == TipoItemEstoque.PECA_COMPARTILHADA;
+
+        return estoqueBaixo && ehAlertaGeral;
     }
 }

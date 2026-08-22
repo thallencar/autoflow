@@ -52,7 +52,7 @@ public class VeiculoValidator {
 
     public Veiculo buscarVeiculo(UUID id) {
         return veiculoRepository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Veículo não encontrado com o ID: ", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Veículo : ", id));
     }
 
     public Cliente buscarCliente(UUID clienteId) {
@@ -62,12 +62,15 @@ public class VeiculoValidator {
 
     public void validarParaAtualizar(UUID veiculoId, VeiculoRequest request) {
         String placaFormatada = formatarPlaca(request.placa());
-        veiculoRepository.findByPlaca(placaFormatada).ifPresent(veiculoEncontrado -> {
-            if (!veiculoEncontrado.getId().equals(veiculoId)) {
-                throw new DadosJaCadastradosException("Placa já cadastrada: " + placaFormatada);
-            }
-        });
-        validarClienteExiste(request.clienteId());
-        validarAnoFabricacao(request.anoFabricacao());
+        if (placaFormatada != null) {
+            veiculoRepository.findByPlaca(placaFormatada).ifPresent(veiculoEncontrado -> {
+                if (!veiculoEncontrado.getId().equals(veiculoId)) {
+                    throw new DadosJaCadastradosException("Placa já cadastrada: " + placaFormatada);
+                }
+            });
+        }
+        if (request.clienteId() != null) {
+            validarClienteExiste(request.clienteId());
+        }
     }
 }

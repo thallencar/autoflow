@@ -7,6 +7,7 @@ public record VeiculoResponse(
         String placa,
         String marca,
         String modelo,
+        Integer kmAtual,
         Short anoFabricacao,
         String cor,
         UUID clienteId

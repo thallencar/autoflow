@@ -47,23 +47,29 @@ public class Funcionario {
     @Column(name = "ds_cargo", nullable = false)
     private Cargo cargo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "id_endereco", nullable = false)
     private Endereco endereco;
 
-    /**
-     * Atualiza os dados cadastrais do funcionário e encadeia a atualização do endereço
-     */
-    public void atualizarDados(FuncionarioRequest request) {
-        this.nome = request.nome();
-        this.telefone = request.telefone();
-        this.email = request.email();
-        this.genero = request.genero();
-        this.cargo = request.cargo();
-        this.dataNascimento = request.dataNascimento();
+    @Column(name = "st_ocupado")
+    private boolean ocupado = false;
 
-        if (this.endereco != null && request.endereco() != null) {
-            this.endereco.atualizarDados(request.endereco());
-        }
+    @Column(name = "nr_advertencias")
+    private int nr_advertencias = 0;
+
+    public void ocupar() {
+        this.ocupado = true;
+    }
+
+    public void liberar() {
+        this.ocupado = false;
+    }
+
+    public void adicionarAdvertencia() {
+        this.nr_advertencias++;
+    }
+
+    public boolean deveSerDemitido() {
+        return this.nr_advertencias >= 3;
     }
 }
