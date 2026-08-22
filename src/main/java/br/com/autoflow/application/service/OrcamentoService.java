@@ -19,9 +19,14 @@ public class OrcamentoService {
 
     private final OrcamentoRepository orcamentoRepository;
     private final OrcamentoMapper orcamentoMapper;
+    private final EstoqueService estoqueService;
 
     @Transactional
     public OrcamentoResponse criar(OrcamentoRequest request) {
+        if (request.itens() != null && !request.itens().isEmpty()) {
+            estoqueService.reservarEstoqueParaItens(request.itens());
+        }
+
         Orcamento orcamento = orcamentoMapper.toEntity(request);
 
         if (orcamento.getItens() != null) {
@@ -29,9 +34,11 @@ public class OrcamentoService {
                 item.setOrcamento(orcamento);
             }
         }
+
         orcamento = orcamentoRepository.save(orcamento);
         return orcamentoMapper.toResponse(orcamento);
     }
+
 
     @Transactional(readOnly = true)
     public List<OrcamentoResponse> listarTodos() {
@@ -44,6 +51,66 @@ public class OrcamentoService {
     public OrcamentoResponse buscarPorId(UUID id) {
         Orcamento orcamento = orcamentoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Orçamento não encontrado"));
+        return orcamentoMapper.toResponse(orcamento);
+    }
+
+    @Transactional
+    public OrcamentoResponse rejeitar(UUID id) {
+        Orcamento orcamento = orcamentoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Orçamento não encontrado"));
+
+        if ("Rejeitado".equalsIgnoreCase(orcamento.getStatus())) {
+            throw new IllegalStateException("Este orçamento já está rejeitado.");
+        }
+
+        if (orcamento.getItens() != null && !orcamento.getItens().isEmpty()) {
+            List<br.com.autoflow.application.dto.OrcamentoItemRequest> itensRequest = orcamento.getItens().stream()
+                    .map(item -> new br.com.autoflow.application.dto.OrcamentoItemRequest(
+                            item.getQuantidade(),
+                            item.getValorUnitario(),
+                            item.getValorTotal(),
+                            item.getIdEstoque()
+                    ))
+                    .collect(Collectors.toList());
+
+            estoqueService.devolverEstoqueDeItens(itensRequest);
+        }
+
+        orcamento.setStatus("Rejeitado");
+        orcamento.setDataDecisao(java.time.LocalDateTime.now());
+
+        orcamento = orcamentoRepository.save(orcamento);
+        return orcamentoMapper.toResponse(orcamento);
+    }
+
+    @Transactional
+    public OrcamentoResponse cancelarPorExpiracao(UUID id) {
+        Orcamento orcamento = orcamentoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Orçamento não encontrado"));
+
+        if ("Cancelado".equalsIgnoreCase(orcamento.getStatus()) || "Rejeitado".equalsIgnoreCase(orcamento.getStatus())) {
+            return orcamentoMapper.toResponse(orcamento);
+        }
+
+        if (java.time.LocalDateTime.now().isAfter(orcamento.getDataExpiracao())) {
+            if (orcamento.getItens() != null && !orcamento.getItens().isEmpty()) {
+                List<br.com.autoflow.application.dto.OrcamentoItemRequest> itensRequest = orcamento.getItens().stream()
+                        .map(item -> new br.com.autoflow.application.dto.OrcamentoItemRequest(
+                                item.getQuantidade(),
+                                item.getValorUnitario(),
+                                item.getValorTotal(),
+                                item.getIdEstoque()
+                        ))
+                        .collect(Collectors.toList());
+
+                estoqueService.devolverEstoqueDeItens(itensRequest);
+            }
+
+            orcamento.setStatus("Cancelado");
+            orcamento.setDataDecisao(java.time.LocalDateTime.now());
+            orcamento = orcamentoRepository.save(orcamento);
+        }
+
         return orcamentoMapper.toResponse(orcamento);
     }
 }
