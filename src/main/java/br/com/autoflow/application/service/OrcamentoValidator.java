@@ -34,13 +34,21 @@ public class OrcamentoValidator {
 
     public void validarCriacao(OrcamentoRequest request) {
         validarOrdemServico(request);
-
         List<Orcamento> orcamentosExistentes = orcamentoRepository.findByOrdemServicoIdOs(request.idOs());
         boolean temOrcamentoAnterior = orcamentosExistentes != null && !orcamentosExistentes.isEmpty();
-
+        validarTipoDeOrcamento(request);
         boolean ehComplementar = request.tipoOrcamento() != null &&
                 request.tipoOrcamento().equals(TipoOrcamento.COMPLEMENTAR);
 
+        if (!ehComplementar) {
+            boolean jaExisteInicial = orcamentosExistentes.stream()
+                    .anyMatch(o -> o.getTipoOrcamento() != null &&
+                            o.getTipoOrcamento().name().equalsIgnoreCase("INICIAL"));
+
+            if (jaExisteInicial) {
+                throw new RegraNegocioException("Já existe um orçamento INICIAL cadastrado para esta Ordem de Serviço. Para adicionar novos itens, utilize o tipo COMPLEMENTAR.");
+            }
+        }
         if (ehComplementar) {
             if (!temOrcamentoAnterior) {
                 throw new RegraNegocioException("Não é permitido criar um orçamento complementar sem antes existir um orçamento inicial para esta OS.");
@@ -64,13 +72,19 @@ public class OrcamentoValidator {
         } else {
             validarDataExpiracao(request);
         }
-
         validarServicosRequest(request.servicos());
     }
 
     public void validarAtualizacaoStatus(StatusOrcamento novoStatus) {
         if (novoStatus != StatusOrcamento.APROVADO && novoStatus != StatusOrcamento.RECUSADO) {
             throw new RegraNegocioException("O orçamento só pode ser alterado para APROVADO ou RECUSADO.");
+        }
+    }
+
+    private void validarTipoDeOrcamento(OrcamentoRequest request){
+        if (request.tipoOrcamento() == null) {
+            throw new RegraNegocioException("O tipo de orçamento é obrigatório.");
+
         }
     }
 

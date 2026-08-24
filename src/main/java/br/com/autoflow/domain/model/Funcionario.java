@@ -1,6 +1,5 @@
 package br.com.autoflow.domain.model;
 
-import br.com.autoflow.application.dto.FuncionarioRequest;
 import br.com.autoflow.domain.enums.Cargo;
 import br.com.autoflow.domain.enums.Genero;
 import jakarta.persistence.*;
@@ -47,7 +46,7 @@ public class Funcionario {
     @Column(name = "ds_cargo", nullable = false)
     private Cargo cargo;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     @JoinColumn(name = "id_endereco", nullable = false)
     private Endereco endereco;
 

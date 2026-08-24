@@ -84,6 +84,7 @@ public class OrdemServicoService {
         }
         repository.deleteById(id);
     }
+
     @Transactional
     public OrdemServicoResponse atualizarStatus(UUID idOS, AtualizarStatusOSRequest request) {
         OrdemServico os = repository.findById(idOS)
@@ -100,14 +101,18 @@ public class OrdemServicoService {
             }
         }
         if (novoStatus == StatusOS.EM_DIAGNOSTICO) {
-            validator.validarAlocacaoMecanico(null, os.getIdFuncionario());
-            Funcionario mecanico = funcionarioRepository.findById(os.getIdFuncionario())
-                    .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", os.getIdFuncionario()));
-            mecanico.ocupar();
-            funcionarioRepository.save(mecanico);
+            UUID idFuncionarioParaUsar = os.getIdFuncionario();
+            validator.validarAlocacaoMecanico(idFuncionarioParaUsar, os.getIdFuncionario());
+            validator.validarDiagnosticoPreenchido(request.observacao());
+            if (idFuncionarioParaUsar != null) {
+                Funcionario mecanico = funcionarioRepository.findById(idFuncionarioParaUsar)
+                        .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", idFuncionarioParaUsar));
+                mecanico.ocupar();
+                funcionarioRepository.save(mecanico);
+                os.setIdFuncionario(idFuncionarioParaUsar);
+            }
         }
         os.atualizarStatus(novoStatus, request.observacao());
-
         if (novoStatus == StatusOS.FINALIZADA || novoStatus == StatusOS.ENTREGUE || novoStatus == StatusOS.CANCELADA) {
             if (os.getIdFuncionario() != null) {
                 funcionarioRepository.findById(os.getIdFuncionario()).ifPresent(mecanico -> {

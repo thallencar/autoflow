@@ -13,6 +13,7 @@ import br.com.autoflow.exception.RegraNegocioException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -160,8 +161,13 @@ public class OrdemServicoValidator {
             if (dtAceite == null) {
                 throw new RegraNegocioException("A data do aceite do termo deve ser informada quando o termo for assinado.");
             }
-            if (dtAceite.isAfter(LocalDateTime.now())) {
+            LocalDate dataHoje = LocalDate.now();
+            LocalDate dataAceite = dtAceite.toLocalDate();
+            if (dataAceite.isAfter(dataHoje)) {
                 throw new RegraNegocioException("A data do aceite do termo não pode estar no futuro.");
+            }
+            if (dtAceite.isAfter(LocalDateTime.now())) {
+                throw new RegraNegocioException("A hora do aceite do termo não pode estar no futuro.");
             }
         }
     }
@@ -182,14 +188,16 @@ public class OrdemServicoValidator {
     }
 
     public void validarAlocacaoMecanico(UUID idFuncionarioReq, UUID idFuncionarioAtual) {
-        if (idFuncionarioReq == null && idFuncionarioAtual == null) {
+        UUID idParaChecar = idFuncionarioReq != null ? idFuncionarioReq : idFuncionarioAtual;
+        if (idParaChecar == null) {
             throw new RegraNegocioException("É obrigatório informar um mecânico para iniciar o diagnóstico.");
         }
-        UUID idParaChecar = idFuncionarioReq != null ? idFuncionarioReq : idFuncionarioAtual;
         Funcionario mecanico = funcionarioRepository.findById(idParaChecar)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", idParaChecar));
-        if (mecanico.isOcupado() && (idFuncionarioAtual == null || !idFuncionarioAtual.equals(mecanico.getIdFuncionario()))) {
-            throw new RegraNegocioException("Este mecânico já está alocado em outro veículo no momento.");
+        if (mecanico.isOcupado()) {
+            throw new RegraNegocioException(
+                    String.format("O mecânico %s já está alocado em outro veículo/Ordem de Serviço no momento.", mecanico.getNome())
+            );
         }
     }
     public void validarVeiculoExiste(UUID idVeiculo) {
@@ -198,6 +206,11 @@ public class OrdemServicoValidator {
         }
         if (!veiculoRepository.existsById(idVeiculo)) {
             throw new EntidadeNaoEncontradaException("Veículo", idVeiculo);
+        }
+    }
+    public void validarDiagnosticoPreenchido(String observacao) {
+        if (observacao == null || observacao.isBlank()) {
+            throw new RegraNegocioException("É obrigatório informar a descrição do diagnóstico técnico para iniciar este status.");
         }
     }
 }

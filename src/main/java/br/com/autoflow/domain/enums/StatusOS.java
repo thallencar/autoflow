@@ -21,6 +21,9 @@ public enum StatusOS {
     }
 
     public boolean podeTransitarPara(StatusOS novoStatus) {
+        if ((this == StatusOS.ORCAMENTO_APROVADO || this == StatusOS.EM_EXECUCAO) && novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
+            return true;
+        }
         if (this == CANCELADA || this == ENTREGUE) {
             return false;
         }

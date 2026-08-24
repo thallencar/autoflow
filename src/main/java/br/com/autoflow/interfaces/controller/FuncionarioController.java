@@ -42,7 +42,7 @@ public class FuncionarioController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletar(@PathVariable UUID id) {
-        service.deletarFuncionario(id);
+        service.deletar(id);
     }
 
     @PatchMapping("/{id}/advertencia")

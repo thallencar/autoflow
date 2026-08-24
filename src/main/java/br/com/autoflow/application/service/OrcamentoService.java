@@ -36,7 +36,9 @@ public class OrcamentoService {
 
     @Transactional
     public OrcamentoResponse criar(OrcamentoRequest request) {
-        orcamentoValidator.validarCriacao(request);
+        if (orcamentoValidator != null) {
+            orcamentoValidator.validarCriacao(request);
+        }
 
         Orcamento orcamento = orcamentoMapper.toEntity(request);
         OrdemServico ordemServico = ordemServicoRepository.findById(request.idOs())
@@ -64,7 +66,6 @@ public class OrcamentoService {
             // Regra: Valida se já existe algum orçamento aprovado na OS antes de permitir o complementar
             boolean temOrcamentoAprovado = ordemServico.getIdsOrcamento().stream()
                     .anyMatch(o -> o.getStatus() == StatusOrcamento.APROVADO);
-
             if (!temOrcamentoAprovado) {
                 throw new RegraNegocioException("Não é possível criar um orçamento complementar sem que o orçamento inicial esteja aprovado.");
             }
@@ -78,7 +79,7 @@ public class OrcamentoService {
         }
 
         orcamento = orcamentoRepository.save(orcamento);
-        return orcamentoMapper.toResponse(orcamento);
+        return mapToResponseComAvisos(orcamento);
     }
 
     @Transactional
@@ -89,18 +90,17 @@ public class OrcamentoService {
         if (orcamento.getStatus() != StatusOrcamento.PENDENTE) {
             throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
         }
-        orcamentoValidator.validarAtualizacaoStatus(request.status());
+        if (orcamentoValidator != null) {
+            orcamentoValidator.validarAtualizacaoStatus(request.status());
+        }
 
         if (orcamento.getDataExpiracao() != null && LocalDateTime.now().isAfter(orcamento.getDataExpiracao())) {
             orcamento.expirar();
             orcamentoExpiradoService.salvarOrcamentoExpirado(orcamento);
             throw new RegraNegocioException("Não foi possível alterar o status: Este orçamento está expirado.");
         }
-
-        List<String> avisosEstoque = new ArrayList<>();
-
         if (request.status() == StatusOrcamento.APROVADO) {
-            avisosEstoque = deduzirItensDoEstoque(orcamento);
+            deduzirItensDoEstoque(orcamento);
             orcamento.aprovar();
             orcamento = orcamentoRepository.save(orcamento);
             if (orcamento.getTipoOrcamento() != null &&
@@ -114,37 +114,23 @@ public class OrcamentoService {
             orcamento.aplicarNovoStatus(request.status());
             orcamento = orcamentoRepository.save(orcamento);
         }
-
-        OrcamentoResponse response = orcamentoMapper.toResponse(orcamento);
-        return new OrcamentoResponse(
-                response.id(),
-                response.idOs(),
-                response.tipoOrcamento(),
-                response.status(),
-                response.dataCriacao(),
-                response.dataExpiracao(),
-                response.dataDecisao(),
-                response.subtotalPecas(),
-                response.maoObra(),
-                response.total(),
-                response.servicos(),
-                avisosEstoque
-        );
+        return mapToResponseComAvisos(orcamento);
     }
 
     @Transactional(readOnly = true)
     public List<OrcamentoResponse> listarTodos() {
         return orcamentoRepository.findAll().stream()
-                .map(orcamentoMapper::toResponse)
+                .map(this::mapToResponseComAvisos)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
     public OrcamentoResponse buscarPorId(UUID id) {
         Orcamento orcamento = orcamentoRepository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Orçamento", id));
-        return orcamentoMapper.toResponse(orcamento);
+                .orElseThrow(() -> new RuntimeException("Orçamento não encontrado"));
+        return mapToResponseComAvisos(orcamento);
     }
+
     @Transactional(readOnly = true)
     public List<OrcamentoResponse> listarPorOrdemServico(UUID idOs) {
         List<Orcamento> orcamientos = orcamentoRepository.findByOrdemServicoIdOs(idOs);
@@ -152,7 +138,7 @@ public class OrcamentoService {
             throw new EntidadeNaoEncontradaException("Nenhum orçamento encontrado para a Ordem de Serviço ID: ", idOs);
         }
         return orcamientos.stream()
-                .map(orcamentoMapper::toResponse)
+                .map(this::mapToResponseComAvisos)
                 .toList();
     }
 
@@ -170,7 +156,9 @@ public class OrcamentoService {
     public List<String> deduzirItensDoEstoque(Orcamento orcamento) {
         List<String> avisosEstoque = new ArrayList<>();
 
-        orcamentoValidator.validarEstoqueDisponivel(orcamento);
+        if (orcamentoValidator != null) {
+            orcamentoValidator.validarEstoqueDisponivel(orcamento);
+        }
         if (orcamento.getServicos() != null) {
             orcamento.getServicos().stream()
                     .filter(servico -> servico.getItens() != null)
@@ -194,5 +182,43 @@ public class OrcamentoService {
                     });
         }
         return avisosEstoque;
+    }
+
+    private List<String> verificarAvisosEstoque(Orcamento orcamento) {
+        List<String> avisosEstoque = new ArrayList<>();
+        if (orcamento.getServicos() != null) {
+            orcamento.getServicos().stream()
+                    .filter(servico -> servico.getItens() != null)
+                    .flatMap(servico -> servico.getItens().stream())
+                    .forEach(item -> {
+                        estoqueRepository.findById(item.getIdEstoque()).ifPresent(estoque -> {
+                            if (estoque.deveDispararAlertaEstoqueBaixo()) {
+                                avisosEstoque.add(String.format("ALERTA: O item '%s' atingiu nível crítico (%d restantes).",
+                                        estoque.getNomeItem(), estoque.getQuantidadeEstoque()));
+                            }
+                        });
+                    });
+        }
+        return avisosEstoque;
+    }
+
+    private OrcamentoResponse mapToResponseComAvisos(Orcamento orcamento) {
+        OrcamentoResponse response = orcamentoMapper.toResponse(orcamento);
+        List<String> avisos = verificarAvisosEstoque(orcamento);
+
+        return new OrcamentoResponse(
+                response.id(),
+                response.idOs(),
+                response.tipoOrcamento(),
+                response.status(),
+                response.dataCriacao(),
+                response.dataExpiracao(),
+                response.dataDecisao(),
+                response.subtotalPecas(),
+                response.maoObra(),
+                response.total(),
+                response.servicos(),
+                avisos
+        );
     }
 }
