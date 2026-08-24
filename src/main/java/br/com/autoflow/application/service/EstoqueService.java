@@ -1,9 +1,6 @@
 package br.com.autoflow.application.service;
 
-import br.com.autoflow.application.dto.AdicionarEstoqueRequest;
-import br.com.autoflow.application.dto.AtualizarValorEstoqueRequest;
-import br.com.autoflow.application.dto.EstoqueRequest;
-import br.com.autoflow.application.dto.EstoqueResponse;
+import br.com.autoflow.application.dto.*;
 import br.com.autoflow.domain.model.Estoque;
 import br.com.autoflow.domain.repository.EstoqueRepository;
 import br.com.autoflow.infrastructure.mapper.EstoqueMapper;
@@ -76,4 +73,43 @@ public class EstoqueService {
         return estoqueRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Item de estoque não encontrado com o ID: " + id));
     }
+
+    @Transactional(readOnly = true)
+    public List<EstoqueResponse> listarInsumosComEstoqueBaixo() {
+        return estoqueRepository.findAll().stream()
+                .filter(Estoque::deveDispararAlertaEstoqueBaixo)
+                .map(estoqueMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+    @Transactional
+    public void reservarEstoqueParaItens(List<OrcamentoItemRequest> itensRequest) {
+        if (itensRequest == null) return;
+
+        for (OrcamentoItemRequest itemDto : itensRequest) {
+            Estoque estoque = buscarEntidadePorId(itemDto.idEstoque());
+
+            if (estoque.getQuantidadeEstoque() < itemDto.quantidade()) {
+                throw new IllegalStateException("Estoque insuficiente para o item: " + estoque.getNomeItem());
+            }
+
+            estoque.setQuantidadeEstoque(estoque.getQuantidadeEstoque() - itemDto.quantidade());
+            estoqueRepository.save(estoque);
+        }
+
+    }
+    /**
+     * Regra de Negócio: Devolve os itens ao estoque caso o orçamento seja rejeitado.
+     */
+    @Transactional
+    public void devolverEstoqueDeItens(List<OrcamentoItemRequest> itensRequest) {
+        if (itensRequest == null) return;
+
+        for (OrcamentoItemRequest itemDto : itensRequest) {
+            Estoque estoque = buscarEntidadePorId(itemDto.idEstoque());
+
+            estoque.setQuantidadeEstoque(estoque.getQuantidadeEstoque() + itemDto.quantidade());
+            estoqueRepository.save(estoque);
+        }
+    }
+
 }

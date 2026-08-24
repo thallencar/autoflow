@@ -37,8 +37,8 @@ public class Estoque {
     @Column(name = "qtd_minima")
     private Integer quantidadeMinima = 0;
 
-    @Column(name = "tp_categoria", length = 20, nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(name = "tp_categoria", length = 20, nullable = false)
     private TipoItemEstoque tipoCategoria;
 
     public boolean deveDispararAlertaEstoqueBaixo() {
@@ -49,5 +49,9 @@ public class Estoque {
                 || this.tipoCategoria == TipoItemEstoque.PECA_COMPARTILHADA;
 
         return estoqueBaixo && ehAlertaGeral;
+    }
+
+    public boolean deveGerarAlertaEstoqueBaixo() {
+        return deveDispararAlertaEstoqueBaixo();
     }
 }
