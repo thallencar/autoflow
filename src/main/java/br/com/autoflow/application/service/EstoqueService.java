@@ -81,6 +81,7 @@ public class EstoqueService {
                 .map(estoqueMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
     @Transactional
     public void reservarEstoqueParaItens(List<OrcamentoItemRequest> itensRequest) {
         if (itensRequest == null) return;

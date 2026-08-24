@@ -49,15 +49,4 @@ public class Endereco {
 
     @Column(name = "ds_complemento")
     private String complemento;
-
-    public record EnderecoResponse(
-            UUID id,
-            String cep,
-            String uf,
-            String cidade,
-            String bairro,
-            String logradouro,
-            Integer numero,
-            String complemento
-    ) {}
 }

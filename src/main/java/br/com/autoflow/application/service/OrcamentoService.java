@@ -127,7 +127,7 @@ public class OrcamentoService {
     @Transactional(readOnly = true)
     public OrcamentoResponse buscarPorId(UUID id) {
         Orcamento orcamento = orcamentoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Orçamento não encontrado"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Orçamento ",id));
         return mapToResponseComAvisos(orcamento);
     }
 

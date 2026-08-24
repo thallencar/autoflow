@@ -244,19 +244,19 @@ class FuncionarioControllerTest {
         @DisplayName("Deve retornar HTTP 204 No Content ao deletar com sucesso")
         void deveDeletarComSucesso() throws Exception {
             UUID id = UUID.randomUUID();
-            doNothing().when(service).deletarFuncionario(id);
+            doNothing().when(service).deletar(id);
 
             mockMvc.perform(delete("/funcionarios/{id}", id))
                     .andExpect(status().isNoContent());
 
-            verify(service).deletarFuncionario(id);
+            verify(service).deletar(id);
         }
 
         @Test
         @DisplayName("Deve propagar exceção ao tentar deletar ID inexistente")
         void deveLancarExcecaoAoDeletarInexistente() {
             UUID id = UUID.randomUUID();
-            doThrow(new EntidadeNaoEncontradaException("Funcionário", id)).when(service).deletarFuncionario(id);
+            doThrow(new EntidadeNaoEncontradaException("Funcionário", id)).when(service).deletar(id);
 
             ServletException exception = assertThrows(ServletException.class, () ->
                     mockMvc.perform(delete("/funcionarios/{id}", id))
@@ -264,7 +264,7 @@ class FuncionarioControllerTest {
 
             assertTrue(exception.getCause() instanceof EntidadeNaoEncontradaException);
             assertEquals("Funcionário com ID " + id + " nao encontrado.", exception.getCause().getMessage());
-            verify(service).deletarFuncionario(id);
+            verify(service).deletar(id);
         }
     }
 }

@@ -33,7 +33,7 @@ class BusinessRulesModelTest {
         Estoque estoque = Estoque.builder()
                 .quantidadeEstoque(1)
                 .quantidadeMinima(3)
-                .tipoCategoria(TipoItemEstoque.PECA)
+                .tipoCategoria(TipoItemEstoque.PECA_ESPECIFICA)
                 .build();
 
         assertFalse(estoque.deveDispararAlertaEstoqueBaixo());
@@ -70,7 +70,7 @@ class BusinessRulesModelTest {
         cliente.setId(UUID.randomUUID());
 
         Veiculo veiculo = Veiculo.builder()
-                .placa("abc1234")
+                .placa("ABC1234")
                 .marca("Marca")
                 .modelo("Modelo")
                 .kmAtual(1000)
@@ -79,7 +79,7 @@ class BusinessRulesModelTest {
                 .cliente(cliente)
                 .build();
 
-        VeiculoRequest request = new VeiculoRequest("  abc1a23  ", "Nova Marca", "Novo Modelo", 2000, (short) 2023, "Vermelho", cliente.getId());
+        VeiculoRequest request = new VeiculoRequest("  ABC1A23  ", "Nova Marca", "Novo Modelo", 2000, (short) 2023, "Vermelho", cliente.getId());
 
         veiculo.atualizarDados(request, cliente);
 
