@@ -23,6 +23,8 @@ public class EstoqueService {
     public EstoqueResponse criar(EstoqueRequest request) {
         Estoque estoque = estoqueMapper.toEntity(request);
         estoque = estoqueRepository.save(estoque);
+        estoque.deveDispararAlertaEstoqueBaixo();
+
         return estoqueMapper.toResponse(estoque);
     }
 
@@ -43,6 +45,7 @@ public class EstoqueService {
         Estoque estoque = buscarEntidadePorId(id);
         int quantidadeAtual = estoque.getQuantidadeEstoque() != null ? estoque.getQuantidadeEstoque() : 0;
         estoque.setQuantidadeEstoque(quantidadeAtual + request.quantidade());
+        estoque.deveDispararAlertaEstoqueBaixo();
         return estoqueMapper.toResponse(estoqueRepository.save(estoque));
     }
 
@@ -62,6 +65,7 @@ public class EstoqueService {
         estoque.setQuantidadeEstoque(request.quantidadeEstoque());
         estoque.setQuantidadeMinima(request.quantidadeMinima());
         estoque.setTipoCategoria(request.tipoCategoria());
+       estoque.deveDispararAlertaEstoqueBaixo();
         return estoqueMapper.toResponse(estoqueRepository.save(estoque));
     }
 

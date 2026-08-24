@@ -13,4 +13,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
     UserDetails findByLogin(String login);
     Optional<Usuario> findUsuarioByLogin(String login);
     Optional<Usuario> findByFuncionario (Funcionario funcionario);
+    Optional<Usuario> findByFuncionario_IdFuncionario(UUID idFuncionario);
 }

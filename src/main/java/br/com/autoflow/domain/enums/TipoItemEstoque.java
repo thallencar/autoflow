@@ -1,6 +1,7 @@
 package br.com.autoflow.domain.enums;
 
 public enum TipoItemEstoque {
-    PECA,
-    INSUMO
+    INSUMO,
+    PECA_COMPARTILHADA,
+    PECA_ESPECIFICA
 }

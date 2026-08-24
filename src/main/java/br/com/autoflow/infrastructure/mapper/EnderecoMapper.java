@@ -3,35 +3,20 @@ package br.com.autoflow.infrastructure.mapper;
 import br.com.autoflow.application.dto.EnderecoRequest;
 import br.com.autoflow.application.dto.EnderecoResponse;
 import br.com.autoflow.domain.model.Endereco;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.MappingConstants;
+import org.mapstruct.MappingTarget;
 
-@Component
-public class EnderecoMapper {
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
+public interface EnderecoMapper {
 
-    public Endereco toEntity(EnderecoRequest request) {
+    @Mapping(target = "id", ignore = true)
+    Endereco toEntity(EnderecoRequest request);
 
-        return Endereco.builder()
-                .logradouro(request.logradouro())
-                .numero(request.numero())
-                .complemento(request.complemento())
-                .bairro(request.bairro())
-                .cidade(request.cidade())
-                .uf(request.uf())
-                .cep(request.cep())
-                .build();
-    }
+    @Mapping(source = "id", target = "idEndereco")
+    EnderecoResponse toResponse(Endereco endereco);
 
-    public EnderecoResponse toResponse(Endereco endereco) {
-
-        return new EnderecoResponse(
-                endereco.getId(),
-                endereco.getLogradouro(),
-                endereco.getNumero(),
-                endereco.getComplemento(),
-                endereco.getBairro(),
-                endereco.getCidade(),
-                endereco.getUf(),
-                endereco.getCep()
-        );
-    }
+    @Mapping(target = "id", ignore = true)
+    void updateEntityFromDto(EnderecoRequest request, @MappingTarget Endereco endereco);
 }

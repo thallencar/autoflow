@@ -17,6 +17,8 @@ public record OrdemServicoResponse(
         LocalDateTime dtInicioDiagnostico,
         LocalDateTime dtFimDiagnostico,
         LocalDateTime dtAprovacaoOrcamento,
+        LocalDateTime dataInicioExecucao,
+        LocalDateTime dataFimExecucao,
         LocalDateTime dtEncerramentoOs,
         LocalDateTime dtReagendamentoOs,
         String stPagamento,
