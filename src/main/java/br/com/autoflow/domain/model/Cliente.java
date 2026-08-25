@@ -1,5 +1,6 @@
 package br.com.autoflow.domain.model;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -23,7 +24,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Cliente {
+public class Cliente implements Serializable {
     @Id
     @UuidGenerator
     @Column(name = "id_cliente")

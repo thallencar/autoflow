@@ -187,19 +187,26 @@ public class OrdemServicoValidator {
         }
     }
 
-    public void validarAlocacaoMecanico(UUID idFuncionarioReq, UUID idFuncionarioAtual) {
-        UUID idParaChecar = idFuncionarioReq != null ? idFuncionarioReq : idFuncionarioAtual;
-        if (idParaChecar == null) {
-            throw new RegraNegocioException("É obrigatório informar um mecânico para iniciar o diagnóstico.");
+    public void validarAlteracaoMecanico(UUID novoIdFuncionario, UUID idOsAtual) {
+        if (novoIdFuncionario == null) {
+            return;
         }
-        Funcionario mecanico = funcionarioRepository.findById(idParaChecar)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", idParaChecar));
+        Funcionario mecanico = funcionarioRepository.findById(novoIdFuncionario)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", novoIdFuncionario));
+
         if (mecanico.isOcupado()) {
-            throw new RegraNegocioException(
-                    String.format("O mecânico %s já está alocado em outro veículo/Ordem de Serviço no momento.", mecanico.getNome())
-            );
+            boolean jaPertenceAEstaOs = ordemServicoRepository.findById(idOsAtual)
+                    .map(os -> novoIdFuncionario.equals(os.getIdFuncionario()))
+                    .orElse(false);
+
+            if (!jaPertenceAEstaOs) {
+                throw new RegraNegocioException(
+                        String.format("O mecânico %s já está alocado em outra Ordem de Serviço no momento.", mecanico.getNome())
+                );
+            }
         }
     }
+
     public void validarVeiculoExiste(UUID idVeiculo) {
         if (idVeiculo == null) {
             throw new RegraNegocioException("O ID do veículo é obrigatório.");

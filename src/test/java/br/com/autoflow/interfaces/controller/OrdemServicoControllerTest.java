@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,13 +38,16 @@ class OrdemServicoControllerTest {
 
     @Test
     void deveListarTodas() {
+        Pageable pageable = PageRequest.of(0, 2);
         OrdemServicoResponse response = new OrdemServicoResponse(UUID.randomUUID(), StatusOS.AGUARDANDO_APROVACAO, "relato", "diag", true, LocalDateTime.now(), 1000, LocalDateTime.now(), null, null, null, null, null, null, null, "PENDENTE", "motivo", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), List.of());
-        when(service.listarTodas()).thenReturn(List.of(response));
+        Page<OrdemServicoResponse> page = new PageImpl<>(List.of(response), pageable, 1);
 
-        List<OrdemServicoResponse> result = controller.listarTodas();
+        when(service.listarTodas(pageable)).thenReturn(page);
 
-        assertEquals(List.of(response), result);
-        verify(service).listarTodas();
+        Page<OrdemServicoResponse> result = controller.listarTodas(pageable);
+
+        assertEquals(page, result);
+        verify(service).listarTodas(pageable);
     }
 
     @Test
@@ -138,13 +140,16 @@ class OrdemServicoControllerTest {
     @Test
     void deveListarHistoricoPorVeiculo() {
         UUID idVeiculo = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 2);
         HistoricoVeiculoResponse response = new HistoricoVeiculoResponse(UUID.randomUUID(), StatusOS.ENTREGUE, "relato", "diag", 1000, LocalDateTime.now(), LocalDateTime.now(), List.of());
-        when(service.obterHistoricoPorVeiculo(idVeiculo)).thenReturn(List.of(response));
+        Page<HistoricoVeiculoResponse> page = new PageImpl<>(List.of(response), pageable, 1);
 
-        List<HistoricoVeiculoResponse> result = controller.listarHistoricoPorVeiculo(idVeiculo);
+        when(service.obterHistoricoPorVeiculo(idVeiculo, pageable)).thenReturn(page);
 
-        assertEquals(List.of(response), result);
-        verify(service).obterHistoricoPorVeiculo(idVeiculo);
+        Page<HistoricoVeiculoResponse> result = controller.listarHistoricoPorVeiculo(idVeiculo, pageable);
+
+        assertEquals(page, result);
+        verify(service).obterHistoricoPorVeiculo(idVeiculo, pageable);
     }
 
     @Test

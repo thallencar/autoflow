@@ -28,6 +28,7 @@ public class FuncionarioService {
     private final FuncionarioValidator funcionarioValidator;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private static final String NOME_ENTIDADE = "Funcionário";
 
     @Transactional
     public FuncionarioResponse criar(FuncionarioRequest request) {
@@ -55,7 +56,7 @@ public class FuncionarioService {
         Funcionario funcionario =
                 repository.findById(id)
                         .orElseThrow(() ->
-                                new EntidadeNaoEncontradaException("Funcionário", id));
+                                new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
         return funcionarioMapper.toResponse(funcionario);
     }
 
@@ -64,7 +65,7 @@ public class FuncionarioService {
         funcionarioValidator.validarParaAtualizar(id, request);
 
         Funcionario funcionario = repository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
 
         funcionarioMapper.updateEntityFromDto(request, funcionario);
         usuarioRepository.findByFuncionario(funcionario)
@@ -79,7 +80,7 @@ public class FuncionarioService {
     @Transactional
     public void deletar(UUID id) {
         Funcionario funcionario = repository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
         usuarioRepository.findByFuncionario_IdFuncionario(id).ifPresent(usuarioRepository::delete);
         repository.delete(funcionario);
     }
@@ -87,7 +88,7 @@ public class FuncionarioService {
     @Transactional
     public String registrarAdvertencia(UUID id) {
         Funcionario funcionario = repository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
         funcionario.adicionarAdvertencia();
         repository.save(funcionario);
 

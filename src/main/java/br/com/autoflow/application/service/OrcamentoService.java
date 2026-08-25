@@ -39,44 +39,17 @@ public class OrcamentoService {
         if (orcamentoValidator != null) {
             orcamentoValidator.validarCriacao(request);
         }
-
         Orcamento orcamento = orcamentoMapper.toEntity(request);
         OrdemServico ordemServico = ordemServicoRepository.findById(request.idOs())
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", request.idOs()));
         orcamento.setOrdemServico(ordemServico);
 
-        if (orcamento.getServicos() != null) {
-            for (var servico : orcamento.getServicos()) {
-                servico.setOrcamento(orcamento);
-                if (servico.getItens() != null) {
-                    for (var item : servico.getItens()) {
-                        item.setOrcamentoServico(servico);
-                        item.setStatusReserva(StatusReservaEstoque.RESERVADO);
-                    }
-                }
-            }
-        }
+        vincularServicosEItens(orcamento);
+
         orcamento.setStatus(StatusOrcamento.PENDENTE);
         orcamento.setDataCriacao(LocalDateTime.now());
 
-        boolean ehComplementar = request.tipoOrcamento() != null &&
-                request.tipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR");
-
-        if (ehComplementar) {
-            // Regra: Valida se já existe algum orçamento aprovado na OS antes de permitir o complementar
-            boolean temOrcamentoAprovado = ordemServico.getIdsOrcamento().stream()
-                    .anyMatch(o -> o.getStatus() == StatusOrcamento.APROVADO);
-            if (!temOrcamentoAprovado) {
-                throw new RegraNegocioException("Não é possível criar um orçamento complementar sem que o orçamento inicial esteja aprovado.");
-            }
-            orcamento.setDataExpiracao(LocalDateTime.now().plusHours(24));
-            ordemServico.atualizarStatus(StatusOS.AGUARDANDO_APROVACAO, "OS pausada: Aguardando aprovação de orçamento complementar.");
-            ordemServicoRepository.save(ordemServico);
-        } else {
-            if (orcamento.getDataExpiracao() == null) {
-                orcamento.setDataExpiracao(request.dataExpiracao());
-            }
-        }
+        processarRegraTipoOrcamento(orcamento, ordemServico, request);
 
         orcamento = orcamentoRepository.save(orcamento);
         return mapToResponseComAvisos(orcamento);
@@ -152,7 +125,6 @@ public class OrcamentoService {
         orcamentoRepository.deletarServicosPorOrcamento(id);
     }
 
-    @Transactional
     public List<String> deduzirItensDoEstoque(Orcamento orcamento) {
         List<String> avisosEstoque = new ArrayList<>();
 
@@ -220,5 +192,39 @@ public class OrcamentoService {
                 response.servicos(),
                 avisos
         );
+    }
+
+    private void vincularServicosEItens(Orcamento orcamento) {
+        if (orcamento.getServicos() != null) {
+            for (var servico : orcamento.getServicos()) {
+                servico.setOrcamento(orcamento);
+                if (servico.getItens() != null) {
+                    for (var item : servico.getItens()) {
+                        item.setOrcamentoServico(servico);
+                        item.setStatusReserva(StatusReservaEstoque.RESERVADO);
+                    }
+                }
+            }
+        }
+    }
+
+    private void processarRegraTipoOrcamento(Orcamento orcamento, OrdemServico ordemServico, OrcamentoRequest request) {
+        boolean ehComplementar = request.tipoOrcamento() != null &&
+                request.tipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR");
+
+        if (ehComplementar) {
+            boolean temOrcamentoAprovado = ordemServico.getIdsOrcamento().stream()
+                    .anyMatch(o -> o.getStatus() == StatusOrcamento.APROVADO);
+            if (!temOrcamentoAprovado) {
+                throw new RegraNegocioException("Não é possível criar um orçamento complementar sem que o orçamento inicial esteja aprovado.");
+            }
+            orcamento.setDataExpiracao(LocalDateTime.now().plusHours(24));
+            ordemServico.atualizarStatus(StatusOS.AGUARDANDO_APROVACAO, "OS pausada: Aguardando aprovação de orçamento complementar.");
+            ordemServicoRepository.save(ordemServico);
+        } else {
+            if (orcamento.getDataExpiracao() == null) {
+                orcamento.setDataExpiracao(request.dataExpiracao());
+            }
+        }
     }
 }

@@ -134,12 +134,26 @@ public class OrdemServico {
     }
 
     public void atualizarStatus(StatusOS novoStatus, String observacao) {
+        validarTransicao(novoStatus);
+        validarRequisitosOrcamento(novoStatus);
+        processarDiagnosticoEObservacao(novoStatus, observacao);
+
+        LocalDateTime agora = LocalDateTime.now();
+        executarMudancaStatus(novoStatus, agora, observacao);
+
+        this.statusOS = novoStatus;
+    }
+
+    private void validarTransicao(StatusOS novoStatus) {
         if (this.statusOS != null && !this.statusOS.podeTransitarPara(novoStatus)) {
             throw new RegraNegocioException(
                     String.format("Transição de status inválida: não é permitido alterar de %s para %s.",
                             this.statusOS, novoStatus)
             );
         }
+    }
+
+    private void processarDiagnosticoEObservacao(StatusOS novoStatus, String observacao) {
         if (novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
             if (observacao != null && !observacao.isBlank()) {
                 if (this.dsDiagnostico != null && !this.dsDiagnostico.isBlank()) {
@@ -149,6 +163,9 @@ public class OrdemServico {
                 }
             }
         }
+    }
+
+    private void validarRequisitosOrcamento(StatusOS novoStatus) {
         List<StatusOS> statusPosDiagnostico = List.of(
                 StatusOS.AGUARDANDO_APROVACAO,
                 StatusOS.ORCAMENTO_APROVADO,
@@ -160,7 +177,9 @@ public class OrdemServico {
                 throw new RegraNegocioException("Não é possível avançar de etapa sem ao menos um orçamento vinculado à Ordem de Serviço.");
             }
         }
-        LocalDateTime agora = LocalDateTime.now();
+    }
+
+    private void executarMudancaStatus(StatusOS novoStatus, LocalDateTime agora, String observacao) {
         switch (novoStatus) {
             case EM_DIAGNOSTICO -> {
                 if (this.dtInicioDiagnostico == null) {
@@ -215,9 +234,11 @@ public class OrdemServico {
                 this.dsMotivoCancelamento = observacao;
                 recusarOrcamentosVinculados();
             }
-            case RECEBIDA -> { /* Estado inicial */ }
+            case RECEBIDA, ABANDONADO -> {
+            }
+            default -> {
+            }
         }
-        this.statusOS = novoStatus;
     }
 
     public Long getTempoTotalExecucaoMinutos() {

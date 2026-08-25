@@ -38,10 +38,12 @@ public class Usuario implements UserDetails {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_cliente")
+    @SuppressWarnings("serial")
     private Cliente cliente;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_funcionario")
+    @SuppressWarnings("serial")
     private Funcionario funcionario;
 
     @Override

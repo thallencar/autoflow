@@ -53,21 +53,22 @@ class OrdemServicoServiceTest {
     private OrdemServicoService service;
 
     @Test
-    @DisplayName("Deve listar todas as ordens de serviço (versão antiga List)")
-    void deveListarTodasLista() {
+    @DisplayName("Deve listar todas as ordens de serviço de forma paginada")
+    void deveListarTodasPaginada() {
+        Pageable pageable = Pageable.unpaged();
         OrdemServico os = new OrdemServico();
-        List<OrdemServico> lista = List.of(os);
-        List<OrdemServicoResponse> listaResponse = List.of(mock(OrdemServicoResponse.class));
+        Page<OrdemServico> pageOs = new PageImpl<>(List.of(os));
+        OrdemServicoResponse responseMock = mock(OrdemServicoResponse.class);
 
-        when(repository.findAll()).thenReturn(lista);
-        when(mapper.toResponseList(lista)).thenReturn(listaResponse);
+        when(repository.findAll(pageable)).thenReturn(pageOs);
+        when(mapper.toResponse(os)).thenReturn(responseMock);
 
-        List<OrdemServicoResponse> resultado = service.listarTodas();
+        Page<OrdemServicoResponse> resultado = service.listarTodas(pageable);
 
         assertNotNull(resultado);
-        assertEquals(1, resultado.size());
-        verify(repository).findAll();
-        verify(mapper).toResponseList(lista);
+        assertEquals(1, resultado.getTotalElements());
+        verify(repository).findAll(pageable);
+        verify(mapper).toResponse(os);
     }
 
     @Test
@@ -102,7 +103,8 @@ class OrdemServicoServiceTest {
         OrdemServico os = new OrdemServico();
         OrdemServicoResponse responseEsperado = mock(OrdemServicoResponse.class);
 
-        when(repository.countByStatusOSNot(StatusOS.ENTREGUE)).thenReturn(1L);
+        List<StatusOS> statusIgnorados = List.of(StatusOS.ENTREGUE, StatusOS.CANCELADA);
+        when(repository.countByStatusOSNotIn(statusIgnorados)).thenReturn(1L);
         doNothing().when(validator).validarCriacao(request, true, 1L);
         when(mapper.toEntity(request)).thenReturn(os);
         when(repository.save(os)).thenReturn(os);
@@ -232,11 +234,9 @@ class OrdemServicoServiceTest {
         os.setStatusOS(StatusOS.RECEBIDA);
         os.setIdFuncionario(idMec);
 
-        Funcionario mecanico = mock(Funcionario.class); // <--- Mudado para mock
+        Funcionario mecanico = mock(Funcionario.class);
 
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
-        doNothing().when(validator).validarAlocacaoMecanico(idMec, idMec);
-        doNothing().when(validator).validarDiagnosticoPreenchido(request.observacao());
         when(funcionarioRepository.findById(idMec)).thenReturn(Optional.of(mecanico));
         when(funcionarioRepository.save(any(Funcionario.class))).thenReturn(mecanico);
         when(repository.save(os)).thenReturn(os);
@@ -244,7 +244,7 @@ class OrdemServicoServiceTest {
 
         service.atualizarStatus(idOs, request);
 
-        verify(mecanico).ocupar(); // Agora o Mockito aceita o verify aqui
+        verify(mecanico).ocupar();
         verify(funcionarioRepository).save(mecanico);
     }
 
@@ -328,31 +328,37 @@ class OrdemServicoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve obter histórico por veículo com sucesso")
-    void deveObterHistoricoPorVeiculo() {
+    @DisplayName("Deve obter histórico por veículo paginado com sucesso")
+    void deveObterHistoricoPorVeiculoPaginado() {
         UUID idVeiculo = UUID.randomUUID();
+        Pageable pageable = Pageable.unpaged();
         OrdemServico os = new OrdemServico();
-        List<OrdemServico> lista = List.of(os);
+        Page<OrdemServico> pageOs = new PageImpl<>(List.of(os));
         HistoricoVeiculoResponse historico = mock(HistoricoVeiculoResponse.class);
 
         doNothing().when(validator).validarVeiculoExiste(idVeiculo);
-        when(repository.findByIdVeiculoOrderByDtAberturaOsDesc(idVeiculo)).thenReturn(lista);
+        when(repository.findByIdVeiculoOrderByDtAberturaOsDesc(idVeiculo, pageable)).thenReturn(pageOs);
         when(mapper.toHistoricoResponse(os)).thenReturn(historico);
 
-        List<HistoricoVeiculoResponse> resultado = service.obterHistoricoPorVeiculo(idVeiculo);
+        Page<HistoricoVeiculoResponse> resultado = service.obterHistoricoPorVeiculo(idVeiculo, pageable);
 
         assertNotNull(resultado);
         assertFalse(resultado.isEmpty());
+        verify(validator).validarVeiculoExiste(idVeiculo);
+        verify(repository).findByIdVeiculoOrderByDtAberturaOsDesc(idVeiculo, pageable);
     }
 
     @Test
-    @DisplayName("Deve lançar exceção se histórico por veículo estiver vazio")
-    void deveLancarExcecaoHistoricoVazio() {
+    @DisplayName("Deve lançar exceção se histórico por veículo paginado estiver vazio")
+    void deveLancarExcecaoHistoricoVazioPaginado() {
         UUID idVeiculo = UUID.randomUUID();
-        doNothing().when(validator).validarVeiculoExiste(idVeiculo);
-        when(repository.findByIdVeiculoOrderByDtAberturaOsDesc(idVeiculo)).thenReturn(Collections.emptyList());
+        Pageable pageable = Pageable.unpaged();
+        Page<OrdemServico> pageVazio = new PageImpl<>(Collections.emptyList());
 
-        assertThrows(EntidadeNaoEncontradaException.class, () -> service.obterHistoricoPorVeiculo(idVeiculo));
+        doNothing().when(validator).validarVeiculoExiste(idVeiculo);
+        when(repository.findByIdVeiculoOrderByDtAberturaOsDesc(idVeiculo, pageable)).thenReturn(pageVazio);
+
+        assertThrows(EntidadeNaoEncontradaException.class, () -> service.obterHistoricoPorVeiculo(idVeiculo, pageable));
     }
 
     @Test
@@ -361,9 +367,9 @@ class OrdemServicoServiceTest {
         OrdemServico os = mock(OrdemServico.class);
         when(os.getStatusOS()).thenReturn(StatusOS.AGUARDANDO_APROVACAO);
 
-        List<OrdemServico> lista = List.of(os);
+        Page<OrdemServico> pagina = new PageImpl<>(List.of(os));
 
-        when(repository.findByStatusOS(StatusOS.AGUARDANDO_APROVACAO)).thenReturn(lista);
+        when(repository.findByStatusOS(eq(StatusOS.AGUARDANDO_APROVACAO), any(Pageable.class))).thenReturn(pagina);
 
         doAnswer(invocation -> {
             when(os.getStatusOS()).thenReturn(StatusOS.CANCELADA);
@@ -382,12 +388,12 @@ class OrdemServicoServiceTest {
         OrdemServico os = mock(OrdemServico.class);
         when(os.getStatusOS()).thenReturn(StatusOS.AGUARDANDO_APROVACAO);
 
-        List<OrdemServico> lista = List.of(os);
+        Page<OrdemServico> pagina = new PageImpl<>(List.of(os));
 
-        when(repository.findByStatusOS(StatusOS.AGUARDANDO_APROVACAO)).thenReturn(lista);
+        when(repository.findByStatusOS(eq(StatusOS.AGUARDANDO_APROVACAO), any(Pageable.class))).thenReturn(pagina);
 
         doAnswer(invocation -> {
-            when(os.getStatusOS()).thenReturn(StatusOS.CANCELADA); // ou o status correspondente a abandono
+            when(os.getStatusOS()).thenReturn(StatusOS.CANCELADA);
             return null;
         }).when(os).verificarAbandonoTecnico(anyInt());
 

@@ -34,45 +34,53 @@ public class OrcamentoValidator {
 
     public void validarCriacao(OrcamentoRequest request) {
         validarOrdemServico(request);
+
         List<Orcamento> orcamentosExistentes = orcamentoRepository.findByOrdemServicoIdOs(request.idOs());
         boolean temOrcamentoAnterior = orcamentosExistentes != null && !orcamentosExistentes.isEmpty();
+
         validarTipoDeOrcamento(request);
+
         boolean ehComplementar = request.tipoOrcamento() != null &&
                 request.tipoOrcamento().equals(TipoOrcamento.COMPLEMENTAR);
 
-        if (!ehComplementar) {
-            boolean jaExisteInicial = orcamentosExistentes.stream()
-                    .anyMatch(o -> o.getTipoOrcamento() != null &&
-                            o.getTipoOrcamento().name().equalsIgnoreCase("INICIAL"));
-
-            if (jaExisteInicial) {
-                throw new RegraNegocioException("Já existe um orçamento INICIAL cadastrado para esta Ordem de Serviço. Para adicionar novos itens, utilize o tipo COMPLEMENTAR.");
-            }
-        }
         if (ehComplementar) {
-            if (!temOrcamentoAnterior) {
-                throw new RegraNegocioException("Não é permitido criar um orçamento complementar sem antes existir um orçamento inicial para esta OS.");
-            }
+            validarRegrasOrcamentoComplementar(orcamentosExistentes, temOrcamentoAnterior, request);
+        } else {
+            validarRegrasOrcamentoInicial(orcamentosExistentes, request);
+        }
 
-            List<UUID> servicosJaCadastrados = orcamentosExistentes.stream()
-                    .filter(o -> o.getServicos() != null)
-                    .flatMap(o -> o.getServicos().stream())
-                    .map(s -> s.getServico().getIdServico())
-                    .toList();
+        validarServicosRequest(request.servicos());
+    }
 
-            if (request.servicos() != null) {
-                for (var novoServico : request.servicos()) {
-                    if (servicosJaCadastrados.contains(novoServico.idServico())) {
-                        throw new RegraNegocioException(
-                                String.format("O serviço com ID %s já foi adicionado em outro orçamento desta OS.", novoServico.idServico())
-                        );
-                    }
+    private void validarRegrasOrcamentoComplementar(List<Orcamento> orcamentosExistentes, boolean temOrcamentoAnterior, OrcamentoRequest request) {
+        if (!temOrcamentoAnterior) {
+            throw new RegraNegocioException("Não é permitido criar um orçamento complementar sem antes existir um orçamento inicial para esta OS.");
+        }
+        List<UUID> servicosJaCadastrados = orcamentosExistentes.stream()
+                .filter(o -> o.getServicos() != null)
+                .flatMap(o -> o.getServicos().stream())
+                .map(s -> s.getServico().getIdServico())
+                .toList();
+
+        if (request.servicos() != null) {
+            for (var novoServico : request.servicos()) {
+                if (servicosJaCadastrados.contains(novoServico.idServico())) {
+                    throw new RegraNegocioException(
+                            String.format("O serviço com ID %s já foi adicionado em outro orçamento desta OS.", novoServico.idServico())
+                    );
                 }
             }
-        } else {
-            validarDataExpiracao(request);
         }
-        validarServicosRequest(request.servicos());
+    }
+
+    private void validarRegrasOrcamentoInicial(List<Orcamento> orcamentosExistentes, OrcamentoRequest request) {
+        boolean jaExisteInicial = orcamentosExistentes != null && orcamentosExistentes.stream()
+                .anyMatch(o -> o.getTipoOrcamento() != null &&
+                        o.getTipoOrcamento().name().equalsIgnoreCase("INICIAL"));
+        if (jaExisteInicial) {
+            throw new RegraNegocioException("Já existe um orçamento INICIAL cadastrado para esta Ordem de Serviço. Para adicionar novos itens, utilize o tipo COMPLEMENTAR.");
+        }
+        validarDataExpiracao(request);
     }
 
     public void validarAtualizacaoStatus(StatusOrcamento novoStatus) {
