@@ -4,14 +4,11 @@ import br.com.autoflow.application.dto.FuncionarioRequest;
 import br.com.autoflow.application.dto.FuncionarioResponse;
 import br.com.autoflow.domain.enums.Cargo;
 import br.com.autoflow.domain.enums.Perfil;
-import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Usuario;
-import br.com.autoflow.domain.repository.EnderecoRepository;
 import br.com.autoflow.domain.repository.FuncionarioRepository;
 import br.com.autoflow.domain.repository.UsuarioRepository;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
-import br.com.autoflow.infrastructure.mapper.EnderecoMapper;
 import br.com.autoflow.infrastructure.mapper.FuncionarioMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,9 +24,7 @@ import java.util.UUID;
 public class FuncionarioService {
 
     private final FuncionarioRepository repository;
-    private final EnderecoRepository enderecoRepository;
     private final FuncionarioMapper funcionarioMapper;
-    private final EnderecoMapper enderecoMapper;
     private final FuncionarioValidator funcionarioValidator;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -38,10 +33,7 @@ public class FuncionarioService {
     public FuncionarioResponse criar(FuncionarioRequest request) {
         funcionarioValidator.validarParaCriar(request);
 
-        Endereco endereco = enderecoMapper.toEntity(request.endereco());
-        endereco = enderecoRepository.save(endereco);
-
-        Funcionario funcionario = funcionarioMapper.toEntity(request, endereco);
+        Funcionario funcionario = funcionarioMapper.toEntity(request);
         funcionario = repository.save(funcionario);
 
         //criação automática de usuário
@@ -69,33 +61,44 @@ public class FuncionarioService {
 
     @Transactional
     public FuncionarioResponse atualizar(UUID id, FuncionarioRequest request) {
+        funcionarioValidator.validarParaAtualizar(id, request);
 
         Funcionario funcionario = repository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", id));
 
-        funcionario.atualizarDados(request);
-        Funcionario funcionarioAtualizado = repository.save(funcionario);
+        funcionarioMapper.updateEntityFromDto(request, funcionario);
+        usuarioRepository.findByFuncionario(funcionario)
+                .ifPresent(usuario -> usuario.atualizarDadosAcesso(
+                        funcionario.getEmail(),
+                        definirPerfilPorCargo(funcionario.getCargo())
+                ));
 
-        usuarioRepository.findByFuncionario(funcionarioAtualizado)
-                .ifPresent(usuario -> {
-                    usuario.atualizarDadosAcesso(
-                            funcionarioAtualizado.getEmail(),
-                            definirPerfilPorCargo(funcionarioAtualizado.getCargo())
-                    );
-                    usuarioRepository.save(usuario);
-                });
-
-        return funcionarioMapper.toResponse(funcionarioAtualizado);
+        return funcionarioMapper.toResponse(funcionario);
     }
 
     @Transactional
     public void deletar(UUID id) {
-
-        Funcionario funcionario =
-                repository.findById(id)
-                        .orElseThrow(() ->
-                                new EntidadeNaoEncontradaException("Funcionário",id));
+        Funcionario funcionario = repository.findById(id)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", id));
+        usuarioRepository.findByFuncionario_IdFuncionario(id).ifPresent(usuarioRepository::delete);
         repository.delete(funcionario);
+    }
+
+    @Transactional
+    public String registrarAdvertencia(UUID id) {
+        Funcionario funcionario = repository.findById(id)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", id));
+        funcionario.adicionarAdvertencia();
+        repository.save(funcionario);
+
+        int totalAdvertencias = funcionario.getNr_advertencias();
+
+        if (funcionario.deveSerDemitido()) {
+            return "Advertência registrada com sucesso. O funcionário atingiu " + totalAdvertencias +
+                    " advertências e deve ser encaminhado para falar com a direção (Risco de demissão).";
+        }
+
+        return "Advertência registrada com sucesso. Total atual de advertências: " + totalAdvertencias;
     }
 
     private Perfil definirPerfilPorCargo(Cargo cargo) {
@@ -104,4 +107,5 @@ public class FuncionarioService {
             case MECANICO, AUXILIAR_MECANICO -> Perfil.MECANICO;
         };
     }
+
 }

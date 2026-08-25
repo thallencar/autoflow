@@ -15,5 +15,6 @@ public record FuncionarioResponse(
         Genero genero,
         LocalDate dataNascimento,
         Cargo cargo,
+        boolean ocupado,
         EnderecoResponse endereco
 ) {}

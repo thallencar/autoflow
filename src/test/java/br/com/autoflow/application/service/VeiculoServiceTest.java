@@ -176,37 +176,43 @@ class VeiculoServiceTest {
     @DisplayName("Atualizar Veículo")
     class AtualizarVeiculoTests {
 
-        @Test
-        @DisplayName("Deve atualizar veículo com sucesso")
-        void deveAtualizarVeiculoComSucesso() {
-            // Arrange
-            UUID id = UUID.randomUUID();
-            UUID clienteId = UUID.randomUUID();
-            VeiculoRequest request = criarVeiculoRequest(clienteId);
+            @Test
+            @DisplayName("Deve atualizar veículo com sucesso")
+            void deveAtualizarVeiculoComSucesso() {
+                // Arrange
+                UUID id = UUID.randomUUID();
+                UUID clienteId = UUID.randomUUID();
+                VeiculoRequest request = criarVeiculoRequest(clienteId);
 
-            Veiculo veiculoExistente = mock(Veiculo.class);
-            Cliente novoCliente = new Cliente();
-            VeiculoResponse responseEsperada = criarVeiculoResponse();
+                Veiculo veiculoExistente = new Veiculo(); // Mudado de mock para instância real
+                Cliente novoCliente = new Cliente();
+                VeiculoResponse responseEsperada = criarVeiculoResponse();
 
-            when(veiculoValidator.buscarVeiculo(id)).thenReturn(veiculoExistente);
-            doNothing().when(veiculoValidator).validarParaAtualizar(id, request);
-            when(veiculoValidator.buscarCliente(clienteId)).thenReturn(novoCliente);
-            when(veiculoRepository.save(veiculoExistente)).thenReturn(veiculoExistente);
-            when(veiculoMapper.toResponse(veiculoExistente)).thenReturn(responseEsperada);
+                when(veiculoValidator.buscarVeiculo(id)).thenReturn(veiculoExistente);
+                doNothing().when(veiculoValidator).validarParaAtualizar(id, request);
+                when(veiculoValidator.buscarCliente(clienteId)).thenReturn(novoCliente);
 
-            // Act
-            VeiculoResponse resultado = veiculoService.atualizar(id, request);
+                // Não é necessário mockar o void do mapper, mas podemos verificar a interação abaixo
 
-            // Assert
-            assertThat(resultado).isNotNull().isEqualTo(responseEsperada);
-            verify(veiculoValidator).buscarVeiculo(id);
-            verify(veiculoValidator).validarParaAtualizar(id, request);
-            verify(veiculoValidator).buscarCliente(clienteId);
-            verify(veiculoExistente).atualizarDados(request, novoCliente);
-            verify(veiculoRepository).save(veiculoExistente);
-            verify(veiculoMapper).toResponse(veiculoExistente);
+                when(veiculoRepository.save(veiculoExistente)).thenReturn(veiculoExistente);
+                when(veiculoMapper.toResponse(veiculoExistente)).thenReturn(responseEsperada);
+
+                // Act
+                VeiculoResponse resultado = veiculoService.atualizar(id, request);
+
+                // Assert
+                assertThat(resultado).isNotNull().isEqualTo(responseEsperada);
+                verify(veiculoValidator).buscarVeiculo(id);
+                verify(veiculoValidator).validarParaAtualizar(id, request);
+                verify(veiculoValidator).buscarCliente(clienteId);
+
+                // Verifica se o mapper foi chamado corretamente para atualizar a entidade
+                verify(veiculoMapper).updateEntity(request, veiculoExistente, novoCliente);
+
+                verify(veiculoRepository).save(veiculoExistente);
+                verify(veiculoMapper).toResponse(veiculoExistente);
+            }
         }
-    }
 
     @Nested
     @DisplayName("Deletar Veículo")
@@ -237,6 +243,7 @@ class VeiculoServiceTest {
                 "ABC1D23",
                 "Toyota",
                 "Corolla",
+                55000,
                 Short.valueOf("2022"),
                 "Prata",
                 clienteId
@@ -250,6 +257,7 @@ class VeiculoServiceTest {
                 "ABC1D23",
                 "Toyota",
                 "Corolla",
+                10000,
                 Short.valueOf("2022"),
                 "Prata",
                 UUID.randomUUID()

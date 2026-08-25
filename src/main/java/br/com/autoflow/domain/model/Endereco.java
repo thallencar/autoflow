@@ -50,16 +50,14 @@ public class Endereco {
     @Column(name = "ds_complemento")
     private String complemento;
 
-    /**
-     * Atualiza os atributos de endereço a partir de um EnderecoRequest
-     */
-    public void atualizarDados(EnderecoRequest request) {
-        this.cep = request.cep();
-        this.uf = request.uf();
-        this.cidade = request.cidade();
-        this.bairro = request.bairro();
-        this.logradouro = request.logradouro();
-        this.numero = request.numero();
-        this.complemento = request.complemento();
-    }
+    public record EnderecoResponse(
+            UUID id,
+            String cep,
+            String uf,
+            String cidade,
+            String bairro,
+            String logradouro,
+            Integer numero,
+            String complemento
+    ) {}
 }
