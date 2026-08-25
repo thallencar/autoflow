@@ -182,7 +182,10 @@ class OrdemServicoServiceTest {
     @DisplayName("Deve deletar OS com sucesso")
     void deveDeletarOs() {
         UUID id = UUID.randomUUID();
-        when(repository.existsById(id)).thenReturn(true);
+        OrdemServico os = new OrdemServico();
+        os.setIdOs(id);
+
+        when(repository.findById(id)).thenReturn(Optional.of(os));
         doNothing().when(repository).deleteById(id);
 
         assertDoesNotThrow(() -> service.deletar(id));
@@ -193,7 +196,8 @@ class OrdemServicoServiceTest {
     @DisplayName("Deve lançar exceção ao deletar OS inexistente")
     void deveLancarExcecaoDeletarInexistente() {
         UUID id = UUID.randomUUID();
-        when(repository.existsById(id)).thenReturn(false);
+
+        when(repository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(EntidadeNaoEncontradaException.class, () -> service.deletar(id));
     }
@@ -223,46 +227,37 @@ class OrdemServicoServiceTest {
     }
 
     @Test
-    @DisplayName("Deve atualizar status para EM_DIAGNOSTICO alocando mecânico")
+    @DisplayName("Deve atualizar status para EM_DIAGNOSTICO com sucesso")
     void deveAtualizarStatusParaEmDiagnosticoComMecanico() {
         UUID idOs = UUID.randomUUID();
-        UUID idMec = UUID.randomUUID();
         AtualizarStatusOSRequest request = new AtualizarStatusOSRequest(StatusOS.EM_DIAGNOSTICO, "Diagnóstico feito");
 
         OrdemServico os = new OrdemServico();
         os.setIdOs(idOs);
         os.setStatusOS(StatusOS.RECEBIDA);
-        os.setIdFuncionario(idMec);
-
-        Funcionario mecanico = mock(Funcionario.class);
 
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
-        when(funcionarioRepository.findById(idMec)).thenReturn(Optional.of(mecanico));
-        when(funcionarioRepository.save(any(Funcionario.class))).thenReturn(mecanico);
         when(repository.save(os)).thenReturn(os);
         when(mapper.toResponse(os)).thenReturn(mock(OrdemServicoResponse.class));
 
-        service.atualizarStatus(idOs, request);
-
-        verify(mecanico).ocupar();
-        verify(funcionarioRepository).save(mecanico);
+        assertDoesNotThrow(() -> service.atualizarStatus(idOs, request));
+        verify(repository).save(os);
     }
 
     @Test
-    @DisplayName("Deve lançar exceção se mecânico não for encontrado no diagnóstico")
-    void deveLancarExcecaoMecanicoNaoEncontradoNoDiagnostico() {
+    @DisplayName("Deve lançar exceção se status exigir requisitos não preenchidos (ex: diagnóstico vazio)")
+    void deveLancarExcecaoRequisitosStatus() {
         UUID idOs = UUID.randomUUID();
-        UUID idMec = UUID.randomUUID();
-        AtualizarStatusOSRequest request = new AtualizarStatusOSRequest(StatusOS.EM_DIAGNOSTICO, "Diagnóstico");
+        // AGUARDANDO_APROVACAO exige validação de diagnóstico preenchido no validator
+        AtualizarStatusOSRequest request = new AtualizarStatusOSRequest(StatusOS.AGUARDANDO_APROVACAO, "");
 
         OrdemServico os = new OrdemServico();
         os.setIdOs(idOs);
-        os.setIdFuncionario(idMec);
 
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
-        when(funcionarioRepository.findById(idMec)).thenReturn(Optional.empty());
+        doThrow(new IllegalArgumentException("Diagnóstico obrigatório")).when(validator).validarDiagnosticoPreenchido("");
 
-        assertThrows(EntidadeNaoEncontradaException.class, () -> service.atualizarStatus(idOs, request));
+        assertThrows(IllegalArgumentException.class, () -> service.atualizarStatus(idOs, request));
     }
 
     @Test

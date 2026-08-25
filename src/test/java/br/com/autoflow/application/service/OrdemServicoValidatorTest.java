@@ -292,9 +292,9 @@ class OrdemServicoValidatorTest {
     // --- TESTES DE ALOCAÇÃO DE MECÂNICO E DIAGNÓSTICO ---
 
     @Test
-    @DisplayName("Deve lançar exceção se nenhum mecânico for informado para o diagnóstico")
-    void deveLancarExcecaoMecanicoNaoInformado() {
-        assertThrows(RegraNegocioException.class, () -> validator.validarAlocacaoMecanico(null, null));
+    @DisplayName("Deve permitir passar nulo quando nenhum mecânico for informado")
+    void devePermitirMecanicoNulo() {
+        assertDoesNotThrow(() -> validator.validarAlteracaoMecanico(null, null));
     }
 
     @Test
@@ -307,7 +307,7 @@ class OrdemServicoValidatorTest {
 
         when(funcionarioRepository.findById(mecanicoId)).thenReturn(Optional.of(mecanico));
 
-        assertThrows(RegraNegocioException.class, () -> validator.validarAlocacaoMecanico(mecanicoId, null));
+        assertThrows(RegraNegocioException.class, () -> validator.validarAlteracaoMecanico(mecanicoId, null));
     }
 
     @Test

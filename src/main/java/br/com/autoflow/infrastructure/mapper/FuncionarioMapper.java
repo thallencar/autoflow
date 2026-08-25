@@ -13,11 +13,15 @@ import org.mapstruct.MappingTarget;
 public interface FuncionarioMapper {
 
     @Mapping(target = "idFuncionario", ignore = true)
+    @Mapping(target = "ocupado", ignore = true)
+    @Mapping(target = "nr_advertencias", ignore = true)
     Funcionario toEntity(FuncionarioRequest request);
 
     @Mapping(target = "id", source = "idFuncionario")
     FuncionarioResponse toResponse(Funcionario funcionario);
 
     @Mapping(target = "idFuncionario", ignore = true)
+    @Mapping(target = "ocupado", ignore = true)
+    @Mapping(target = "nr_advertencias", ignore = true)
     void updateEntityFromDto(FuncionarioRequest request, @MappingTarget Funcionario funcionario);
 }
