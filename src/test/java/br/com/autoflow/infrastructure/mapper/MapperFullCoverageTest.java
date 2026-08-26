@@ -125,7 +125,7 @@ class MapperFullCoverageTest {
     @Test
     void estoqueMapperRoundtrip() {
         EstoqueMapper mapper = Mappers.getMapper(EstoqueMapper.class);
-        EstoqueRequest req = new EstoqueRequest("Filtro","Bosch", new BigDecimal("25.00"), 5, 2, TipoItemEstoque.INSUMO);
+        EstoqueRequest req = new EstoqueRequest("Filtro", "Bosch", new BigDecimal("25.00"), 5, 2, TipoItemEstoque.INSUMO);
         Estoque ent = mapper.toEntity(req);
         assertEquals("Filtro", ent.getNomeItem());
 
@@ -134,29 +134,15 @@ class MapperFullCoverageTest {
     }
 
     @Test
-    void funcionarioMapperToEntityAndUpdate() {
-        EnderecoMapper enderecoMapper = new EnderecoMapperImpl();
-        FuncionarioMapperImpl mapper = new FuncionarioMapperImpl();
-        ReflectionTestUtils.setField(mapper, "enderecoMapper", enderecoMapper);
-
-        FuncionarioRequest req = new FuncionarioRequest("11122233344","Joao","51900000000","joao@x.com", Genero.MASCULINO, java.time.LocalDate.of(1990,1,1), Cargo.MECANICO, new EnderecoRequest("90000-000","RS","POA","Centro","Rua A",1,null));
-        Funcionario ent = mapper.toEntity(req);
-        assertEquals("Joao", ent.getNome());
-        assertNotNull(ent.getEndereco());
-
-        Funcionario update = Funcionario.builder().build();
-        mapper.updateEntityFromDto(req, update);
-        assertEquals("Joao", update.getNome());
-    }
-
-    @Test
     void veiculoMapperUpdateAndToResponse() {
-        EnderecoMapper enderecoMapper = Mappers.getMapper(EnderecoMapper.class);
-        ClienteMapper clienteMapper = new ClienteMapper(enderecoMapper);
+        ClienteMapper clienteMapper = Mappers.getMapper(ClienteMapper.class);
+
         VeiculoMapper mapper = new VeiculoMapper(clienteMapper);
 
-        Cliente cliente = new Cliente(); cliente.setId(UUID.randomUUID());
-        VeiculoRequest req = new VeiculoRequest("abc1a23","VW","Golf",1000,(short)2019,"Preto", cliente.getId());
+        Cliente cliente = new Cliente();
+        cliente.setId(UUID.randomUUID());
+
+        VeiculoRequest req = new VeiculoRequest("abc1a23", "VW", "Golf", 1000, (short) 2019, "Preto", cliente.getId());
         Veiculo ent = mapper.toEntity(req, cliente);
         assertEquals("ABC1A23", ent.getPlaca());
 

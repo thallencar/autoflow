@@ -3,6 +3,7 @@ package br.com.autoflow.interfaces.controller;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.autoflow.application.dto.ClienteUpdateRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,17 +34,26 @@ public class ClienteController {
     }
 
     @GetMapping
+    @ResponseStatus(HttpStatus.OK)
     public List<ClienteResponse> listar(){
         return service.listar();
     }
 
     @GetMapping("/{id}")
-    public ClienteResponse buscar(@PathVariable UUID id) {
-        return service.buscar(id);
+    @ResponseStatus(HttpStatus.OK)
+    public ClienteResponse buscarPorId(@PathVariable UUID id) {
+        return service.buscarPorId(id);
+    }
+
+    @GetMapping("/documento/{documento}")
+    @ResponseStatus(HttpStatus.OK)
+    public ClienteResponse buscarPorDocumento(@PathVariable String documento) {
+        return service.buscarPorDocumento(documento);
     }
 
     @PutMapping("/{id}")
-    public ClienteResponse atualizar(@PathVariable UUID id, @RequestBody @Valid ClienteRequest request) {
+    @ResponseStatus(HttpStatus.OK)
+    public ClienteResponse atualizar(@PathVariable UUID id, @RequestBody @Valid ClienteUpdateRequest request) {
         return service.atualizar(id, request);
     }
 

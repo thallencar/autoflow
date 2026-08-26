@@ -4,9 +4,9 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import br.com.autoflow.application.dto.ClienteUpdateRequest;
 import org.hibernate.annotations.UuidGenerator;
 
-import br.com.autoflow.application.dto.ClienteRequest;
 import br.com.autoflow.domain.enums.Genero;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -62,13 +62,11 @@ public class Cliente implements Serializable {
     /**
      * Atualiza os dados cadastrais do funcionário e encadeia a atualização do endereço
      */
-    public void atualizarDados(ClienteRequest request) {
+    public void atualizarDados(ClienteUpdateRequest request) {
         this.nome = request.nome();
         this.telefone = request.telefone();
         this.email = request.email();
         this.genero = request.genero();
-        this.dataNascimento = request.dataNascimento();
-
         if (this.endereco != null && request.endereco() != null) {
             this.endereco.atualizarDados(request.endereco());
         }

@@ -4,37 +4,21 @@ import br.com.autoflow.application.dto.ClienteRequest;
 import br.com.autoflow.application.dto.ClienteResponse;
 import br.com.autoflow.domain.model.Cliente;
 import br.com.autoflow.domain.model.Endereco;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Component
-@RequiredArgsConstructor
-public class ClienteMapper {
+@Mapper(
+        componentModel = "spring",
+        uses = {EnderecoMapper.class},
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
+public interface ClienteMapper {
 
-    private final EnderecoMapper enderecoMapper;
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "endereco", source = "endereco")
+    Cliente toEntity(ClienteRequest request, Endereco endereco);
 
-    public Cliente toEntity(ClienteRequest request, Endereco endereco) {
-        return Cliente.builder()
-                .documento(request.documento())
-                .nome(request.nome())
-                .telefone(request.telefone())
-                .email(request.email())
-                .genero(request.genero())
-                .dataNascimento(request.dataNascimento())
-                .endereco(endereco)
-                .build();
-    }
-
-    public ClienteResponse toResponse(Cliente cliente) {
-                return new ClienteResponse(
-                cliente.getId(),
-                cliente.getNome(),
-                cliente.getDocumento(),
-                cliente.getEmail(),
-                cliente.getDataNascimento(),
-                cliente.getTelefone(),
-                cliente.getGenero(),
-                enderecoMapper.toResponse(cliente.getEndereco())
-        );
-    }
+    @Mapping(target = "endereco", source = "endereco")
+    ClienteResponse toResponse(Cliente cliente);
 }

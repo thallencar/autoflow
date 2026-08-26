@@ -44,8 +44,9 @@ class MapperCoverageTest {
 
     @Test
     void deveMapearClienteEFuncionario() {
-        EnderecoMapper enderecoMapper = Mappers.getMapper(EnderecoMapper.class);
-        ClienteMapper clienteMapper = new ClienteMapper(enderecoMapper);
+        ClienteMapperImpl clienteMapper = new ClienteMapperImpl();
+        ReflectionTestUtils.setField(clienteMapper, "enderecoMapper", new EnderecoMapperImpl());
+
         FuncionarioMapperImpl funcionarioMapper = new FuncionarioMapperImpl();
         ReflectionTestUtils.setField(funcionarioMapper, "enderecoMapper", new EnderecoMapperImpl());
 
@@ -93,8 +94,7 @@ class MapperCoverageTest {
 
     @Test
     void deveMapearVeiculo() {
-        EnderecoMapper enderecoMapper = Mappers.getMapper(EnderecoMapper.class);
-        ClienteMapper clienteMapper = new ClienteMapper(enderecoMapper);
+        ClienteMapper clienteMapper = Mappers.getMapper(ClienteMapper.class);
         VeiculoMapper mapper = new VeiculoMapper(clienteMapper);
 
         Cliente cliente = new Cliente();

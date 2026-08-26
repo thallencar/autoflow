@@ -2,6 +2,8 @@ package br.com.autoflow.domain.model;
 
 import java.io.Serializable;
 import java.util.UUID;
+
+import br.com.autoflow.application.dto.EnderecoRequest;
 import org.hibernate.annotations.UuidGenerator;
 
 import jakarta.persistence.Column;
@@ -48,4 +50,19 @@ public class Endereco implements Serializable {
 
     @Column(name = "ds_complemento")
     private String complemento;
+
+    /**
+     * Atualiza os dados do endereço com base na requisição recebida.
+     */
+    public void atualizarDados(EnderecoRequest request) {
+        if (request != null) {
+            this.cep = request.cep();
+            this.uf = request.uf();
+            this.cidade = request.cidade();
+            this.bairro = request.bairro();
+            this.logradouro = request.logradouro();
+            this.numero = request.numero();
+            this.complemento = request.complemento();
+        }
+    }
 }

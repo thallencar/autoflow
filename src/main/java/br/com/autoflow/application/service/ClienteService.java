@@ -3,6 +3,9 @@ package br.com.autoflow.application.service;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.autoflow.application.dto.ClienteUpdateRequest;
+import br.com.autoflow.domain.repository.VeiculoRepository;
+import br.com.autoflow.exception.RegraNegocioException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,7 @@ public class ClienteService {
     private final ClienteValidator clienteValidator;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final VeiculoRepository veiculoRepository;
 
     @Transactional
     public ClienteResponse criar(ClienteRequest request){
@@ -58,15 +62,22 @@ public class ClienteService {
                 .toList();
     }
 
-    public ClienteResponse buscar(UUID id) {
+    public ClienteResponse buscarPorId(UUID id) {
         Cliente cliente =
                 respository.findById(id)
                         .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente", id));
         return clienteMapper.toResponse(cliente);
     }
 
+    public ClienteResponse buscarPorDocumento(String documento) {
+        Cliente cliente =
+                respository.findByDocumento(documento)
+                        .orElseThrow(() -> new RegraNegocioException("Cliente não encontrado: " + documento));
+        return clienteMapper.toResponse(cliente);
+    }
+
     @Transactional
-    public ClienteResponse atualizar(UUID id, ClienteRequest request) {
+    public ClienteResponse atualizar(UUID id, ClienteUpdateRequest request) {
         Cliente cliente = respository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente", id));
 
@@ -88,19 +99,17 @@ public class ClienteService {
 
     @Transactional
     public void deletar(UUID id) {
-
-        Cliente cliente =
-                respository.findById(id)
-                        .orElseThrow(() ->
-                            new EntidadeNaoEncontradaException("Cliente",id));
-
+        Cliente cliente = respository.findById(id)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente", id));
+        if (veiculoRepository.existsByClienteId(id)) {
+            throw new RegraNegocioException("Não é possível excluir o cliente pois existem veículos vinculados a ele.");
+        }
         usuarioRepository.findByCliente(cliente)
-            .ifPresent(usuario -> {
-                usuarioRepository.delete(usuario);
-                usuarioRepository.flush();
-        });
+                .ifPresent(usuario -> {
+                    usuarioRepository.delete(usuario);
+                    usuarioRepository.flush();
+                });
 
         respository.delete(cliente);
     }
-
 }
