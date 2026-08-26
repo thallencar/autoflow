@@ -28,6 +28,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ClienteService {
+    private final static String NOME_ENTIDADE = "Cliente";
+
     private final ClienteRepository respository;
     private final EnderecoRepository enderecoRepository;
     private final ClienteMapper clienteMapper;
@@ -65,21 +67,21 @@ public class ClienteService {
     public ClienteResponse buscarPorId(UUID id) {
         Cliente cliente =
                 respository.findById(id)
-                        .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente", id));
+                        .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
         return clienteMapper.toResponse(cliente);
     }
 
     public ClienteResponse buscarPorDocumento(String documento) {
         Cliente cliente =
                 respository.findByDocumento(documento)
-                        .orElseThrow(() -> new RegraNegocioException("Cliente não encontrado: " + documento));
+                        .orElseThrow(() -> new RegraNegocioException(NOME_ENTIDADE + " não encontrado: " + documento));
         return clienteMapper.toResponse(cliente);
     }
 
     @Transactional
     public ClienteResponse atualizar(UUID id, ClienteUpdateRequest request) {
         Cliente cliente = respository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
 
         cliente.atualizarDados(request);
         
@@ -100,7 +102,7 @@ public class ClienteService {
     @Transactional
     public void deletar(UUID id) {
         Cliente cliente = respository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
         if (veiculoRepository.existsByClienteId(id)) {
             throw new RegraNegocioException("Não é possível excluir o cliente pois existem veículos vinculados a ele.");
         }

@@ -45,18 +45,7 @@ class ClienteControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(clienteController)
-                .setValidator(new org.springframework.validation.Validator() {
-                    @Override
-                    public boolean supports(Class<?> clazz) {
-                        return true;
-                    }
-
-                    @Override
-                    public void validate(Object target, org.springframework.validation.Errors errors) {
-                    }
-                })
-                .build();
+        mockMvc = MockMvcBuilders.standaloneSetup(clienteController).build();
     }
 
     private String criarJsonRequestValido() {

@@ -43,18 +43,7 @@ class EnderecoControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(enderecoController)
-                .setValidator(new org.springframework.validation.Validator() {
-                    @Override
-                    public boolean supports(Class<?> clazz) {
-                        return true;
-                    }
-
-                    @Override
-                    public void validate(Object target, org.springframework.validation.Errors errors) {
-                    }
-                })
-                .build();
+        mockMvc = MockMvcBuilders.standaloneSetup(enderecoController).build();
     }
 
     private String criarJsonRequestValido() {
