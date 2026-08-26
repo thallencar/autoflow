@@ -40,21 +40,49 @@ class MapperFullCoverageTest {
     void ordemServicoHistoricoIncluiPecas() {
         OrdemServicoMapper mapper = Mappers.getMapper(OrdemServicoMapper.class);
 
-        Servico serv = Servico.builder().idServico(UUID.randomUUID()).dsServico("X").vlServico(new BigDecimal("30.00")).qtTempoEstimadoMin(10).build();
-        OsServico osServ = OsServico.builder().servico(serv).build();
+        UUID idServico = UUID.randomUUID();
 
-        OrcamentoItem item = OrcamentoItem.builder().idEstoque(UUID.randomUUID()).quantidade(1).valorUnitario(new BigDecimal("2.00")).build();
-        item.setOrcamentoServico(OrcamentoServico.builder().servico(serv).build());
+        Servico serv = Servico.builder()
+                .idServico(idServico)
+                .dsServico("Troca de Óleo")
+                .vlServico(new BigDecimal("30.00"))
+                .qtTempoEstimadoMin(10)
+                .build();
 
-        OrcamentoServico orcServ = OrcamentoServico.builder().servico(serv).itens(List.of(item)).build();
-        item.setOrcamentoServico(orcServ);
-        Orcamento orc = Orcamento.builder().servicos(List.of(orcServ)).build();
+        OsServico osServ = OsServico.builder()
+                .servico(serv)
+                .build();
+
+        OrcamentoServico orcServ = OrcamentoServico.builder()
+                .id(UUID.randomUUID())
+                .servico(serv)
+                .build();
+
+        OrcamentoItem item = OrcamentoItem.builder()
+                .idEstoque(UUID.randomUUID())
+                .quantidade(1)
+                .valorUnitario(new BigDecimal("2.00"))
+                .orcamentoServico(orcServ)
+                .build();
+
+        orcServ.setItens(List.of(item));
+
+        Orcamento orc = Orcamento.builder()
+                .id(UUID.randomUUID())
+                .servicos(List.of(orcServ))
+                .itens(List.of(item))
+                .build();
+
         orcServ.setOrcamento(orc);
-        orc.setItens(List.of(item));
 
-        OrdemServico os = OrdemServico.builder().idOs(UUID.randomUUID()).servicosExecucao(List.of(osServ)).idsOrcamento(List.of(orc)).build();
+        OrdemServico os = OrdemServico.builder()
+                .idOs(UUID.randomUUID())
+                .servicosExecucao(List.of(osServ))
+                .idsOrcamento(List.of(orc))
+                .build();
 
         HistoricoVeiculoResponse hist = mapper.toHistoricoResponse(os);
+
         assertNotNull(hist);
         assertEquals(os.getIdOs(), hist.idOs());
         assertFalse(hist.servicosExecucao().isEmpty());

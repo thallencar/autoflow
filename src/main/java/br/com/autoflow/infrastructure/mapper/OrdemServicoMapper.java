@@ -102,7 +102,7 @@ public interface OrdemServicoMapper {
                 List<HistoricoVeiculoResponse.PecaHistorico> pecas = List.of();
 
                 if (orcamentos != null) {
-                        orcamentos.stream()
+                        pecas = orcamentos.stream()
                                 .filter(orc -> orc.getItens() != null)
                                 .flatMap(orc -> orc.getItens().stream())
                                 .filter(item -> isItemPertencenteAoServico(item, se))
