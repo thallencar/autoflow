@@ -90,6 +90,15 @@ public class Usuario implements UserDetails {
                 .build();
     }
 
+    public static Usuario criarUsuarioParaCliente(Cliente cliente, Perfil perfil, PasswordEncoder passwordEncoder) {
+        return Usuario.builder()
+            .login(cliente.getEmail())
+            .senha(passwordEncoder.encode(cliente.getDocumento()))
+            .perfil(perfil)
+            .cliente(cliente)
+            .build();
+    }
+
     /**
      * Atualiza dados de acesso com base nas mudanças do funcionário.
      */
