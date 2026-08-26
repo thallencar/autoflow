@@ -99,23 +99,20 @@ public interface OrdemServicoMapper {
         }
 
         private HistoricoVeiculoResponse.ServicoHistorico mapearServicoHistorico(OsServico se, List<Orcamento> orcamentos) {
-                List<HistoricoVeiculoResponse.PecaHistorico> pecas = new java.util.ArrayList<>();
+                List<HistoricoVeiculoResponse.PecaHistorico> pecas = List.of();
 
                 if (orcamentos != null) {
-                        for (Orcamento orcamento : orcamentos) {
-                                if (orcamento.getItens() != null) {
-                                        for (OrcamentoItem item : orcamento.getItens()) {
-                                                if (isItemPertencenteAoServico(item, se)) {
-                                                        pecas.add(new HistoricoVeiculoResponse.PecaHistorico(
-                                                                item.getIdEstoque(),
-                                                                "Item de Estoque",
-                                                                item.getQuantidade(),
-                                                                item.getValorUnitario() != null ? item.getValorUnitario().doubleValue() : 0.0
-                                                        ));
-                                                }
-                                        }
-                                }
-                        }
+                        orcamentos.stream()
+                                .filter(orc -> orc.getItens() != null)
+                                .flatMap(orc -> orc.getItens().stream())
+                                .filter(item -> isItemPertencenteAoServico(item, se))
+                                .map(item -> new HistoricoVeiculoResponse.PecaHistorico(
+                                        item.getIdEstoque(),
+                                        "Item de Estoque",
+                                        item.getQuantidade(),
+                                        item.getValorUnitario() != null ? item.getValorUnitario().doubleValue() : 0.0
+                                ))
+                                .toList();
                 }
 
                 return new HistoricoVeiculoResponse.ServicoHistorico(

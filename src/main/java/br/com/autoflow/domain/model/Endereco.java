@@ -1,8 +1,7 @@
 package br.com.autoflow.domain.model;
 
+import java.io.Serializable;
 import java.util.UUID;
-
-import br.com.autoflow.application.dto.EnderecoRequest;
 import org.hibernate.annotations.UuidGenerator;
 
 import jakarta.persistence.Column;
@@ -22,7 +21,7 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Endereco {
+public class Endereco implements Serializable {
 
     @Id
     @UuidGenerator

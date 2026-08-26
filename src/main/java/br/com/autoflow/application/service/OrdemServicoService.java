@@ -30,6 +30,9 @@ import java.util.UUID;
 public class OrdemServicoService {
 
     private static final Logger log = LoggerFactory.getLogger(OrdemServicoService.class);
+
+    private static final String NOME_ENTIDADE = "Ordem de Serviço";
+
     private final OrdemServicoRepository repository;
     private final OrdemServicoMapper mapper;
     private final OrdemServicoValidator validator;
@@ -51,7 +54,7 @@ public class OrdemServicoService {
     @Transactional(readOnly = true)
     public OrdemServicoResponse buscarPorId(UUID id) {
         OrdemServico os = repository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
         return mapper.toResponse(os);
     }
 
@@ -68,7 +71,7 @@ public class OrdemServicoService {
     @Transactional
     public OrdemServicoResponse atualizar(UUID id, OrdemServicoRequest request) {
         OrdemServico os = repository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
 
         validator.validarCliente(request.idCliente());
         validator.validarOrcamentosParaOS(request.idsOrcamento());
@@ -82,7 +85,7 @@ public class OrdemServicoService {
     @Transactional
     public void atualizarStatusPagamento(UUID id, StatusPagamento novoStatus) {
         OrdemServico ordemServico = repository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
         validator.validarAtualizacaoPagamento(ordemServico, novoStatus);
         ordemServico.setStPagamento(novoStatus);
         repository.save(ordemServico);
@@ -91,7 +94,7 @@ public class OrdemServicoService {
     @Transactional
     public void deletar(UUID id) {
         OrdemServico os = repository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
         if (os.getIdFuncionario() != null) {
             liberarMecanico(os.getIdFuncionario());
         }
@@ -115,7 +118,7 @@ public class OrdemServicoService {
     @Transactional(readOnly = true)
     public MetricaOsResponse obterMetricasPorOS(UUID idOs) {
         OrdemServico ordemServico = repository.findById(idOs)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", idOs));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, idOs));
         return mapper.toMetricaResponse(ordemServico);
     }
 
@@ -134,7 +137,7 @@ public class OrdemServicoService {
         validator.validarVeiculoExiste(idVeiculo);
         Page<OrdemServico> ordens = repository.findByIdVeiculoOrderByDtAberturaOsDesc(idVeiculo, pageable);
         if (ordens.isEmpty()) {
-            throw new EntidadeNaoEncontradaException("Veículo : ", idVeiculo);
+            throw new EntidadeNaoEncontradaException(NOME_ENTIDADE, idVeiculo);
         }
         return ordens.map(mapper::toHistoricoResponse);
     }
@@ -180,7 +183,7 @@ public class OrdemServicoService {
 
     private OrdemServico buscarOrdemServicoPorId(UUID idOS) {
         return repository.findById(idOS)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", idOS));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, idOS));
     }
 
     private void processarEstoqueSeNecessario(OrdemServico os, StatusOS novoStatus) {
@@ -199,7 +202,7 @@ public class OrdemServicoService {
     private void ocuparMecanicoSeNecessario(UUID idFuncionario) {
         if (idFuncionario != null) {
             Funcionario mecanico = funcionarioRepository.findById(idFuncionario)
-                    .orElseThrow(() -> new EntidadeNaoEncontradaException("Funcionário", idFuncionario));
+                    .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, idFuncionario));
             mecanico.ocupar();
             funcionarioRepository.save(mecanico);
         }
