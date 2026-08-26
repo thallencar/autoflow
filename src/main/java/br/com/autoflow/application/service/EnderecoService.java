@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EnderecoService {
+    private final  static  String NOME_ENTIDADE = "Endereço";
     private final EnderecoRepository repository;  
     private final EnderecoMapper enderecoMapper;
     private final EnderecoValidator enderecoValidator;
@@ -40,7 +41,7 @@ public class EnderecoService {
     public EnderecoResponse buscar(UUID id) {
         Endereco endereco =
                 repository.findById(id)
-                    .orElseThrow(() -> new EntidadeNaoEncontradaException("Endereço", id));
+                    .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
 
         return enderecoMapper.toResponse(endereco);
     }
@@ -49,7 +50,7 @@ public class EnderecoService {
     public EnderecoResponse atualizar(UUID id, EnderecoRequest request) {
 
         Endereco endereco = repository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Endereço", id));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
 
         endereco.atualizarDados(request);
 
@@ -63,7 +64,7 @@ public class EnderecoService {
 
         Endereco endereco =
                 repository.findById(id)
-                        .orElseThrow(() -> new EntidadeNaoEncontradaException("Endereço",id));
+                        .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
         repository.delete(endereco);
     }   
 }
