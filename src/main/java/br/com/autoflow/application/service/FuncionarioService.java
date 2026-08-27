@@ -92,7 +92,7 @@ public class FuncionarioService {
         funcionario.adicionarAdvertencia();
         repository.save(funcionario);
 
-        int totalAdvertencias = funcionario.getNr_advertencias();
+        int totalAdvertencias = funcionario.getNrAdvertencias();
 
         if (funcionario.deveSerDemitido()) {
             return "Advertência registrada com sucesso. O funcionário atingiu " + totalAdvertencias +

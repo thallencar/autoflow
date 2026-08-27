@@ -52,10 +52,12 @@ public class Funcionario  implements Serializable {
     private Endereco endereco;
 
     @Column(name = "st_ocupado")
+    @Builder.Default
     private boolean ocupado = false;
 
     @Column(name = "nr_advertencias")
-    private int nr_advertencias = 0;
+    @Builder.Default
+    private int nrAdvertencias = 0;
 
     public void ocupar() {
         this.ocupado = true;
@@ -66,10 +68,10 @@ public class Funcionario  implements Serializable {
     }
 
     public void adicionarAdvertencia() {
-        this.nr_advertencias++;
+        this.nrAdvertencias++;
     }
 
     public boolean deveSerDemitido() {
-        return this.nr_advertencias >= 3;
+        return this.nrAdvertencias >= 3;
     }
 }

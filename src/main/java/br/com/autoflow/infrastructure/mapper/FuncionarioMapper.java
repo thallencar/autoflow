@@ -14,7 +14,7 @@ public interface FuncionarioMapper {
 
     @Mapping(target = "idFuncionario", ignore = true)
     @Mapping(target = "ocupado", ignore = true)
-    @Mapping(target = "nr_advertencias", ignore = true)
+    @Mapping(target = "nrAdvertencias", ignore = true)
     Funcionario toEntity(FuncionarioRequest request);
 
     @Mapping(target = "id", source = "idFuncionario")
@@ -22,6 +22,6 @@ public interface FuncionarioMapper {
 
     @Mapping(target = "idFuncionario", ignore = true)
     @Mapping(target = "ocupado", ignore = true)
-    @Mapping(target = "nr_advertencias", ignore = true)
+    @Mapping(target = "nrAdvertencias", ignore = true)
     void updateEntityFromDto(FuncionarioRequest request, @MappingTarget Funcionario funcionario);
 }

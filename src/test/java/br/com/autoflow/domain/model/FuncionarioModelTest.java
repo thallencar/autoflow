@@ -26,7 +26,7 @@ class FuncionarioModelTest {
 
         assertEquals("João", f.getNome());
         assertFalse(f.isOcupado());
-        assertEquals(0, f.getNr_advertencias());
+        assertEquals(0, f.getNrAdvertencias());
 
         f.ocupar();
         assertTrue(f.isOcupado());

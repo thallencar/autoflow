@@ -33,7 +33,7 @@ class BusinessRulesModelTest {
         Estoque estoque = Estoque.builder()
                 .quantidadeEstoque(1)
                 .quantidadeMinima(3)
-                .tipoCategoria(TipoItemEstoque.PECA_ESPECIFICA)
+                .tipoCategoria(TipoItemEstoque.PECA)
                 .build();
 
         assertFalse(estoque.deveDispararAlertaEstoqueBaixo());
