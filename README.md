@@ -147,3 +147,27 @@ src/
 - **Maven** — build e gerenciamento de dependências
 - **Maven Wrapper** — execução padronizada do Maven
 - **OpenAPI / Swagger** — documentação da API
+
+## Executando com Docker
+
+É necessário ter o Docker instalado localmente para executar o projeto via Docker Compose.
+
+Se for a primeira vez, execute:
+
+```
+docker compose up --build
+```
+
+Se já houve build anterior e você quiser subir apenas os containers novamente, use:
+
+```
+docker compose up
+```
+
+Após iniciar, a documentação Swagger estará disponível em:
+
+```
+http://localhost:8080/swagger-ui/index.html#/
+```
+
+Para encerrar, use Ctrl+C ou `docker compose down`.
