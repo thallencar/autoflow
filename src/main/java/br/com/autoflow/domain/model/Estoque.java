@@ -45,8 +45,7 @@ public class Estoque {
         boolean estoqueBaixo = (this.quantidadeEstoque != null && this.quantidadeMinima != null)
                 && (this.quantidadeEstoque <= this.quantidadeMinima);
 
-        boolean ehAlertaGeral = this.tipoCategoria == TipoItemEstoque.INSUMO
-                || this.tipoCategoria == TipoItemEstoque.PECA_COMPARTILHADA;
+        boolean ehAlertaGeral = this.tipoCategoria == TipoItemEstoque.INSUMO;
 
         return estoqueBaixo && ehAlertaGeral;
     }

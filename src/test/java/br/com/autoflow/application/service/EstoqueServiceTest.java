@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any; // <-- Import correto do Mockito
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class EstoqueServiceTest {
+ class EstoqueServiceTest {
 
     @Mock
     private EstoqueRepository estoqueRepository;
@@ -161,11 +160,11 @@ public class EstoqueServiceTest {
         Estoque estoque = new Estoque();
 
         EstoqueRequest request = new EstoqueRequest(
-                "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PECA_COMPARTILHADA
+                "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.INSUMO
         );
 
         EstoqueResponse response = new EstoqueResponse(
-                id, "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PECA_COMPARTILHADA
+                id, "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.INSUMO
         );
 
         when(estoqueRepository.findById(id)).thenReturn(Optional.of(estoque));
