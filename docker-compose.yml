@@ -10,3 +10,11 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres.kkvqhlqswogkqenxtayv
       - SPRING_DATASOURCE_PASSWORD=6fb6BnxELUUuYBQc
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+  sonarqube:
+    image: sonarqube:latest
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_SEARCH_JAVAADDITIONALOPTS=-Dnode.store.allow_mmap=false
