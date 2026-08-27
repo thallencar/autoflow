@@ -2,7 +2,9 @@ package br.com.autoflow.infrastructure.mapper;
 
 import br.com.autoflow.application.dto.OrcamentoServicoRequest;
 import br.com.autoflow.application.dto.OrcamentoServicoResponse;
+import br.com.autoflow.application.dto.OrcamentoItemResponse;
 import br.com.autoflow.domain.model.OrcamentoServico;
+import br.com.autoflow.domain.model.OrcamentoItem;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -10,6 +12,9 @@ import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface OrcamentoServicoMapper {
+
+    @Mapping(source = "orcamentoServico.id", target = "idOrcamento")
+    OrcamentoItemResponse toResponse(OrcamentoItem orcamentoItem);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "itens", ignore = true)

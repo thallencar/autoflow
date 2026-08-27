@@ -9,6 +9,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +31,7 @@ public class OrdemServico {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "st_os", nullable = false, length = 30)
+    @Builder.Default
     private StatusOS statusOS = StatusOS.RECEBIDA;
 
     @Column(name = "ds_relato_cliente", nullable = false, length = 255)
@@ -73,6 +76,7 @@ public class OrdemServico {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "st_pagamento", nullable = false, length = 15)
+    @Builder.Default
     private StatusPagamento stPagamento = StatusPagamento.PENDENTE;
 
     @Column(name = "ds_motivo_cancelamento", length = 255)
@@ -102,7 +106,7 @@ public class OrdemServico {
     @PrePersist
     public void prePersist() {
         if (this.dtAberturaOs == null) {
-            this.dtAberturaOs = LocalDateTime.now();
+            this.dtAberturaOs = LocalDateTime.now(Clock.systemDefaultZone());
         }
         if (this.stPagamento == null) {
             this.stPagamento = StatusPagamento.PENDENTE;
@@ -134,21 +138,35 @@ public class OrdemServico {
     }
 
     public void atualizarStatus(StatusOS novoStatus, String observacao) {
+        validarTransicao(novoStatus);
+        validarRequisitosOrcamento(novoStatus);
+        processarDiagnosticoEObservacao(novoStatus, observacao);
+
+        LocalDateTime agora = LocalDateTime.now(Clock.systemDefaultZone());
+        executarMudancaStatus(novoStatus, agora, observacao);
+
+        this.statusOS = novoStatus;
+    }
+
+    private void validarTransicao(StatusOS novoStatus) {
         if (this.statusOS != null && !this.statusOS.podeTransitarPara(novoStatus)) {
             throw new RegraNegocioException(
                     String.format("Transição de status inválida: não é permitido alterar de %s para %s.",
                             this.statusOS, novoStatus)
             );
         }
-        if (novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
-            if (observacao != null && !observacao.isBlank()) {
-                if (this.dsDiagnostico != null && !this.dsDiagnostico.isBlank()) {
-                    this.dsDiagnostico = this.dsDiagnostico + " | " + observacao;
-                } else {
-                    this.dsDiagnostico = observacao;
-                }
-            }
+    }
+
+    private void processarDiagnosticoEObservacao(StatusOS novoStatus, String observacao) {
+        if ((novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO)
+                && observacao != null && !observacao.isBlank()) {
+            this.dsDiagnostico = (this.dsDiagnostico != null && !this.dsDiagnostico.isBlank())
+                    ? this.dsDiagnostico + " | " + observacao
+                    : observacao;
         }
+    }
+
+    private void validarRequisitosOrcamento(StatusOS novoStatus) {
         List<StatusOS> statusPosDiagnostico = List.of(
                 StatusOS.AGUARDANDO_APROVACAO,
                 StatusOS.ORCAMENTO_APROVADO,
@@ -160,69 +178,99 @@ public class OrdemServico {
                 throw new RegraNegocioException("Não é possível avançar de etapa sem ao menos um orçamento vinculado à Ordem de Serviço.");
             }
         }
-        LocalDateTime agora = LocalDateTime.now();
+    }
+
+    private void executarMudancaStatus(StatusOS novoStatus, LocalDateTime agora, String observacao) {
         switch (novoStatus) {
-            case EM_DIAGNOSTICO -> {
-                if (this.dtInicioDiagnostico == null) {
-                    this.dtInicioDiagnostico = agora;
-                }
+            case EM_DIAGNOSTICO -> tratarEmDiagnostico(agora);
+            case AGUARDANDO_APROVACAO -> tratarAguardandoAprovacao(agora);
+            case ORCAMENTO_APROVADO -> tratarOrcamentoAprovado(agora);
+            case EM_EXECUCAO -> tratarEmExecucao(agora);
+            case FINALIZADA -> tratarFinalizada(agora);
+            case ENTREGUE -> tratarEntregue(agora);
+            case CANCELADA -> tratarCancelada(agora, observacao);
+            case RECEBIDA, ABANDONADO -> {
+                // no operation required for RECEBIDA or ABANDONADO
             }
-            case AGUARDANDO_APROVACAO -> {
-                if (this.dtInicioDiagnostico == null) {
-                    this.dtInicioDiagnostico = agora;
-                }
-                this.dtFimDiagnostico = agora;
+            default -> {
+                // default: no operation
             }
-            case ORCAMENTO_APROVADO -> {
-                if (this.dtInicioDiagnostico == null) this.dtInicioDiagnostico = agora;
-                if (this.dtFimDiagnostico == null) this.dtFimDiagnostico = agora;
-                if (this.dtAprovacaoOrcamento == null) {
-                    this.dtAprovacaoOrcamento = agora;
-                }
-                aprovarOrcamentosVinculados(agora);
-                carregarServicosDosOrcamentosAprovados();
-            }
-            case EM_EXECUCAO -> {
-                if (this.dtInicioDiagnostico == null) this.dtInicioDiagnostico = agora;
-                if (this.dtFimDiagnostico == null) this.dtFimDiagnostico = agora;
-                if (this.dtAprovacaoOrcamento == null) this.dtAprovacaoOrcamento = agora;
-                if (this.dataInicioExecucao == null) {
-                    this.dataInicioExecucao = agora;
-                }
-                aprovarOrcamentosVinculados(agora);
-                if (this.servicosExecucao.isEmpty()) {
-                    carregarServicosDosOrcamentosAprovados();
-                }
-            }
-            case FINALIZADA -> {
-                if (this.dataFimExecucao == null) {
-                    this.dataFimExecucao = agora;
-                }
-            }
-            case ENTREGUE -> {
-                if (this.stPagamento == StatusPagamento.PENDENTE) {
-                    throw new RegraNegocioException("Não é possível entregar o veículo enquanto o pagamento estiver pendente.");
-                }
-                if (this.dataFimExecucao == null) {
-                    this.dataFimExecucao = agora;
-                }
-                if (this.dtEncerramentoOs == null) {
-                    this.dtEncerramentoOs = agora;
-                }
-            }
-            case CANCELADA -> {
-                this.dtEncerramentoOs = agora;
-                this.dsMotivoCancelamento = observacao;
-                recusarOrcamentosVinculados();
-            }
-            case RECEBIDA -> { /* Estado inicial */ }
         }
-        this.statusOS = novoStatus;
+    }
+
+    private void tratarEmDiagnostico(LocalDateTime agora) {
+        if (this.dtInicioDiagnostico == null) {
+            this.dtInicioDiagnostico = agora;
+        }
+    }
+
+    private void tratarAguardandoAprovacao(LocalDateTime agora) {
+        tratarEmDiagnostico(agora);
+        this.dtFimDiagnostico = agora;
+    }
+
+    private void tratarOrcamentoAprovado(LocalDateTime agora) {
+        garantirDatasDiagnostico(agora);
+        if (this.dtAprovacaoOrcamento == null) {
+            this.dtAprovacaoOrcamento = agora;
+        }
+        aprovarOrcamentosVinculados();
+        carregarServicosDosOrcamentosAprovados();
+    }
+
+    private void tratarEmExecucao(LocalDateTime agora) {
+        garantirDatasDiagnostico(agora);
+        if (this.dtAprovacaoOrcamento == null) {
+            this.dtAprovacaoOrcamento = agora;
+        }
+        if (this.dataInicioExecucao == null) {
+            this.dataInicioExecucao = agora;
+        }
+        aprovarOrcamentosVinculados();
+        if (this.servicosExecucao.isEmpty()) {
+            carregarServicosDosOrcamentosAprovados();
+        }
+    }
+
+    private void tratarFinalizada(LocalDateTime agora) {
+        if (this.dataFimExecucao == null) {
+            this.dataFimExecucao = agora;
+        }
+    }
+
+    private void tratarEntregue(LocalDateTime agora) {
+        if (this.stPagamento == StatusPagamento.PENDENTE) {
+            throw new RegraNegocioException("Não é possível entregar o veículo enquanto o pagamento estiver pendente.");
+        }
+        if (this.dataFimExecucao == null) {
+            this.dataFimExecucao = agora;
+        }
+        if (this.dtEncerramentoOs == null) {
+            this.dtEncerramentoOs = agora;
+        }
+    }
+
+    private void tratarCancelada(LocalDateTime agora, String observacao) {
+        this.dtEncerramentoOs = agora;
+        this.dsMotivoCancelamento = observacao;
+        recusarOrcamentosVinculados();
+    }
+
+    private void garantirDatasDiagnostico(LocalDateTime agora) {
+        if (this.dtInicioDiagnostico == null) {
+            this.dtInicioDiagnostico = agora;
+        }
+        if (this.dtFimDiagnostico == null) {
+            this.dtFimDiagnostico = agora;
+        }
     }
 
     public Long getTempoTotalExecucaoMinutos() {
         if (this.dataInicioExecucao != null && this.dataFimExecucao != null) {
-            return java.time.Duration.between(this.dataInicioExecucao, this.dataFimExecucao).toMinutes();
+            return java.time.Duration.between(
+                    this.dataInicioExecucao.atZone(ZoneId.systemDefault()).toInstant(),
+                    this.dataFimExecucao.atZone(ZoneId.systemDefault()).toInstant()
+            ).toMinutes();
         }
         return null;
     }
@@ -248,7 +296,7 @@ public class OrdemServico {
         return null;
     }
 
-    private void aprovarOrcamentosVinculados(LocalDateTime dataAprovacao) {
+    private void aprovarOrcamentosVinculados() {
         if (this.idsOrcamento != null) {
             this.idsOrcamento.forEach(orcamento -> {
                 if (orcamento.getStatus() == StatusOrcamento.PENDENTE) {
@@ -270,11 +318,14 @@ public class OrdemServico {
 
     public void verificarCancelamentoAutomatico(int diasLimite, BigDecimal valorDiaria) {
         if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
-            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(this.dtFimDiagnostico, LocalDateTime.now());
+            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(
+                    this.dtFimDiagnostico.atZone(ZoneId.systemDefault()),
+                    LocalDateTime.now(Clock.systemDefaultZone()).atZone(ZoneId.systemDefault())
+            );
             if (diasDecorridos > diasLimite) {
                 long diasExcedidos = diasDecorridos - diasLimite;
                 this.statusOS = StatusOS.CANCELADA;
-                this.dtEncerramentoOs = LocalDateTime.now();
+                this.dtEncerramentoOs = LocalDateTime.now(Clock.systemDefaultZone());
                 this.dsMotivoCancelamento = "Cancelado automaticamente após " + diasLimite + " dias sem retorno do orçamento (Art. 40 CDC).";
                 this.taxaPermanencia = valorDiaria.multiply(BigDecimal.valueOf(diasExcedidos));
                 recusarOrcamentosVinculados();
@@ -284,10 +335,13 @@ public class OrdemServico {
 
     public void verificarAbandonoTecnico(int diasLimiteAbandono) {
         if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
-            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(this.dtFimDiagnostico, LocalDateTime.now());
+            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(
+                    this.dtFimDiagnostico.atZone(ZoneId.systemDefault()),
+                    LocalDateTime.now(Clock.systemDefaultZone()).atZone(ZoneId.systemDefault())
+            );
             if (diasDecorridos >= diasLimiteAbandono) {
                 this.statusOS = StatusOS.ABANDONADO;
-                this.dtEncerramentoOs = LocalDateTime.now();
+                this.dtEncerramentoOs = LocalDateTime.now(Clock.systemDefaultZone());
                 this.dsMotivoCancelamento = "Veículo considerado abandonado após " + diasLimiteAbandono + " dias sem manifestação do cliente.";
             }
         }

@@ -45,7 +45,7 @@ class VeiculoValidatorTest {
             // Arrange
             UUID clienteId = UUID.randomUUID();
             VeiculoRequest request = new VeiculoRequest(
-                    "abc-1d23", "Toyota", "Corolla", Short.valueOf("2023"), "Prata", clienteId
+                    "abc-1d23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId
             );
 
             when(veiculoRepository.existsByPlaca("ABC1D23")).thenReturn(false);
@@ -63,7 +63,7 @@ class VeiculoValidatorTest {
             // Arrange
             UUID clienteId = UUID.randomUUID();
             VeiculoRequest request = new VeiculoRequest(
-                    "ABC1D23", "Toyota", "Corolla", Short.valueOf("2023"), "Prata", clienteId
+                    "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId
             );
 
             when(veiculoRepository.existsByPlaca("ABC1D23")).thenReturn(true);
@@ -83,7 +83,7 @@ class VeiculoValidatorTest {
             // Arrange
             UUID clienteId = UUID.randomUUID();
             VeiculoRequest request = new VeiculoRequest(
-                    "ABC1D23", "Toyota", "Corolla", Short.valueOf("2023"), "Prata", clienteId
+                    "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId
             );
 
             when(veiculoRepository.existsByPlaca("ABC1D23")).thenReturn(false);
@@ -103,7 +103,7 @@ class VeiculoValidatorTest {
             UUID clienteId = UUID.randomUUID();
             int anoInvalido = Year.now().getValue() + 2;
             VeiculoRequest request = new VeiculoRequest(
-                    "ABC1D23", "Toyota", "Corolla", (short) anoInvalido, "Prata", clienteId
+                    "ABC1D23", "Toyota", "Corolla", 12000, (short) anoInvalido, "Prata", clienteId
             );
 
             when(veiculoRepository.existsByPlaca("ABC1D23")).thenReturn(false);
@@ -129,7 +129,7 @@ class VeiculoValidatorTest {
             UUID veiculoId = UUID.randomUUID();
             UUID clienteId = UUID.randomUUID();
             VeiculoRequest request = new VeiculoRequest(
-                    "ABC-1D23", "Toyota", "Corolla", Short.valueOf("2023"), "Preto", clienteId
+                    "ABC-1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Preto", clienteId
             );
 
             Veiculo veiculoExistente = new Veiculo();
@@ -150,7 +150,7 @@ class VeiculoValidatorTest {
             UUID outroVeiculoId = UUID.randomUUID();
             UUID clienteId = UUID.randomUUID();
             VeiculoRequest request = new VeiculoRequest(
-                    "ABC1D23", "Toyota", "Corolla", Short.valueOf("2023"), "Preto", clienteId
+                    "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Preto", clienteId
             );
 
             Veiculo outroVeiculo = new Veiculo();
@@ -172,7 +172,7 @@ class VeiculoValidatorTest {
             UUID veiculoId = UUID.randomUUID();
             UUID clienteId = UUID.randomUUID();
             VeiculoRequest request = new VeiculoRequest(
-                    "XYZ9876", "Toyota", "Corolla", Short.valueOf("2023"), "Preto", clienteId
+                    "XYZ9876", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Preto", clienteId
             );
 
             when(veiculoRepository.findByPlaca("XYZ9876")).thenReturn(Optional.empty());

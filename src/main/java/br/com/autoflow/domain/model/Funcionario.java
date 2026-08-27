@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -16,7 +17,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Funcionario {
+public class Funcionario  implements Serializable {
 
     @Id
     @UuidGenerator
@@ -51,10 +52,12 @@ public class Funcionario {
     private Endereco endereco;
 
     @Column(name = "st_ocupado")
+    @Builder.Default
     private boolean ocupado = false;
 
     @Column(name = "nr_advertencias")
-    private int nr_advertencias = 0;
+    @Builder.Default
+    private int nrAdvertencias = 0;
 
     public void ocupar() {
         this.ocupado = true;
@@ -65,10 +68,10 @@ public class Funcionario {
     }
 
     public void adicionarAdvertencia() {
-        this.nr_advertencias++;
+        this.nrAdvertencias++;
     }
 
     public boolean deveSerDemitido() {
-        return this.nr_advertencias >= 3;
+        return this.nrAdvertencias >= 3;
     }
 }

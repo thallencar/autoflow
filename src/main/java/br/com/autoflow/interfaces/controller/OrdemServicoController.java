@@ -23,8 +23,8 @@ public class OrdemServicoController {
     private final OrdemServicoService service;
 
     @GetMapping
-    public List<OrdemServicoResponse> listarTodas() {
-        return service.listarTodas();
+    public Page<OrdemServicoResponse> listarTodas(Pageable pageable) {
+        return service.listarTodas(pageable);
     }
 
     @GetMapping("/{id}")
@@ -80,10 +80,18 @@ public class OrdemServicoController {
         service.atualizarStatusPagamento(id, request.stPagamento());
     }
 
+    @GetMapping("/filtro-status")
+    @ResponseStatus(HttpStatus.OK)
+    public Page<OrdemServicoResponse> listarPorStatus(
+            @RequestParam StatusOS status,
+            Pageable pageable) {
+        return service.listarPorStatus(status, pageable);
+    }
+
     @GetMapping("/veiculo/{idVeiculo}/historico")
     @ResponseStatus(HttpStatus.OK)
-    public List<HistoricoVeiculoResponse> listarHistoricoPorVeiculo(@PathVariable UUID idVeiculo) {
-        return service.obterHistoricoPorVeiculo(idVeiculo);
+    public Page<HistoricoVeiculoResponse> listarHistoricoPorVeiculo(@PathVariable UUID idVeiculo, Pageable pageable) {
+        return service.obterHistoricoPorVeiculo(idVeiculo, pageable);
     }
 
     @DeleteMapping("/{id}")

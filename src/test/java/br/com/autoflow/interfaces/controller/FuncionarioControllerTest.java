@@ -48,18 +48,7 @@ class FuncionarioControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setValidator(new org.springframework.validation.Validator() {
-                    @Override
-                    public boolean supports(Class<?> clazz) {
-                        return true;
-                    }
-
-                    @Override
-                    public void validate(Object target, org.springframework.validation.Errors errors) {
-                    }
-                })
-                .build();
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
     private String criarJsonRequestValido() {
@@ -91,7 +80,7 @@ class FuncionarioControllerTest {
         );
         return new FuncionarioResponse(
                 id, "62157435000", "Carlos Silva", "51999999999", "carlos@gmail.com",
-                Genero.MASCULINO, LocalDate.of(2000, 9, 12), Cargo.GERENTE, enderecoResponse
+                Genero.MASCULINO, LocalDate.of(2000, 9, 12), Cargo.GERENTE, false, enderecoResponse
         );
     }
 

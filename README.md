@@ -147,3 +147,116 @@ src/
 - **Maven** — build e gerenciamento de dependências
 - **Maven Wrapper** — execução padronizada do Maven
 - **OpenAPI / Swagger** — documentação da API
+
+## Executando com Docker
+
+É necessário ter o Docker instalado localmente para executar o projeto via Docker Compose.
+
+Se for a primeira vez, execute:
+
+```
+docker compose up --build
+```
+
+Se já houve build anterior e você quiser subir apenas os containers novamente, use:
+
+```
+docker compose up
+```
+
+Após iniciar, a documentação Swagger estará disponível em:
+
+```
+http://localhost:8080/swagger-ui/index.html#/
+```
+
+Para encerrar, use Ctrl+C ou `docker compose down`.
+
+## SonarQube local
+
+Para acompanhar qualidade de código e cobertura localmente com SonarQube, siga os passos abaixo.
+
+### Pré-requisitos
+
+- Docker instalado e em execução
+- Docker Compose disponível
+- Java 25 e Maven instalados na máquina
+- Projeto clonado localmente
+
+### 1) Subir o SonarQube
+
+```bash
+docker compose up -d sonarqube
+```
+
+Acesse a interface web em:
+
+```text
+http://localhost:9000
+```
+
+Na primeira vez, faça login com:
+
+```text
+usuário: admin
+senha: admin
+```
+
+Recomendado: altere a senha e crie um projeto local no Sonar.
+
+### 2) Gerar a cobertura de testes
+
+O projeto já está configurado com JaCoCo e gera o relatório em:
+
+```text
+target/site/jacoco/jacoco.xml
+```
+
+Execute:
+
+```bash
+mvn clean verify
+```
+
+Isso gera os relatórios de testes e cobertura para o Sonar consumir.
+
+### 3) Enviar análise para o SonarQube
+
+Para analisar o projeto no Sonar local, execute:
+
+```bash
+mvn sonar:sonar \
+  -Dsonar.host.url=http://localhost:9000 \
+  -Dsonar.login=admin \
+  -Dsonar.password=admin
+```
+
+Se preferir usar um token do projeto no Sonar:
+
+```bash
+mvn sonar:sonar \
+  -Dsonar.host.url=http://localhost:9000 \
+  -Dsonar.token=SEU_TOKEN_AQUI
+```
+
+### 4) Observações
+
+- O comando `docker compose up` sobe todos os serviços do projeto (aplicação + SonarQube), conforme necessário.
+- Para subir apenas o SonarQube, use `docker compose up -d sonarqube`.
+- Para o build local em CI ou desenvolvimento, o comando recomendado é:
+
+```bash
+mvn clean verify
+```
+
+- Para rodar tudo em Docker pela primeira vez, ainda use:
+
+```bash
+docker compose up --build
+```
+
+- Se já tiver o ambiente montado, o uso mais rápido é:
+
+```bash
+docker compose up
+```

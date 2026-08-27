@@ -21,11 +21,13 @@ public interface OrdemServicoRepository extends JpaRepository<OrdemServico, UUID
 
     boolean existsByIdVeiculoAndStatusOSNotIn(UUID veiculoId, Collection<StatusOS> status);
 
-    long countByStatusOSNot(StatusOS statusOs);
+    long countByStatusOSNotIn(Collection<StatusOS> statusList);
 
     Optional<OrdemServico> findTopByIdVeiculoOrderByDtAberturaOsDesc(UUID idVeiculo);
 
-    List<OrdemServico> findByIdVeiculoOrderByDtAberturaOsDesc(UUID idVeiculo);
+    Page<OrdemServico> findByIdVeiculoOrderByDtAberturaOsDesc(UUID idVeiculo, Pageable pageable);
+
+    Page<OrdemServico> findByStatusOS(StatusOS statusOS, Pageable pageable);
 
     @Query("""
         SELECT os FROM OrdemServico os
@@ -40,6 +42,4 @@ public interface OrdemServicoRepository extends JpaRepository<OrdemServico, UUID
             @Param("status") StatusOS status,
             Pageable pageable
     );
-
-    List<OrdemServico> findByStatusOS(StatusOS statusOS);
 }

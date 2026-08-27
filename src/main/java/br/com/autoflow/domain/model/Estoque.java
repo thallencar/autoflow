@@ -1,7 +1,6 @@
 package br.com.autoflow.domain.model;
 
 import br.com.autoflow.domain.enums.TipoItemEstoque;
-import br.com.autoflow.domain.enums.TipoItemEstoqueConverter;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -38,17 +37,20 @@ public class Estoque {
     @Column(name = "qtd_minima")
     private Integer quantidadeMinima = 0;
 
-    @Column(name = "tp_categoria", length = 20, nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(name = "tp_categoria", length = 20, nullable = false)
     private TipoItemEstoque tipoCategoria;
 
     public boolean deveDispararAlertaEstoqueBaixo() {
         boolean estoqueBaixo = (this.quantidadeEstoque != null && this.quantidadeMinima != null)
                 && (this.quantidadeEstoque <= this.quantidadeMinima);
 
-        boolean ehAlertaGeral = this.tipoCategoria == TipoItemEstoque.INSUMO
-                || this.tipoCategoria == TipoItemEstoque.PECA_COMPARTILHADA;
+        boolean ehAlertaGeral = this.tipoCategoria == TipoItemEstoque.INSUMO;
 
         return estoqueBaixo && ehAlertaGeral;
+    }
+
+    public boolean deveGerarAlertaEstoqueBaixo() {
+        return deveDispararAlertaEstoqueBaixo();
     }
 }

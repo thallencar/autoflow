@@ -1,6 +1,5 @@
 package br.com.autoflow.application.service;
 
-import br.com.autoflow.application.dto.OrcamentoServicoRequest;
 import br.com.autoflow.application.dto.ServicoRequest;
 import br.com.autoflow.domain.model.Servico;
 import br.com.autoflow.domain.repository.OrcamentoServicoRepository;
@@ -8,11 +7,9 @@ import br.com.autoflow.domain.repository.OsServicoRepository;
 import br.com.autoflow.domain.repository.ServicoRepository;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.exception.RegraNegocioException;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.UUID;
 
 @Component

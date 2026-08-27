@@ -19,6 +19,15 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @RequiredArgsConstructor
 public class SecurityConfigurations {
 
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_MECANICO = "MECANICO";
+    private static final String ROLE_CLIENTE = "CLIENTE";
+
+    private static final String ORDENS_SERVICO_PATH = "/ordens-servico/**";
+    private static final String VEICULOS_PATH = "/veiculos/**";
+    private static final String ORCAMENTOS_PATH = "/orcamentos/**";
+    private static final String SERVICOS_PATH = "/servicos/**";
+
     private final SecurityFilter securityFilter;
 
     @Bean
@@ -27,11 +36,16 @@ public class SecurityConfigurations {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/ordens-servico/**", "/veiculos/**","/orcamentos/**","/servicos/**","/os-servicos/**").hasAnyRole("ADMIN", "MECANICO", "CLIENTE")
-                        .requestMatchers(HttpMethod.POST, "/ordens-servico/**", "/veiculos/**","/orcamentos/**","/servicos/**").hasAnyRole("ADMIN", "MECANICO")
-                        .requestMatchers(HttpMethod.PUT, "/ordens-servico/**", "/veiculos/**", "/orcamentos/**","/servicos/**").hasAnyRole("ADMIN", "MECANICO")
+                        .requestMatchers(HttpMethod.DELETE, "/**").hasRole(ROLE_ADMIN)
+                        .requestMatchers(HttpMethod.GET, ORDENS_SERVICO_PATH, VEICULOS_PATH, ORCAMENTOS_PATH, SERVICOS_PATH, "/os-servicos/**").hasAnyRole(ROLE_ADMIN, ROLE_MECANICO, ROLE_CLIENTE)
+                        .requestMatchers(HttpMethod.POST, ORDENS_SERVICO_PATH, VEICULOS_PATH, ORCAMENTOS_PATH, SERVICOS_PATH).hasAnyRole(ROLE_ADMIN, ROLE_MECANICO)
+                        .requestMatchers(HttpMethod.PUT, ORDENS_SERVICO_PATH, VEICULOS_PATH, ORCAMENTOS_PATH, SERVICOS_PATH).hasAnyRole(ROLE_ADMIN, ROLE_MECANICO)
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

@@ -38,10 +38,12 @@ public class Usuario implements UserDetails {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_cliente")
+    @SuppressWarnings("serial")
     private Cliente cliente;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_funcionario")
+    @SuppressWarnings("serial")
     private Funcionario funcionario;
 
     @Override
@@ -86,6 +88,15 @@ public class Usuario implements UserDetails {
                 .perfil(perfil)
                 .funcionario(funcionario)
                 .build();
+    }
+
+    public static Usuario criarUsuarioParaCliente(Cliente cliente, Perfil perfil, PasswordEncoder passwordEncoder) {
+        return Usuario.builder()
+            .login(cliente.getEmail())
+            .senha(passwordEncoder.encode(cliente.getDocumento()))
+            .perfil(perfil)
+            .cliente(cliente)
+            .build();
     }
 
     /**

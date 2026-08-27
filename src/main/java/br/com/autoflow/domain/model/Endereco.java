@@ -1,5 +1,6 @@
 package br.com.autoflow.domain.model;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 import br.com.autoflow.application.dto.EnderecoRequest;
@@ -22,7 +23,7 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Endereco {
+public class Endereco implements Serializable {
 
     @Id
     @UuidGenerator
@@ -50,14 +51,18 @@ public class Endereco {
     @Column(name = "ds_complemento")
     private String complemento;
 
-    public record EnderecoResponse(
-            UUID id,
-            String cep,
-            String uf,
-            String cidade,
-            String bairro,
-            String logradouro,
-            Integer numero,
-            String complemento
-    ) {}
+    /**
+     * Atualiza os dados do endereço com base na requisição recebida.
+     */
+    public void atualizarDados(EnderecoRequest request) {
+        if (request != null) {
+            this.cep = request.cep();
+            this.uf = request.uf();
+            this.cidade = request.cidade();
+            this.bairro = request.bairro();
+            this.logradouro = request.logradouro();
+            this.numero = request.numero();
+            this.complemento = request.complemento();
+        }
+    }
 }
