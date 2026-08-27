@@ -264,4 +264,53 @@ class OrcamentoServiceTest {
 
         assertThrows(EntidadeNaoEncontradaException.class, () -> orcamentoService.delete(id));
     }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao tentar criar orçamento com Ordem de Serviço não encontrada")
+    void deveLancarExcecaoCriarOsNaoEncontrada() {
+        OrcamentoRequest request = mock(OrcamentoRequest.class);
+        UUID idOs = UUID.randomUUID();
+
+        when(request.idOs()).thenReturn(idOs);
+        when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.empty());
+
+        assertThrows(EntidadeNaoEncontradaException.class, () -> orcamentoService.criar(request));
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao aprovar orçamento com estoque insuficiente")
+    void deveLancarExcecaoEstoqueInsuficiente() {
+        UUID idOrcamento = UUID.randomUUID();
+        AtualizarStatusOrcamentoRequest request = new AtualizarStatusOrcamentoRequest(StatusOrcamento.APROVADO);
+
+        Orcamento orcamento = new Orcamento();
+        orcamento.setStatus(StatusOrcamento.PENDENTE);
+        orcamento.setDataExpiracao(LocalDateTime.now().plusDays(1));
+
+        OrcamentoItem item = new OrcamentoItem();
+        item.setIdEstoque(UUID.randomUUID());
+        item.setQuantidade(15); // Quantidade maior que o estoque disponível
+
+        OrcamentoServico servico = new OrcamentoServico();
+        servico.setItens(List.of(item));
+        orcamento.setServicos(List.of(servico));
+
+        Estoque estoque = new Estoque();
+        estoque.setQuantidadeEstoque(10); // Apenas 10 em estoque
+        estoque.setNomeItem("Óleo");
+
+        when(orcamentoRepository.findById(idOrcamento)).thenReturn(Optional.of(orcamento));
+        when(estoqueRepository.findById(item.getIdEstoque())).thenReturn(Optional.of(estoque));
+
+        assertThrows(RegraNegocioException.class, () -> orcamentoService.atualizarStatus(idOrcamento, request));
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao buscar orçamento por ID inexistente")
+    void deveLancarExcecaoBuscarPorIdInexistente() {
+        UUID id = UUID.randomUUID();
+        when(orcamentoRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(EntidadeNaoEncontradaException.class, () -> orcamentoService.buscarPorId(id));
+    }
 }
