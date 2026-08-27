@@ -1,7 +1,7 @@
 package br.com.autoflow.domain.model;
 
 import br.com.autoflow.domain.enums.*;
-import br.com.autoflow.domain.exception.RegraNegocioException;
+import br.com.autoflow.exception.RegraNegocioException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
