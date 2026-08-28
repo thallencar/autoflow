@@ -4,6 +4,7 @@ import br.com.autoflow.application.dto.VeiculoRequest;
 import br.com.autoflow.domain.model.Cliente;
 import br.com.autoflow.domain.model.Veiculo;
 import br.com.autoflow.domain.repository.ClienteRepository;
+import br.com.autoflow.domain.repository.OrdemServicoRepository;
 import br.com.autoflow.domain.repository.VeiculoRepository;
 import br.com.autoflow.exception.*;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class VeiculoValidator {
 
     private final VeiculoRepository veiculoRepository;
     private final ClienteRepository clienteRepository;
+    private final OrdemServicoRepository ordemServicoRepository;
 
     public void validarParaCriar(VeiculoRequest request) {
         String placaFormatada = formatarPlaca(request.placa());
@@ -72,5 +74,13 @@ public class VeiculoValidator {
         if (request.clienteId() != null) {
             validarClienteExiste(request.clienteId());
         }
+    }
+    public Veiculo validarParaDeletar(UUID id) {
+        Veiculo veiculo = veiculoRepository.findById(id)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Veículo: ", id));
+        if (ordemServicoRepository.existsByIdVeiculo(id)) {
+            throw new RegraNegocioException("Não é possível excluir o veículo pois existem ordens de serviço vinculadas a ele.");
+        }
+        return veiculo;
     }
 }

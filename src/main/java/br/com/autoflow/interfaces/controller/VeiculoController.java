@@ -42,6 +42,11 @@ public class VeiculoController {
         return service.atualizar(id, request);
     }
 
+    @GetMapping("/placa/{placa}")
+    public VeiculoResponse buscarPorPlaca(@PathVariable String placa) {
+        return service.buscarPorPlaca(placa);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletar(@PathVariable UUID id) {
