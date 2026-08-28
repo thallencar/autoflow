@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -69,20 +70,20 @@ public class Orcamento {
     public void aprovar() {
         validarMudancaStatus();
         this.status = StatusOrcamento.APROVADO;
-        this.dataDecisao = LocalDateTime.now();
+        this.dataDecisao = LocalDateTime.now(ZoneId.systemDefault());
         atualizarStatusReservaItens(StatusReservaEstoque.VENDIDO);
     }
 
     public void recusar() {
         validarMudancaStatus();
         this.status = StatusOrcamento.RECUSADO;
-        this.dataDecisao = LocalDateTime.now();
+        this.dataDecisao = LocalDateTime.now(ZoneId.systemDefault());
         atualizarStatusReservaItens(StatusReservaEstoque.CANCELADO);
     }
 
     public void expirar() {
         this.status = StatusOrcamento.CANCELADO;
-        this.dataDecisao = LocalDateTime.now();
+        this.dataDecisao = LocalDateTime.now(ZoneId.systemDefault());
         atualizarStatusReservaItens(StatusReservaEstoque.CANCELADO);
     }
 
@@ -109,7 +110,7 @@ public class Orcamento {
         if (this.status != StatusOrcamento.PENDENTE) {
             throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
         }
-        if (this.dataExpiracao != null && LocalDateTime.now().isAfter(this.dataExpiracao)) {
+        if (this.dataExpiracao != null && LocalDateTime.now(ZoneId.systemDefault()).isAfter(this.dataExpiracao)) {
             throw new RegraNegocioException("Este orçamento está expirado e não pode mais ser alterado.");
         }
     }

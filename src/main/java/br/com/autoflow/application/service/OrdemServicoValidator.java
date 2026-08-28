@@ -103,7 +103,7 @@ public class OrdemServicoValidator {
                             idOrcamento, orcamento.getStatus())
             );
         }
-        if (orcamento.getDataExpiracao() != null && LocalDateTime.now().isAfter(orcamento.getDataExpiracao())) {
+        if (orcamento.getDataExpiracao() != null && LocalDateTime.now(java.time.ZoneId.systemDefault()).isAfter(orcamento.getDataExpiracao())) {
             throw new RegraNegocioException(
                     String.format("O orçamento (ID: %s) está expirado. Solicite uma atualização.", idOrcamento)
             );

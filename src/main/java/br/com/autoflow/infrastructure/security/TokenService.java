@@ -61,6 +61,8 @@ public class TokenService {
     }
 
     private Instant gerarDataExpiracao() {
-        return LocalDateTime.now().plusMinutes(expirationMinutes).toInstant(ZoneOffset.of("-03:00"));
+        return LocalDateTime.now(java.time.ZoneId.of("America/Sao_Paulo"))
+                .plusMinutes(expirationMinutes)
+                .toInstant(ZoneOffset.of("-03:00"));
     }
 }

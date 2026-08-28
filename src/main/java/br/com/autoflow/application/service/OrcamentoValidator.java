@@ -117,7 +117,7 @@ public class OrcamentoValidator {
         if (request.dataExpiracao() == null) {
             throw new RegraNegocioException("A data de expiração do orçamento é obrigatória.");
         }
-        if (request.dataExpiracao().isBefore(LocalDateTime.now())) {
+        if (request.dataExpiracao().isBefore(LocalDateTime.now(java.time.ZoneId.systemDefault()))) {
             throw new RegraNegocioException("A data de expiração não pode ser anterior à data atual.");
         }
     }

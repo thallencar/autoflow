@@ -26,7 +26,7 @@ public class ClienteValidator {
         if(dataNascimento == null) {
             throw new RegraNegocioException("A data de nascimento é obrigatória");
         }
-        long idade = ChronoUnit.YEARS.between(dataNascimento, LocalDate.now());
+        long idade = ChronoUnit.YEARS.between(dataNascimento, LocalDate.now(java.time.ZoneId.systemDefault()));
         if (idade < 18) {
             throw new RegraNegocioException("O cliente deve ter no mínimo 18 anos.");
         }

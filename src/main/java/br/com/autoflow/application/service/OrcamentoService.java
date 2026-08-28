@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +48,7 @@ public class OrcamentoService {
         vincularServicosEItens(orcamento);
 
         orcamento.setStatus(StatusOrcamento.PENDENTE);
-        orcamento.setDataCriacao(LocalDateTime.now());
+        orcamento.setDataCriacao(LocalDateTime.now(ZoneId.systemDefault()));
 
         processarRegraTipoOrcamento(orcamento, ordemServico, request);
 
@@ -67,7 +68,7 @@ public class OrcamentoService {
             orcamentoValidator.validarAtualizacaoStatus(request.status());
         }
 
-        if (orcamento.getDataExpiracao() != null && LocalDateTime.now().isAfter(orcamento.getDataExpiracao())) {
+        if (orcamento.getDataExpiracao() != null && LocalDateTime.now(ZoneId.systemDefault()).isAfter(orcamento.getDataExpiracao())) {
             orcamento.expirar();
             orcamentoExpiradoService.salvarOrcamentoExpirado(orcamento);
             throw new RegraNegocioException("Não foi possível alterar o status: Este orçamento está expirado.");
@@ -218,7 +219,7 @@ public class OrcamentoService {
             if (!temOrcamentoAprovado) {
                 throw new RegraNegocioException("Não é possível criar um orçamento complementar sem que o orçamento inicial esteja aprovado.");
             }
-            orcamento.setDataExpiracao(LocalDateTime.now().plusHours(24));
+            orcamento.setDataExpiracao(LocalDateTime.now(ZoneId.systemDefault()).plusHours(24));
             ordemServico.atualizarStatus(StatusOS.AGUARDANDO_APROVACAO, "OS pausada: Aguardando aprovação de orçamento complementar.");
             ordemServicoRepository.save(ordemServico);
         } else {

@@ -9,6 +9,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -102,7 +103,7 @@ public class OrdemServico {
     @PrePersist
     public void prePersist() {
         if (this.dtAberturaOs == null) {
-            this.dtAberturaOs = LocalDateTime.now();
+            this.dtAberturaOs = LocalDateTime.now(ZoneId.systemDefault());
         }
         if (this.stPagamento == null) {
             this.stPagamento = StatusPagamento.PENDENTE;
@@ -264,7 +265,10 @@ public class OrdemServico {
 
     public Long getTempoTotalExecucaoMinutos() {
         if (this.dataInicioExecucao != null && this.dataFimExecucao != null) {
-            return java.time.Duration.between(this.dataInicioExecucao, this.dataFimExecucao).toMinutes();
+            return java.time.Duration.between(
+                    this.dataInicioExecucao.atZone(java.time.ZoneId.systemDefault()),
+                    this.dataFimExecucao.atZone(java.time.ZoneId.systemDefault())
+            ).toMinutes();
         }
         return null;
     }
@@ -312,11 +316,14 @@ public class OrdemServico {
 
     public void verificarCancelamentoAutomatico(int diasLimite, BigDecimal valorDiaria) {
         if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
-            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(this.dtFimDiagnostico, LocalDateTime.now());
+            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(
+                    this.dtFimDiagnostico.atZone(java.time.ZoneId.systemDefault()),
+                    LocalDateTime.now(java.time.ZoneId.systemDefault()).atZone(java.time.ZoneId.systemDefault())
+            );
             if (diasDecorridos > diasLimite) {
                 long diasExcedidos = diasDecorridos - diasLimite;
                 this.statusOS = StatusOS.CANCELADA;
-                this.dtEncerramentoOs = LocalDateTime.now();
+                this.dtEncerramentoOs = LocalDateTime.now(java.time.ZoneId.systemDefault());
                 this.dsMotivoCancelamento = "Cancelado automaticamente após " + diasLimite + " dias sem retorno do orçamento (Art. 40 CDC).";
                 this.taxaPermanencia = valorDiaria.multiply(BigDecimal.valueOf(diasExcedidos));
                 recusarOrcamentosVinculados();
@@ -326,10 +333,13 @@ public class OrdemServico {
 
     public void verificarAbandonoTecnico(int diasLimiteAbandono) {
         if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
-            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(this.dtFimDiagnostico, LocalDateTime.now());
+            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(
+                    this.dtFimDiagnostico.atZone(java.time.ZoneId.systemDefault()),
+                    LocalDateTime.now(java.time.ZoneId.systemDefault()).atZone(java.time.ZoneId.systemDefault())
+            );
             if (diasDecorridos >= diasLimiteAbandono) {
                 this.statusOS = StatusOS.ABANDONADO;
-                this.dtEncerramentoOs = LocalDateTime.now();
+                this.dtEncerramentoOs = LocalDateTime.now(java.time.ZoneId.systemDefault());
                 this.dsMotivoCancelamento = "Veículo considerado abandonado após " + diasLimiteAbandono + " dias sem manifestação do cliente.";
             }
         }
