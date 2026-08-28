@@ -4,11 +4,10 @@ import br.com.autoflow.application.dto.VeiculoRequest;
 import br.com.autoflow.application.dto.VeiculoResponse;
 import br.com.autoflow.domain.model.Cliente;
 import br.com.autoflow.domain.model.Veiculo;
-import br.com.autoflow.domain.repository.ClienteRepository;
+import br.com.autoflow.domain.repository.OrdemServicoRepository;
 import br.com.autoflow.domain.repository.VeiculoRepository;
 import br.com.autoflow.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.infrastructure.mapper.VeiculoMapper;
-import jakarta.validation.constraints.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,6 +29,9 @@ class VeiculoServiceTest {
 
     @Mock
     private VeiculoRepository veiculoRepository;
+
+    @Mock
+    private OrdemServicoRepository ordemServicoRepository;
 
     @Mock
     private VeiculoMapper veiculoMapper;
@@ -176,68 +178,59 @@ class VeiculoServiceTest {
     @DisplayName("Atualizar Veículo")
     class AtualizarVeiculoTests {
 
-            @Test
-            @DisplayName("Deve atualizar veículo com sucesso")
-            void deveAtualizarVeiculoComSucesso() {
-                // Arrange
-                UUID id = UUID.randomUUID();
-                UUID clienteId = UUID.randomUUID();
-                VeiculoRequest request = criarVeiculoRequest(clienteId);
+        @Test
+        @DisplayName("Deve atualizar veículo com sucesso")
+        void deveAtualizarVeiculoComSucesso() {
+            // Arrange
+            UUID id = UUID.randomUUID();
+            UUID clienteId = UUID.randomUUID();
+            VeiculoRequest request = criarVeiculoRequest(clienteId);
 
-                Veiculo veiculoExistente = new Veiculo(); // Mudado de mock para instância real
-                Cliente novoCliente = new Cliente();
-                VeiculoResponse responseEsperada = criarVeiculoResponse();
+            Veiculo veiculoExistente = new Veiculo();
+            Cliente novoCliente = new Cliente();
+            VeiculoResponse responseEsperada = criarVeiculoResponse();
 
-                when(veiculoValidator.buscarVeiculo(id)).thenReturn(veiculoExistente);
-                doNothing().when(veiculoValidator).validarParaAtualizar(id, request);
-                when(veiculoValidator.buscarCliente(clienteId)).thenReturn(novoCliente);
+            when(veiculoValidator.buscarVeiculo(id)).thenReturn(veiculoExistente);
+            doNothing().when(veiculoValidator).validarParaAtualizar(id, request);
+            when(veiculoValidator.buscarCliente(clienteId)).thenReturn(novoCliente);
 
-                // Não é necessário mockar o void do mapper, mas podemos verificar a interação abaixo
+            when(veiculoRepository.save(veiculoExistente)).thenReturn(veiculoExistente);
+            when(veiculoMapper.toResponse(veiculoExistente)).thenReturn(responseEsperada);
 
-                when(veiculoRepository.save(veiculoExistente)).thenReturn(veiculoExistente);
-                when(veiculoMapper.toResponse(veiculoExistente)).thenReturn(responseEsperada);
+            // Act
+            VeiculoResponse resultado = veiculoService.atualizar(id, request);
 
-                // Act
-                VeiculoResponse resultado = veiculoService.atualizar(id, request);
-
-                // Assert
-                assertThat(resultado).isNotNull().isEqualTo(responseEsperada);
-                verify(veiculoValidator).buscarVeiculo(id);
-                verify(veiculoValidator).validarParaAtualizar(id, request);
-                verify(veiculoValidator).buscarCliente(clienteId);
-
-                // Verifica se o mapper foi chamado corretamente para atualizar a entidade
-                verify(veiculoMapper).updateEntity(request, veiculoExistente, novoCliente);
-
-                verify(veiculoRepository).save(veiculoExistente);
-                verify(veiculoMapper).toResponse(veiculoExistente);
-            }
+            // Assert
+            assertThat(resultado).isNotNull().isEqualTo(responseEsperada);
+            verify(veiculoValidator).buscarVeiculo(id);
+            verify(veiculoValidator).validarParaAtualizar(id, request);
+            verify(veiculoValidator).buscarCliente(clienteId);
+            verify(veiculoMapper).updateEntity(request, veiculoExistente, novoCliente);
+            verify(veiculoRepository).save(veiculoExistente);
+            verify(veiculoMapper).toResponse(veiculoExistente);
         }
+    }
 
     @Nested
     @DisplayName("Deletar Veículo")
     class DeletarVeiculoTests {
 
         @Test
-        @DisplayName("Deve deletar veículo com sucesso")
+        @DisplayName("Deve deletar veículo com sucesso quando não houver OS vinculada")
         void deveDeletarVeiculoComSucesso() {
-            // Arrange
             UUID id = UUID.randomUUID();
             Veiculo veiculo = new Veiculo();
 
-            when(veiculoValidator.buscarVeiculo(id)).thenReturn(veiculo);
+            when(veiculoValidator.validarParaDeletar(id)).thenReturn(veiculo);
 
-            // Act
             veiculoService.deletar(id);
 
-            // Assert
-            verify(veiculoValidator).buscarVeiculo(id);
+            verify(veiculoValidator).validarParaDeletar(id);
             verify(veiculoRepository).delete(veiculo);
         }
     }
 
-    // --- Helpers auxiliares para construção dos DTOs dos testes ---
-
+    // Métodos auxiliares movidos corretamente para a raiz da classe
     private VeiculoRequest criarVeiculoRequest(UUID clienteId) {
         return new VeiculoRequest(
                 "ABC1D23",
@@ -249,7 +242,6 @@ class VeiculoServiceTest {
                 clienteId
         );
     }
-
 
     private VeiculoResponse criarVeiculoResponse() {
         return new VeiculoResponse(

@@ -103,7 +103,17 @@ class OrdemServicoControllerTest {
     @Test
     void deveObterMetricasPorOS() {
         UUID idOs = UUID.randomUUID();
-        MetricaOsResponse response = new MetricaOsResponse(idOs, "EM_EXECUCAO", 60, 45L, 15L, LocalDateTime.now(), LocalDateTime.now());
+        LocalDateTime agora = LocalDateTime.now();
+
+        // Ajustado para os 5 campos do record atual
+        MetricaOsResponse response = new MetricaOsResponse(
+                idOs,
+                "ENTREGUE",
+                agora,
+                agora,
+                15L
+        );
+
         when(service.obterMetricasPorOS(idOs)).thenReturn(response);
 
         MetricaOsResponse result = controller.obterMetricasPorOS(idOs);
@@ -117,7 +127,16 @@ class OrdemServicoControllerTest {
         LocalDateTime inicio = LocalDateTime.now().minusDays(1);
         LocalDateTime fim = LocalDateTime.now();
         Pageable pageable = PageRequest.of(0, 2);
-        MetricaOsResponse response = new MetricaOsResponse(UUID.randomUUID(), "EM_EXECUCAO", 60, 45L, 15L, inicio, fim);
+
+        // Ajustado para os 5 campos do record atual
+        MetricaOsResponse response = new MetricaOsResponse(
+                UUID.randomUUID(),
+                "EM_EXECUCAO",
+                inicio,
+                fim,
+                15L
+        );
+
         Page<MetricaOsResponse> page = new PageImpl<>(List.of(response), pageable, 1);
         when(service.buscarMetricasComFiltro(inicio, fim, StatusOS.EM_EXECUCAO, pageable)).thenReturn(page);
 
