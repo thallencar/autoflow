@@ -57,8 +57,16 @@ public class VeiculoService {
     }
 
     @Transactional
+    public VeiculoResponse buscarPorPlaca(String placa) {
+        String placaFormatada = veiculoValidator.formatarPlaca(placa);
+        Veiculo veiculo = veiculoRepository.findByPlaca(placaFormatada)
+                .orElseThrow(() -> new RuntimeException("Veículo não encontrado com a placa: " + placa));
+        return veiculoMapper.toResponse(veiculo);
+    }
+
+    @Transactional
     public void deletar(UUID id) {
-        Veiculo veiculo = veiculoValidator.buscarVeiculo(id);
+        Veiculo veiculo = veiculoValidator.validarParaDeletar(id);
         veiculoRepository.delete(veiculo);
     }
 }

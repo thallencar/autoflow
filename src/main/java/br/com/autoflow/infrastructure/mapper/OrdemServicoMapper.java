@@ -45,11 +45,9 @@ public interface OrdemServicoMapper {
                 return new MetricaOsResponse(
                         os.getIdOs(),
                         os.getStatusOS() != null ? os.getStatusOS().name() : null,
-                        os.getTempoTotalEstimadoMinutos(),
-                        os.getTempoTotalExecucaoMinutos(),
-                        os.getDiferencaMinutos(),
                         os.getDataInicioExecucao(),
-                        os.getDataFimExecucao()
+                        os.getDataFimExecucao(),
+                        os.getTempoTotalExecucaoMinutos()
                 );
         }
 

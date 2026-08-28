@@ -7,6 +7,7 @@ import br.com.autoflow.domain.enums.StatusPagamento;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.repository.FuncionarioRepository;
+import br.com.autoflow.exception.RegraNegocioException;
 import br.com.autoflow.infrastructure.mapper.OrdemServicoMapper;
 import br.com.autoflow.domain.model.OrdemServico;
 import br.com.autoflow.domain.repository.OrdemServicoRepository;
@@ -106,7 +107,7 @@ public class OrdemServicoService {
         OrdemServico os = buscarOrdemServicoPorId(idOS);
         StatusOS novoStatus = request.status();
 
-        validarRequisitosStatus(novoStatus, request.observacao());
+        validarRequisitosStatus(novoStatus, request.observacao(), os);
         processarEstoqueSeNecessario(os, novoStatus);
         os.atualizarStatus(novoStatus, request.observacao());
 
@@ -227,7 +228,12 @@ public class OrdemServicoService {
         }
     }
 
-    private void validarRequisitosStatus(StatusOS novoStatus, String observacao) {
+    private void validarRequisitosStatus(StatusOS novoStatus, String observacao, OrdemServico os) {
+        if (novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
+            if (os.getIdFuncionario() == null) {
+                throw new RegraNegocioException("Não é possível iniciar o diagnóstico sem um mecânico/funcionário alocado na Ordem de Serviço.");
+            }
+        }
         if (novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
             validator.validarDiagnosticoPreenchido(observacao);
         }

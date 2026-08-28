@@ -29,6 +29,8 @@ public interface OrdemServicoRepository extends JpaRepository<OrdemServico, UUID
 
     Page<OrdemServico> findByStatusOS(StatusOS statusOS, Pageable pageable);
 
+    boolean existsByIdVeiculo(UUID veiculoId);
+
     @Query("""
         SELECT os FROM OrdemServico os
         WHERE (:status IS NULL OR os.statusOS = :status)
