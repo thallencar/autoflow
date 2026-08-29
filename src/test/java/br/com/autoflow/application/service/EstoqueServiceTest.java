@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any; // <-- Import correto do Mockito
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class EstoqueServiceTest {
+class EstoqueServiceTest {
 
     @Mock
     private EstoqueRepository estoqueRepository;
@@ -180,5 +179,4 @@ public class EstoqueServiceTest {
         verify(estoqueRepository, times(1)).findById(id);
         verify(estoqueRepository, times(1)).save(estoque);
     }
-
 }

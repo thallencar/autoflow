@@ -70,6 +70,5 @@ class GlobalExceptionHandlerTest {
     }
 
     private static class TestRequest {
-        private String nome;
     }
 }

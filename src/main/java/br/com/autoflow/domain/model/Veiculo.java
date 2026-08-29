@@ -1,6 +1,5 @@
 package br.com.autoflow.domain.model;
 
-import br.com.autoflow.application.dto.FuncionarioRequest;
 import br.com.autoflow.application.dto.VeiculoRequest;
 import jakarta.persistence.*;
 import lombok.*;

@@ -6,7 +6,6 @@ import br.com.autoflow.application.dto.FuncionarioResponse;
 import br.com.autoflow.domain.enums.Cargo;
 import br.com.autoflow.domain.enums.Genero;
 import br.com.autoflow.domain.enums.Perfil;
-import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Usuario;
 import br.com.autoflow.domain.repository.EnderecoRepository;

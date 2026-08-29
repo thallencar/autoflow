@@ -1,5 +1,6 @@
 package br.com.autoflow.infrastructure.security;
 
+import br.com.autoflow.exception.RegraNegocioException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,30 +32,38 @@ public class SecurityConfigurations {
     private final SecurityFilter securityFilter;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/**").hasRole(ROLE_ADMIN)
-                        .requestMatchers(HttpMethod.GET, ORDENS_SERVICO_PATH, VEICULOS_PATH, ORCAMENTOS_PATH, SERVICOS_PATH, "/os-servicos/**").hasAnyRole(ROLE_ADMIN, ROLE_MECANICO, ROLE_CLIENTE)
-                        .requestMatchers(HttpMethod.POST, ORDENS_SERVICO_PATH, VEICULOS_PATH, ORCAMENTOS_PATH, SERVICOS_PATH).hasAnyRole(ROLE_ADMIN, ROLE_MECANICO)
-                        .requestMatchers(HttpMethod.PUT, ORDENS_SERVICO_PATH, VEICULOS_PATH, ORCAMENTOS_PATH, SERVICOS_PATH).hasAnyRole(ROLE_ADMIN, ROLE_MECANICO)
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+        try {
+            return http
+                    .csrf(csrf -> csrf.disable())
+                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .authorizeHttpRequests(authorize -> authorize
+                            .requestMatchers(
+                                    "/v3/api-docs/**",
+                                    "/swagger-ui/**",
+                                    "/swagger-ui.html"
+                            ).permitAll()
+                            .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                            .requestMatchers(HttpMethod.DELETE, "/**").hasRole(ROLE_ADMIN)
+                            .requestMatchers(HttpMethod.GET, ORDENS_SERVICO_PATH, VEICULOS_PATH, ORCAMENTOS_PATH, SERVICOS_PATH, "/os-servicos/**").hasAnyRole(ROLE_ADMIN, ROLE_MECANICO, ROLE_CLIENTE)
+                            .requestMatchers(HttpMethod.POST, ORDENS_SERVICO_PATH, VEICULOS_PATH, ORCAMENTOS_PATH, SERVICOS_PATH).hasAnyRole(ROLE_ADMIN, ROLE_MECANICO)
+                            .requestMatchers(HttpMethod.PUT, ORDENS_SERVICO_PATH, VEICULOS_PATH, ORCAMENTOS_PATH, SERVICOS_PATH).hasAnyRole(ROLE_ADMIN, ROLE_MECANICO)
+                            .anyRequest().authenticated()
+                    )
+                    .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
+                    .build();
+        } catch (Exception e) {
+            throw new RegraNegocioException("Erro ao configurar a cadeia de filtros de segurança: " + e.getMessage());
+        }
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) {
+        try {
+            return authenticationConfiguration.getAuthenticationManager();
+        } catch (Exception e) {
+            throw new RegraNegocioException("Erro ao recuperar o AuthenticationManager: " + e.getMessage());
+        }
     }
 
     @Bean

@@ -217,9 +217,11 @@ class OrdemServicoServiceTest {
         os.setStatusOS(StatusOS.AGUARDANDO_APROVACAO);
         os.setIdsOrcamento(List.of(orcamentoPendente));
 
+        OrdemServicoResponse responseMock = mock(OrdemServicoResponse.class);
+
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
         when(repository.save(os)).thenReturn(os);
-        when(mapper.toResponse(os)).thenReturn(mock(OrdemServicoResponse.class));
+        when(mapper.toResponse(os)).thenReturn(responseMock);
 
         service.atualizarStatus(idOs, request);
 
@@ -231,17 +233,19 @@ class OrdemServicoServiceTest {
     @DisplayName("Deve atualizar status para EM_DIAGNOSTICO com sucesso")
     void deveAtualizarStatusParaEmDiagnosticoComMecanico() {
         UUID idOs = UUID.randomUUID();
-        UUID idFuncionario = UUID.randomUUID(); // ID do mecânico alocado
+        UUID idFuncionario = UUID.randomUUID();
         AtualizarStatusOSRequest request = new AtualizarStatusOSRequest(StatusOS.EM_DIAGNOSTICO, "Diagnóstico feito");
 
         OrdemServico os = new OrdemServico();
         os.setIdOs(idOs);
         os.setStatusOS(StatusOS.RECEBIDA);
-        os.setIdFuncionario(idFuncionario); // Definindo o mecânico para passar na validação
+        os.setIdFuncionario(idFuncionario);
+
+        OrdemServicoResponse responseMock = mock(OrdemServicoResponse.class);
 
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
         when(repository.save(os)).thenReturn(os);
-        when(mapper.toResponse(os)).thenReturn(mock(OrdemServicoResponse.class));
+        when(mapper.toResponse(os)).thenReturn(responseMock);
 
         assertDoesNotThrow(() -> service.atualizarStatus(idOs, request));
         verify(repository).save(os);
@@ -279,12 +283,13 @@ class OrdemServicoServiceTest {
         os.setIdFuncionario(idMec);
 
         Funcionario mecanico = mock(Funcionario.class);
+        OrdemServicoResponse responseMock = mock(OrdemServicoResponse.class);
 
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
         when(funcionarioRepository.findById(idMec)).thenReturn(Optional.of(mecanico));
         when(funcionarioRepository.save(any(Funcionario.class))).thenReturn(mecanico);
         when(repository.save(os)).thenReturn(os);
-        when(mapper.toResponse(os)).thenReturn(mock(OrdemServicoResponse.class));
+        when(mapper.toResponse(os)).thenReturn(responseMock);
 
         service.atualizarStatus(idOs, request);
 

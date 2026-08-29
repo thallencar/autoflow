@@ -1,6 +1,5 @@
 package br.com.autoflow.domain.repository;
 
-import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.model.OrdemServico;
 import br.com.autoflow.domain.enums.StatusOS;
 import org.springframework.data.domain.Page;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 

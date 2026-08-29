@@ -32,7 +32,7 @@ public class EstoqueService {
     public List<EstoqueResponse> listarTodos() {
         return estoqueRepository.findAll().stream()
                 .map(estoqueMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -79,7 +79,7 @@ public class EstoqueService {
         return estoqueRepository.findAll().stream()
                 .filter(Estoque::deveDispararAlertaEstoqueBaixo)
                 .map(estoqueMapper::toResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional

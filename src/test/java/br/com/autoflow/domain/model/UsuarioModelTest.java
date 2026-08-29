@@ -2,7 +2,6 @@ package br.com.autoflow.domain.model;
 
 import br.com.autoflow.domain.enums.Perfil;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Collection;

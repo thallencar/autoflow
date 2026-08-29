@@ -80,7 +80,7 @@ public class ClienteValidator {
             if (digito2 > 9) digito2 = 0;
 
             return digito2 == (cpf.charAt(10) - '0');
-        } catch (Exception e) {
+        } catch (Exception _) {
             return false;
         }
     }
@@ -109,7 +109,7 @@ public class ClienteValidator {
             digito2 = digito2 < 2 ? 0 : 11 - digito2;
 
             return digito2 == (cnpj.charAt(13) - '0');
-        } catch (Exception e) {
+        } catch (Exception _) {
             return false;
         }
     }

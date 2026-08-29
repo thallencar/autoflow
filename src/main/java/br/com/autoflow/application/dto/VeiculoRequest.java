@@ -11,7 +11,7 @@ public record VeiculoRequest(
 
         @NotBlank(message = "A placa é obrigatória.")
         @Pattern(
-                regexp = "^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$",
+                regexp = "^[A-Z]{3}\\d[A-Z\\d]\\d{2}$",
                 message = "A placa deve estar no formato antigo (AAA1234) ou Mercosul (AAA1A23)."
         )
         String placa,

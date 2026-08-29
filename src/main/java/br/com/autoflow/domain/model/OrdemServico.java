@@ -139,7 +139,7 @@ public class OrdemServico {
         validarRequisitosOrcamento(novoStatus);
         processarDiagnosticoEObservacao(novoStatus, observacao);
 
-        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime agora = LocalDateTime.now(ZoneId.systemDefault());
         executarMudancaStatus(novoStatus, agora, observacao);
 
         this.statusOS = novoStatus;
@@ -155,13 +155,11 @@ public class OrdemServico {
     }
 
     private void processarDiagnosticoEObservacao(StatusOS novoStatus, String observacao) {
-        if (novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
-            if (observacao != null && !observacao.isBlank()) {
-                if (this.dsDiagnostico != null && !this.dsDiagnostico.isBlank()) {
-                    this.dsDiagnostico = this.dsDiagnostico + " | " + observacao;
-                } else {
-                    this.dsDiagnostico = observacao;
-                }
+        if ((novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO) && observacao != null && !observacao.isBlank()) {
+            if (this.dsDiagnostico != null && !this.dsDiagnostico.isBlank()) {
+                this.dsDiagnostico = this.dsDiagnostico + " | " + observacao;
+            } else {
+                this.dsDiagnostico = observacao;
             }
         }
     }
@@ -173,10 +171,8 @@ public class OrdemServico {
                 StatusOS.EM_EXECUCAO
         );
 
-        if (statusPosDiagnostico.contains(novoStatus)) {
-            if (this.idsOrcamento == null || this.idsOrcamento.isEmpty()) {
-                throw new RegraNegocioException("Não é possível avançar de etapa sem ao menos um orçamento vinculado à Ordem de Serviço.");
-            }
+        if (statusPosDiagnostico.contains(novoStatus) && (this.idsOrcamento == null || this.idsOrcamento.isEmpty())) {
+            throw new RegraNegocioException("Não é possível avançar de etapa sem ao menos um orçamento vinculado à Ordem de Serviço.");
         }
     }
 
@@ -190,9 +186,10 @@ public class OrdemServico {
             case ENTREGUE -> tratarEntregue(agora);
             case CANCELADA -> tratarCancelada(agora, observacao);
             case RECEBIDA, ABANDONADO -> {
+                // Status iniciais ou passivos não requerem tratamentos de data adicionais na mudança de status
             }
-            default -> {
-            }
+            default ->
+                    throw new RegraNegocioException("Status de Ordem de Serviço não suportado: " + novoStatus);
         }
     }
 
@@ -212,7 +209,7 @@ public class OrdemServico {
         if (this.dtAprovacaoOrcamento == null) {
             this.dtAprovacaoOrcamento = agora;
         }
-        aprovarOrcamentosVinculados(agora);
+        aprovarOrcamentosVinculados();
         carregarServicosDosOrcamentosAprovados();
     }
 
@@ -224,7 +221,7 @@ public class OrdemServico {
         if (this.dataInicioExecucao == null) {
             this.dataInicioExecucao = agora;
         }
-        aprovarOrcamentosVinculados(agora);
+        aprovarOrcamentosVinculados();
         if (this.servicosExecucao.isEmpty()) {
             carregarServicosDosOrcamentosAprovados();
         }
@@ -294,7 +291,7 @@ public class OrdemServico {
         return null;
     }
 
-    private void aprovarOrcamentosVinculados(LocalDateTime dataAprovacao) {
+    private void aprovarOrcamentosVinculados() {
         if (this.idsOrcamento != null) {
             this.idsOrcamento.forEach(orcamento -> {
                 if (orcamento.getStatus() == StatusOrcamento.PENDENTE) {
@@ -323,7 +320,7 @@ public class OrdemServico {
             if (diasDecorridos > diasLimite) {
                 long diasExcedidos = diasDecorridos - diasLimite;
                 this.statusOS = StatusOS.CANCELADA;
-                this.dtEncerramentoOs = LocalDateTime.now(java.time.ZoneId.systemDefault());
+                this.dtEncerramentoOs = LocalDateTime.now(ZoneId.systemDefault());
                 this.dsMotivoCancelamento = "Cancelado automaticamente após " + diasLimite + " dias sem retorno do orçamento (Art. 40 CDC).";
                 this.taxaPermanencia = valorDiaria.multiply(BigDecimal.valueOf(diasExcedidos));
                 recusarOrcamentosVinculados();
@@ -339,7 +336,7 @@ public class OrdemServico {
             );
             if (diasDecorridos >= diasLimiteAbandono) {
                 this.statusOS = StatusOS.ABANDONADO;
-                this.dtEncerramentoOs = LocalDateTime.now(java.time.ZoneId.systemDefault());
+                this.dtEncerramentoOs = LocalDateTime.now(ZoneId.systemDefault());
                 this.dsMotivoCancelamento = "Veículo considerado abandonado após " + diasLimiteAbandono + " dias sem manifestação do cliente.";
             }
         }

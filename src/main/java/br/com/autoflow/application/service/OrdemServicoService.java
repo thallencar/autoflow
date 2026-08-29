@@ -143,13 +143,12 @@ public class OrdemServicoService {
         return ordens.map(mapper::toHistoricoResponse);
     }
 
-    @Scheduled(cron = "0 0 8 * * *")// Roda todo dia as 08:00 da manhã
+    @Scheduled(cron = "0 0 8 * * *")
     @Transactional
     public void processarCancelamentosAutomaticos() {
         List<OrdemServico> ordensPendentes = repository.findByStatusOS(StatusOS.AGUARDANDO_APROVACAO, Pageable.unpaged()).getContent();
 
         for (OrdemServico os : ordensPendentes) {
-            // Regra: Prazo limite de 3 dias e taxa de R$ 30,00 por dia excedido (Art. 40 CDC)
             StatusOS statusAntigo = os.getStatusOS();
             os.verificarCancelamentoAutomatico(3, BigDecimal.valueOf(30.00));
             if (statusAntigo != os.getStatusOS()) {
@@ -162,10 +161,9 @@ public class OrdemServicoService {
         }
     }
 
-    @Scheduled(cron = "0 0 9 * * *") // Roda todo dia às 09:00
+    @Scheduled(cron = "0 0 9 * * *")
     @Transactional
     public void processarAbandonoTecnico() {
-        // Busca OS aguardando aprovação para verificar abandono (ex: 60 dias)
         List<OrdemServico> ordensPendentes = repository.findByStatusOS(StatusOS.AGUARDANDO_APROVACAO, Pageable.unpaged()).getContent();
 
         for (OrdemServico os : ordensPendentes) {
@@ -177,7 +175,7 @@ public class OrdemServicoService {
                     liberarMecanico(os.getIdFuncionario());
                 }
                 repository.save(os);
-                log.warn("ALERTA AGENDADO: A OS ID {} foi marcada como abandonada tecnicamente.", os.getIdOs());
+                log.info("ALERTA AGENDADO: A OS ID {} foi marcada como abandonada tecnicamente.", os.getIdOs());
             }
         }
     }
@@ -229,10 +227,8 @@ public class OrdemServicoService {
     }
 
     private void validarRequisitosStatus(StatusOS novoStatus, String observacao, OrdemServico os) {
-        if (novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
-            if (os.getIdFuncionario() == null) {
-                throw new RegraNegocioException("Não é possível iniciar o diagnóstico sem um mecânico/funcionário alocado na Ordem de Serviço.");
-            }
+        if ((novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO) && os.getIdFuncionario() == null) {
+            throw new RegraNegocioException("Não é possível iniciar o diagnóstico sem um mecânico/funcionário alocado na Ordem de Serviço.");
         }
         if (novoStatus == StatusOS.AGUARDANDO_APROVACAO) {
             validator.validarDiagnosticoPreenchido(observacao);

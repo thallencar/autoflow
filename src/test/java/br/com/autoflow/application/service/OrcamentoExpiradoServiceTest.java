@@ -3,7 +3,6 @@ package br.com.autoflow.application.service;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.repository.OrcamentoRepository;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import static org.mockito.Mockito.*;
 
@@ -11,7 +10,7 @@ class OrcamentoExpiradoServiceTest {
 
     @Test
     void salvarOrcamentoExpirado_deveChamarRepositorio() {
-        OrcamentoRepository repo = Mockito.mock(OrcamentoRepository.class);
+        OrcamentoRepository repo = mock(OrcamentoRepository.class);
         OrcamentoExpiradoService svc = new OrcamentoExpiradoService(repo);
 
         Orcamento orc = new Orcamento();

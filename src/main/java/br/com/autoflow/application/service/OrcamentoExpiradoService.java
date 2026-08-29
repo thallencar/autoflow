@@ -3,11 +3,11 @@ package br.com.autoflow.application.service;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.repository.OrcamentoRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class OrcamentoExpiradoService {
 

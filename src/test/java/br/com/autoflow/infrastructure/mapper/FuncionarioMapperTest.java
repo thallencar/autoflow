@@ -36,7 +36,7 @@ class FuncionarioMapperTest {
                 .idFuncionario(UUID.randomUUID())
                 .cpf("oldcpf")
                 .ocupado(true)
-                .nr_advertencias(5)
+                .nrAdvertencias(5)
                 .build();
 
         mapper.updateEntityFromDto(req, existing);
@@ -44,7 +44,7 @@ class FuncionarioMapperTest {
         // campos ignorados não devem ser alterados
         assertNotNull(existing.getIdFuncionario());
         assertTrue(existing.isOcupado());
-        assertEquals(5, existing.getNr_advertencias());
+        assertEquals(5, existing.getNrAdvertencias());
 
         // campos atualizáveis devem mudar
         assertEquals("Carlos", existing.getNome());
@@ -89,7 +89,7 @@ class FuncionarioMapperTest {
                 .idFuncionario(UUID.randomUUID())
                 .cpf("oldcpf")
                 .ocupado(false)
-                .nr_advertencias(1)
+                .nrAdvertencias(1)
                 .endereco(Endereco.builder().cep("00000-000").build())
                 .build();
 

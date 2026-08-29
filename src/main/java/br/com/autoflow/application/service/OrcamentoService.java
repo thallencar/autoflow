@@ -95,7 +95,7 @@ public class OrcamentoService {
     public List<OrcamentoResponse> listarTodos() {
         return orcamentoRepository.findAll().stream()
                 .map(this::mapToResponseComAvisos)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -163,14 +163,12 @@ public class OrcamentoService {
             orcamento.getServicos().stream()
                     .filter(servico -> servico.getItens() != null)
                     .flatMap(servico -> servico.getItens().stream())
-                    .forEach(item -> {
-                        estoqueRepository.findById(item.getIdEstoque()).ifPresent(estoque -> {
-                            if (estoque.deveDispararAlertaEstoqueBaixo()) {
-                                avisosEstoque.add(String.format("ALERTA: O item '%s' atingiu nível crítico (%d restantes).",
-                                        estoque.getNomeItem(), estoque.getQuantidadeEstoque()));
-                            }
-                        });
-                    });
+                    .forEach(item -> estoqueRepository.findById(item.getIdEstoque()).ifPresent(estoque -> {
+                        if (estoque.deveDispararAlertaEstoqueBaixo()) {
+                            avisosEstoque.add(String.format("ALERTA: O item '%s' atingiu nível crítico (%d restantes).",
+                                    estoque.getNomeItem(), estoque.getQuantidadeEstoque()));
+                        }
+                    }));
         }
         return avisosEstoque;
     }

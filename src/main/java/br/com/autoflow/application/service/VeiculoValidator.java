@@ -41,7 +41,7 @@ public class VeiculoValidator {
     }
 
     private void validarAnoFabricacao(Short ano) {
-        int anoAtual = Year.now().getValue();
+        int anoAtual = Year.now(java.time.ZoneId.systemDefault()).getValue();
         if (ano > anoAtual + 1) {
             throw new RegraNegocioException("O ano de fabricação não pode ser maior que " + (anoAtual + 1));
         }
