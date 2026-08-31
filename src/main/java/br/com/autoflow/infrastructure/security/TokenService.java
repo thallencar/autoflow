@@ -55,12 +55,14 @@ public class TokenService {
                     .build()
                     .verify(token)
                     .getSubject();
-        } catch (JWTVerificationException exception) {
+        } catch (JWTVerificationException _) {
             return "";
         }
     }
 
     private Instant gerarDataExpiracao() {
-        return LocalDateTime.now().plusMinutes(expirationMinutes).toInstant(ZoneOffset.of("-03:00"));
+        return LocalDateTime.now(java.time.ZoneId.of("America/Sao_Paulo"))
+                .plusMinutes(expirationMinutes)
+                .toInstant(ZoneOffset.of("-03:00"));
     }
 }

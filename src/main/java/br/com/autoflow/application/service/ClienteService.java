@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ClienteService {
-    private final static String NOME_ENTIDADE = "Cliente";
+    private static final String NOME_ENTIDADE = "Cliente";
 
     private final ClienteRepository respository;
     private final EnderecoRepository enderecoRepository;

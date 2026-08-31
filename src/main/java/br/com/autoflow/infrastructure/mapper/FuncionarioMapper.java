@@ -2,7 +2,6 @@ package br.com.autoflow.infrastructure.mapper;
 
 import br.com.autoflow.application.dto.FuncionarioRequest;
 import br.com.autoflow.application.dto.FuncionarioResponse;
-import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.model.Funcionario;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

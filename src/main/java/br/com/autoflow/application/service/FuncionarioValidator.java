@@ -32,7 +32,7 @@ public class FuncionarioValidator {
         if (dataNascimento == null) {
             throw new RegraNegocioException("A data de nascimento é obrigatória.");
         }
-        long idade = ChronoUnit.YEARS.between(dataNascimento, LocalDate.now());
+        long idade = ChronoUnit.YEARS.between(dataNascimento, LocalDate.now(java.time.ZoneId.systemDefault()));
         if (idade < 16) {
             throw new RegraNegocioException("O funcionário deve ter no mínimo 16 anos.");
         }

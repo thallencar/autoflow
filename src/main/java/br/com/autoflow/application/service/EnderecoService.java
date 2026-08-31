@@ -16,7 +16,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class EnderecoService {
-    private final  static  String NOME_ENTIDADE = "Endereço";
+    private static final String NOME_ENTIDADE = "Endereço";
+
     private final EnderecoRepository repository;  
     private final EnderecoMapper enderecoMapper;
     private final EnderecoValidator enderecoValidator;
@@ -30,7 +31,7 @@ public class EnderecoService {
 
         return enderecoMapper.toResponse(endereco);
     }
-    
+
     public List<EnderecoResponse> listar() {
         return repository.findAll()
                 .stream()

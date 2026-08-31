@@ -5,7 +5,6 @@ import br.com.autoflow.domain.enums.*;
 import br.com.autoflow.domain.model.*;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

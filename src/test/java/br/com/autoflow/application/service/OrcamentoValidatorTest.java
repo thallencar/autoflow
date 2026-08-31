@@ -281,7 +281,8 @@ class OrcamentoValidatorTest {
         when(servicoValidator.buscarPorId(idServico)).thenReturn(new Servico());
         when(estoqueRepository.findById(idEstoque)).thenReturn(Optional.of(estoque));
 
-        assertThrows(RegraNegocioException.class, () -> validator.validarServicosRequest(List.of(servicoRequest)));
+        List<OrcamentoServicoRequest> servicosList = List.of(servicoRequest);
+        assertThrows(RegraNegocioException.class, () -> validator.validarServicosRequest(servicosList));
     }
 
     @Test

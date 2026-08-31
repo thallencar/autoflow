@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any; // <-- Import correto do Mockito
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
- class EstoqueServiceTest {
+class EstoqueServiceTest {
 
     @Mock
     private EstoqueRepository estoqueRepository;
@@ -160,11 +160,11 @@ import static org.mockito.Mockito.*;
         Estoque estoque = new Estoque();
 
         EstoqueRequest request = new EstoqueRequest(
-                "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.INSUMO
+                "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PECA_COMPARTILHADA
         );
 
         EstoqueResponse response = new EstoqueResponse(
-                id, "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.INSUMO
+                id, "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PECA_COMPARTILHADA
         );
 
         when(estoqueRepository.findById(id)).thenReturn(Optional.of(estoque));

@@ -9,7 +9,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.Clock;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +30,6 @@ public class OrdemServico {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "st_os", nullable = false, length = 30)
-    @Builder.Default
     private StatusOS statusOS = StatusOS.RECEBIDA;
 
     @Column(name = "ds_relato_cliente", nullable = false, length = 255)
@@ -76,7 +74,6 @@ public class OrdemServico {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "st_pagamento", nullable = false, length = 15)
-    @Builder.Default
     private StatusPagamento stPagamento = StatusPagamento.PENDENTE;
 
     @Column(name = "ds_motivo_cancelamento", length = 255)
@@ -106,7 +103,7 @@ public class OrdemServico {
     @PrePersist
     public void prePersist() {
         if (this.dtAberturaOs == null) {
-            this.dtAberturaOs = LocalDateTime.now(Clock.systemDefaultZone());
+            this.dtAberturaOs = LocalDateTime.now(ZoneId.systemDefault());
         }
         if (this.stPagamento == null) {
             this.stPagamento = StatusPagamento.PENDENTE;
@@ -142,7 +139,7 @@ public class OrdemServico {
         validarRequisitosOrcamento(novoStatus);
         processarDiagnosticoEObservacao(novoStatus, observacao);
 
-        LocalDateTime agora = LocalDateTime.now(Clock.systemDefaultZone());
+        LocalDateTime agora = LocalDateTime.now(ZoneId.systemDefault());
         executarMudancaStatus(novoStatus, agora, observacao);
 
         this.statusOS = novoStatus;
@@ -158,11 +155,12 @@ public class OrdemServico {
     }
 
     private void processarDiagnosticoEObservacao(StatusOS novoStatus, String observacao) {
-        if ((novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO)
-                && observacao != null && !observacao.isBlank()) {
-            this.dsDiagnostico = (this.dsDiagnostico != null && !this.dsDiagnostico.isBlank())
-                    ? this.dsDiagnostico + " | " + observacao
-                    : observacao;
+        if ((novoStatus == StatusOS.EM_DIAGNOSTICO || novoStatus == StatusOS.AGUARDANDO_APROVACAO) && observacao != null && !observacao.isBlank()) {
+            if (this.dsDiagnostico != null && !this.dsDiagnostico.isBlank()) {
+                this.dsDiagnostico = this.dsDiagnostico + " | " + observacao;
+            } else {
+                this.dsDiagnostico = observacao;
+            }
         }
     }
 
@@ -173,10 +171,8 @@ public class OrdemServico {
                 StatusOS.EM_EXECUCAO
         );
 
-        if (statusPosDiagnostico.contains(novoStatus)) {
-            if (this.idsOrcamento == null || this.idsOrcamento.isEmpty()) {
-                throw new RegraNegocioException("Não é possível avançar de etapa sem ao menos um orçamento vinculado à Ordem de Serviço.");
-            }
+        if (statusPosDiagnostico.contains(novoStatus) && (this.idsOrcamento == null || this.idsOrcamento.isEmpty())) {
+            throw new RegraNegocioException("Não é possível avançar de etapa sem ao menos um orçamento vinculado à Ordem de Serviço.");
         }
     }
 
@@ -190,11 +186,10 @@ public class OrdemServico {
             case ENTREGUE -> tratarEntregue(agora);
             case CANCELADA -> tratarCancelada(agora, observacao);
             case RECEBIDA, ABANDONADO -> {
-                // no operation required for RECEBIDA or ABANDONADO
+                // Status iniciais ou passivos não requerem tratamentos de data adicionais na mudança de status
             }
-            default -> {
-                // default: no operation
-            }
+            default ->
+                    throw new RegraNegocioException("Status de Ordem de Serviço não suportado: " + novoStatus);
         }
     }
 
@@ -268,8 +263,8 @@ public class OrdemServico {
     public Long getTempoTotalExecucaoMinutos() {
         if (this.dataInicioExecucao != null && this.dataFimExecucao != null) {
             return java.time.Duration.between(
-                    this.dataInicioExecucao.atZone(ZoneId.systemDefault()).toInstant(),
-                    this.dataFimExecucao.atZone(ZoneId.systemDefault()).toInstant()
+                    this.dataInicioExecucao.atZone(java.time.ZoneId.systemDefault()),
+                    this.dataFimExecucao.atZone(java.time.ZoneId.systemDefault())
             ).toMinutes();
         }
         return null;
@@ -319,13 +314,13 @@ public class OrdemServico {
     public void verificarCancelamentoAutomatico(int diasLimite, BigDecimal valorDiaria) {
         if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
             long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(
-                    this.dtFimDiagnostico.atZone(ZoneId.systemDefault()),
-                    LocalDateTime.now(Clock.systemDefaultZone()).atZone(ZoneId.systemDefault())
+                    this.dtFimDiagnostico.atZone(java.time.ZoneId.systemDefault()),
+                    LocalDateTime.now(java.time.ZoneId.systemDefault()).atZone(java.time.ZoneId.systemDefault())
             );
             if (diasDecorridos > diasLimite) {
                 long diasExcedidos = diasDecorridos - diasLimite;
                 this.statusOS = StatusOS.CANCELADA;
-                this.dtEncerramentoOs = LocalDateTime.now(Clock.systemDefaultZone());
+                this.dtEncerramentoOs = LocalDateTime.now(ZoneId.systemDefault());
                 this.dsMotivoCancelamento = "Cancelado automaticamente após " + diasLimite + " dias sem retorno do orçamento (Art. 40 CDC).";
                 this.taxaPermanencia = valorDiaria.multiply(BigDecimal.valueOf(diasExcedidos));
                 recusarOrcamentosVinculados();
@@ -336,12 +331,12 @@ public class OrdemServico {
     public void verificarAbandonoTecnico(int diasLimiteAbandono) {
         if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
             long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(
-                    this.dtFimDiagnostico.atZone(ZoneId.systemDefault()),
-                    LocalDateTime.now(Clock.systemDefaultZone()).atZone(ZoneId.systemDefault())
+                    this.dtFimDiagnostico.atZone(java.time.ZoneId.systemDefault()),
+                    LocalDateTime.now(java.time.ZoneId.systemDefault()).atZone(java.time.ZoneId.systemDefault())
             );
             if (diasDecorridos >= diasLimiteAbandono) {
                 this.statusOS = StatusOS.ABANDONADO;
-                this.dtEncerramentoOs = LocalDateTime.now(Clock.systemDefaultZone());
+                this.dtEncerramentoOs = LocalDateTime.now(ZoneId.systemDefault());
                 this.dsMotivoCancelamento = "Veículo considerado abandonado após " + diasLimiteAbandono + " dias sem manifestação do cliente.";
             }
         }

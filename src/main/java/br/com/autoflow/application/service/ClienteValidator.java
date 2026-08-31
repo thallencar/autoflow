@@ -26,7 +26,7 @@ public class ClienteValidator {
         if(dataNascimento == null) {
             throw new RegraNegocioException("A data de nascimento é obrigatória");
         }
-        long idade = ChronoUnit.YEARS.between(dataNascimento, LocalDate.now());
+        long idade = ChronoUnit.YEARS.between(dataNascimento, LocalDate.now(java.time.ZoneId.systemDefault()));
         if (idade < 18) {
             throw new RegraNegocioException("O cliente deve ter no mínimo 18 anos.");
         }
@@ -80,7 +80,7 @@ public class ClienteValidator {
             if (digito2 > 9) digito2 = 0;
 
             return digito2 == (cpf.charAt(10) - '0');
-        } catch (Exception e) {
+        } catch (Exception _) {
             return false;
         }
     }
@@ -109,7 +109,7 @@ public class ClienteValidator {
             digito2 = digito2 < 2 ? 0 : 11 - digito2;
 
             return digito2 == (cnpj.charAt(13) - '0');
-        } catch (Exception e) {
+        } catch (Exception _) {
             return false;
         }
     }

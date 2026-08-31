@@ -52,11 +52,9 @@ public class Funcionario  implements Serializable {
     private Endereco endereco;
 
     @Column(name = "st_ocupado")
-    @Builder.Default
     private boolean ocupado = false;
 
     @Column(name = "nr_advertencias")
-    @Builder.Default
     private int nrAdvertencias = 0;
 
     public void ocupar() {

@@ -182,10 +182,17 @@ class OrdemServicoValidatorTest {
     // --- TESTES DE ORÇAMENTO ---
 
     @Test
-    @DisplayName("Deve retornar lista vazia se ids de orçamento forem nulos ou vazios")
+    @DisplayName("Deve retornar lista vazia se ids de orçamento forem nulos")
     void deveRetornarListaVaziaSeOrcamentosNulos() {
-        assertTrue(validator.validarECarregarOrcamentosParaOS(null).isEmpty());
-        assertTrue(validator.validarECarregarOrcamentosParaOS(Collections.emptyList()).isEmpty());
+        List<UUID> orcamentosNulos = null;
+        assertTrue(validator.validarECarregarOrcamentosParaOS(orcamentosNulos).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Deve retornar lista vazia se ids de orçamento forem vazios")
+    void deveRetornarListaVaziaSeOrcamentosVazios() {
+        List<UUID> orcamentosVazios = Collections.emptyList();
+        assertTrue(validator.validarECarregarOrcamentosParaOS(orcamentosVazios).isEmpty());
     }
 
     @Test
@@ -232,7 +239,9 @@ class OrdemServicoValidatorTest {
     @Test
     @DisplayName("Deve lançar exceção se KM de entrada for negativo")
     void deveLancarExcecaoKmNegativo() {
-        assertThrows(RegraNegocioException.class, () -> validator.validarKmEntrada(UUID.randomUUID(), -10));
+        UUID veiculoId = UUID.randomUUID();
+        int kmNegativo = -10;
+        assertThrows(RegraNegocioException.class, () -> validator.validarKmEntrada(veiculoId, kmNegativo));
     }
 
     @Test
@@ -245,7 +254,8 @@ class OrdemServicoValidatorTest {
         when(ordemServicoRepository.findTopByIdVeiculoOrderByDtAberturaOsDesc(veiculoId))
                 .thenReturn(Optional.of(ultimaOs));
 
-        assertThrows(RegraNegocioException.class, () -> validator.validarKmEntrada(veiculoId, 40000));
+        int kmAtual = 40000;
+        assertThrows(RegraNegocioException.class, () -> validator.validarKmEntrada(veiculoId, kmAtual));
     }
 
     // --- TESTES DE PAGAMENTO ---
@@ -317,9 +327,15 @@ class OrdemServicoValidatorTest {
     }
 
     @Test
-    @DisplayName("Deve lançar exceção se diagnóstico estiver em branco ou nulo")
-    void deveLancarExcecaoDiagnosticoVazio() {
+    @DisplayName("Deve lançar exceção se diagnóstico for nulo")
+    void deveLancarExcecaoDiagnosticoNulo() {
         assertThrows(RegraNegocioException.class, () -> validator.validarDiagnosticoPreenchido(null));
-        assertThrows(RegraNegocioException.class, () -> validator.validarDiagnosticoPreenchido("   "));
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção se diagnóstico estiver em branco")
+    void deveLancarExcecaoDiagnosticoEmBranco() {
+        String diagnosticoEmBranco = "   ";
+        assertThrows(RegraNegocioException.class, () -> validator.validarDiagnosticoPreenchido(diagnosticoEmBranco));
     }
 }

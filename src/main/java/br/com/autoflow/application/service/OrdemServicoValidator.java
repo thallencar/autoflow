@@ -103,7 +103,7 @@ public class OrdemServicoValidator {
                             idOrcamento, orcamento.getStatus())
             );
         }
-        if (orcamento.getDataExpiracao() != null && LocalDateTime.now().isAfter(orcamento.getDataExpiracao())) {
+        if (orcamento.getDataExpiracao() != null && LocalDateTime.now(java.time.ZoneId.systemDefault()).isAfter(orcamento.getDataExpiracao())) {
             throw new RegraNegocioException(
                     String.format("O orçamento (ID: %s) está expirado. Solicite uma atualização.", idOrcamento)
             );
@@ -161,12 +161,12 @@ public class OrdemServicoValidator {
             if (dtAceite == null) {
                 throw new RegraNegocioException("A data do aceite do termo deve ser informada quando o termo for assinado.");
             }
-            LocalDate dataHoje = LocalDate.now();
+            LocalDate dataHoje = LocalDate.now(java.time.ZoneId.systemDefault());
             LocalDate dataAceite = dtAceite.toLocalDate();
             if (dataAceite.isAfter(dataHoje)) {
                 throw new RegraNegocioException("A data do aceite do termo não pode estar no futuro.");
             }
-            if (dtAceite.isAfter(LocalDateTime.now())) {
+            if (dtAceite.isAfter(LocalDateTime.now(java.time.ZoneId.systemDefault()))) {
                 throw new RegraNegocioException("A hora do aceite do termo não pode estar no futuro.");
             }
         }

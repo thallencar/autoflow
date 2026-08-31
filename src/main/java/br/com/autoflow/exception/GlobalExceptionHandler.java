@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +20,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ApiErrorResponse(
-                        LocalDateTime.now(),
+                        LocalDateTime.now(ZoneId.systemDefault()),
                         HttpStatus.NOT_FOUND.value(),
                         ex.getMessage()
                 ));
@@ -31,7 +32,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ApiErrorResponse(
-                        LocalDateTime.now(),
+                        LocalDateTime.now(ZoneId.systemDefault()),
                         HttpStatus.CONFLICT.value(),
                         ex.getMessage()
                 ));
@@ -52,13 +53,14 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest().body(errors);
     }
+
     @ExceptionHandler(RegraNegocioException.class)
     public ResponseEntity<ApiErrorResponse> handleFuncionarioMenorDeIdade(RegraNegocioException ex) {
         ApiErrorResponse error = new ApiErrorResponse(
-                LocalDateTime.now(),
+                LocalDateTime.now(ZoneId.systemDefault()),
                 HttpStatus.BAD_REQUEST.value(),
                 ex.getMessage()
-                );
+        );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 }
