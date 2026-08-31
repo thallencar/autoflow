@@ -1,27 +1,53 @@
 # AutoFlow
-Sistema para gerenciamento dos processos de uma oficina mecânica, centralizando o ciclo de vida das Ordens de Serviço (OS), desde a abertura até a entrega do veículo.
 
-## Contexto
-O AutoFlow foi desenvolvido para substituir processos manuais e descentralizados, como anotações e planilhas, por um fluxo centralizado de atendimento e execução de serviços.
+![V1.1.0](https://img.shields.io/badge/V1.1.0-gray?style=for-the-badge)
 
-O sistema fornece suporte para:
-
-- Cadastro e gerenciamento de clientes e veículos;
-- Abertura e acompanhamento de Ordens de Serviço;
-- Registro de diagnóstico e serviços necessários;
-- Elaboração e acompanhamento de orçamentos;
-- Reserva, baixa e devolução de peças e insumos;
-- Registro e acompanhamento da execução dos serviços;
-- Controle do pagamento da OS;
-- Registro da entrega do veículo;
-- Notificações relacionadas ao andamento da OS;
-- Registro de informações necessárias para acompanhamento do tempo de execução.
+_Sistema para gerenciamento dos processos de uma oficina mecânica, centralizando o ciclo de vida das Ordens de Serviço (OS), desde a abertura até a entrega do veículo._
 
 ---
 
-## Fluxo da Ordem de Serviço
+## 🗄️ Seções do Documento
 
-A OS representa o principal fluxo do sistema:
+| Seção                                             | Subseções                                                                                |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [🎯 Visão Geral](#-visão-geral)                   | [Objetivo](#objetivo-do-sistema), [Stack](#stack-tecnológica), [Fluxo](#fluxo-principal) |
+| [🏗️ Arquitetura](#-arquitetura)                   | [Estrutura](#estrutura-da-solucao), [Diagrama](#diagrama-de-alto-nível)                  |
+| [💼 Regras de Negócio](#-regras-de-negócio)       | [Regras implementadas](#regras-implementadas)                                            |
+| [📚 Documentação Oficial](#-documentação-oficial) | [Negócio](#negócio), [Técnica](#técnica), [Arquitetura](#arquitetura-1)                  |
+| [⚙️ Execução](#-execução)                         | [Comandos rápidos](#comandos-rápidos), [Docker](#docker), [SonarQube](#sonarqube)        |
+| [✅ Observações](#-observações)                   | [Importantes](#observações-importantes), [Execução local](#execução-local)               |
+
+---
+
+## 🎯 Visão Geral
+
+### Objetivo do Sistema
+
+O AutoFlow foi desenvolvido para substituir processos manuais e descentralizados, como anotações e planilhas, por um fluxo centralizado de atendimento e execução de serviços.
+
+**Propósito:**
+
+- Centralizar o ciclo de vida da Ordem de Serviço.
+- Controlar o fluxo entre recebimento, diagnóstico, aprovação, execução e entrega.
+- Apoiar a gestão de estoque, orçamento, pagamento e histórico operacional.
+
+### Stack Tecnológica
+
+- Java 25
+- Spring Boot 4.1.0
+- Spring Web MVC
+- Spring Data JPA
+- Spring Security
+- PostgreSQL
+- JWT (Auth0)
+- Springdoc OpenAPI
+- Lombok + MapStruct
+- Maven
+- Docker / Docker Compose
+- SonarQube
+- JaCoCo
+
+### Fluxo Principal
 
 ```text
 Recebida
@@ -37,226 +63,156 @@ Finalizada
 Entregue
 ```
 
-Em determinadas situações, como fluxos e exceções. a OS pode assumir o status de ``Cancelada``.
+### Miro / DDD de apoio
 
-## Principais Atores
+<p>
+  <img src="docs/%5BSOAT18%5D%20DDD%20-%20Mec%C3%A2nica%20-%20Event%20Storming.jpg" alt="DDD Event Storming" width="820" />
+</p>
 
-### Cliente
-Interage com o sistema para:
+<p>
+  <img src="docs/%5BSOAT18%5D%20DDD%20-%20Mec%C3%A2nica%20-%20Eventos%20Pivotais%20(CMD,%20POL,%20ML,%20AT).jpg" alt="DDD Eventos Pivotais" width="820" />
+</p>
 
-- Acompanhar sua Ordem de Serviço;
-- Receber orçamentos;
-- Aprovar ou rejeitar orçamentos;
-- Realizar o pagamento;
-- Retirar o veículo.
+---
 
-## Recepcionista
-Utiliza o sistema para:
+## 🏗️ Arquitetura
 
-- Cadastrar e identificar clientes;
-- Cadastrar e vincular veículos;
-- Abrir Ordens de Serviço;
-- Acompanhar o andamento das OS;
-- Registrar e confirmar informações relacionadas ao pagamento;
-- Registrar ou confirmar a entrega do veículo.
+### Estrutura da Solução
 
-## Mecânico
-Utiliza o sistema para:
+O sistema segue uma arquitetura monolítica modular em Spring Boot, organizada por camadas de domínio, aplicação, interfaces e infraestrutura. A documentação detalhada está em:
 
-- Consultar novas Ordens de Serviço;
-- Registrar diagnósticos;
-- Identificar serviços, peças e insumos necessários;
-- Participar da elaboração de orçamentos;
-- Registrar necessidades adicionais durante a execução;
-- Registrar informações da execução dos serviços;
-- Acompanhar alertas relacionados ao estoque.
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [HLD.md](docs/HLD.md)
+- [LLD.md](docs/LLD.md)
+- [DAS.md](docs/DAS.md)
 
-## Regras de Negócio
+### Diagrama de alto nível
 
-
-## Linguagem do Domínio
-| Termo                      | Significado                                                           |
-| -------------------------- | --------------------------------------------------------------------- |
-| **OS / Ordem de Serviço**  | Registro que acompanha o atendimento e execução do serviço do veículo |
-| **Diagnóstico**            | Avaliação técnica para identificar necessidades do veículo            |
-| **Orçamento**              | Proposta de serviços e peças para a OS                                |
-| **Orçamento inicial**      | Proposta baseada no diagnóstico inicial                               |
-| **Orçamento complementar** | Proposta para necessidades identificadas durante a execução           |
-| **Serviço**                | Trabalho realizado no veículo                                         |
-| **Peça**                   | Item utilizado durante a execução                                     |
-| **Insumo**                 | Material consumível utilizado durante a execução                      |
-| **Reserva**                | Separação temporária de itens do estoque para uma OS                  |
-| **Baixa**                  | Retirada definitiva de itens do estoque                               |
-| **Estoque mínimo**         | Limite utilizado para geração de alertas                              |
-| **Aguardando peça**        | Situação em que a execução depende da disponibilidade de uma peça     |
-| **Aprovação**              | Aceite do orçamento pelo cliente                                      |
-| **Rejeição**               | Recusa do orçamento pelo cliente                                      |
-| **Pagamento**              | Quitação do valor devido pela OS                                      |
-| **Entrega**                | Devolução do veículo ao cliente                                       |
-
-## Métricas
-
-## Notificações
-
-## Arquitetura
-
-O projeto é implementado como um **monolito em arquitetura em camadas**, organizado em:
-
-```text
-src/main/java/br/com/autoflow/
-
-├── interface/
-├── application/
-├── domain/
-└── infrastructure/
-```
-A aplicação possui uma única unidade de execução e deploy, mantendo a separação de responsabilidades entre as camadas.
-
-```text
-Interface → Application → Domain
-                  ↓
-           Infrastructure
+```mermaid
+flowchart LR
+    Cliente[Cliente / app] --> API[API REST]
+    Admin[Admin] --> API
+    Funcionario[Mecânico / funcionário] --> API
+    API --> OS[Ordem de Serviço]
+    OS --> Orcamento[Orçamento]
+    OS --> Estoque[Estoque]
+    OS --> Pagamento[Pagamento]
+    OS --> Historico[Histórico e métricas]
+    API --> JWT[Segurança JWT]
+    API --> DB[(PostgreSQL)]
 ```
 
-As regras de negócio são mantidas no domínio, enquanto detalhes de persistência e infraestrutura permanecem isolados das regras centrais da aplicação.
+---
 
-## Estrutura do projeto
+## 💼 Regras de Negócio
 
-```text
-src/
-└── main/
-    ├── java/
-    │   └── br/com/autoflow/
-    │       ├── interface/
-    │       ├── application/
-    │       ├── domain/
-    │       └── infrastructure/
-    │
-    └── resources/
-        └── application.properties
+### Regras implementadas
+
+As regras abaixo refletem o comportamento identificado no código e na lógica de domínio do projeto:
+
+- **Início por agendamento e limite de pátio:** A Ordem de Serviço (OS) exige agendamento prévio para ser iniciada e está sujeita ao limite de capacidade do pátio.
+- **Atribuição do mecânico:** A abertura da OS e a etapa de diagnóstico são vinculadas obrigatoriamente a um mecânico responsável.
+- **Ciclo de vida do orçamento:** O orçamento transita entre os status: Pendente, Aprovado, Recusado, Expirado e Cancelado.
+- **Aprovação via app:** A aprovação do orçamento é realizada diretamente pelo cliente através do aplicativo.
+- **Transição de status garantida:** A OS só evolui no fluxo quando a mudança de status respeita as regras de transição permitidas.
+- **Bloqueio de liberação:** A entrega do veículo permanece bloqueada enquanto houver pendência financeira/pagamento em aberto.
+- **Estorno de estoque:** Peças reservadas retornam automaticamente ao estoque quando o orçamento é recusado pelo cliente.
+- **Validade da reserva:** A reserva de peças permanece ativa somente enquanto a OS correspondente mantiver status ativo.
+- **Dedicação do mecânico:** Um mecânico atende exclusivamente um único veículo por vez (com apoio de auxiliar, se necessário).
+- **Unicidade de serviços:** Não é permitida a inserção de um mesmo serviço duplicado em uma única OS.
+- **Precedência do orçamento complementar:** Um orçamento complementar exige a existência e validação prévia de um orçamento inicial.
+- **Pausa e SLA de complementares:** O orçamento complementar fica pausado aguardando o cliente e expira após 24 horas.
+- **Alerta de estoque crítico:** O sistema dispara alertas para estoque baixo focado exclusivamente em peças compartilhadas.
+- **Histórico e métrica operacional:** O sistema consolida o histórico completo por veículo e registra as métricas de tempo de execução e finalização.
+- **Varredura e SLA de cancelamento:** Orçamentos pendentes sem aprovação em até 3 dias úteis são cancelados automaticamente com cobrança diária de R$ 30,00 de permanência.
+- **Varredura e SLA de abandono técnico:** Veículos sem resposta ou inativos por 60 dias entram em status de abandono técnico com notificação formal.
+
+> O gateway de pagamento e as notificações do cliente continuam como evolução de implementação futura. A base operacional do sistema, o fluxo de decisão e o controle de status já estão implementados, mas a integração externa de pagamento e a notificação automatizada completa ainda não fazem parte da solução atual.
+
+---
+
+## 📚 Documentação Oficial
+
+### Negócio
+
+- [BUSINESS.md](docs/BUSINESS.md)
+
+### Técnica
+
+- [TECHNICAL.md](docs/TECHNICAL.md)
+
+### Arquitetura
+
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [HLD.md](docs/HLD.md)
+- [LLD.md](docs/LLD.md)
+- [DAS.md](docs/DAS.md)
+- [ADR.md](docs/ADR.md)
+
+---
+
+## ⚙️ Execução
+
+### Comandos rápidos
+
+```bash
+./mvnw clean package
+./mvnw spring-boot:run
 ```
 
-### Tecnologias
-- **Java 25** — linguagem principal
-- **Spring Boot 4** — framework da aplicação
-- **Spring Web** — API REST
-- **Spring Data JPA** — persistência
-- **Hibernate** — ORM
-- **PostgreSQL** — banco de dados relacional
-- **Supabase** — hospedagem inicial do PostgreSQL
-- **Maven** — build e gerenciamento de dependências
-- **Maven Wrapper** — execução padronizada do Maven
-- **OpenAPI / Swagger** — documentação da API
+### Docker
 
-## Executando com Docker
-
-É necessário ter o Docker instalado localmente para executar o projeto via Docker Compose.
-
-Se for a primeira vez, execute:
-
-```
-docker compose up --build
+```bash
+docker compose up -d
+docker compose logs -f autoflow-app
 ```
 
-Se já houve build anterior e você quiser subir apenas os containers novamente, use:
-
-```
-docker compose up
-```
-
-Após iniciar, a documentação Swagger estará disponível em:
-
-```
-http://localhost:8080/swagger-ui/index.html#/
-```
-
-Para encerrar, use Ctrl+C ou `docker compose down`.
-
-## SonarQube local
-
-Para acompanhar qualidade de código e cobertura localmente com SonarQube, siga os passos abaixo.
-
-### Pré-requisitos
-
-- Docker instalado e em execução
-- Docker Compose disponível
-- Java 25 e Maven instalados na máquina
-- Projeto clonado localmente
-
-### 1) Subir o SonarQube
+### SonarQube
 
 ```bash
 docker compose up -d sonarqube
+./mvnw clean verify
+./mvnw sonar:sonar -Dsonar.host.url=http://localhost:9000
 ```
 
-Acesse a interface web em:
+---
 
-```text
-http://localhost:9000
-```
+## ✅ Observações
 
-Na primeira vez, faça login com:
+### Observações importantes
 
-```text
-usuário: admin
-senha: admin
-```
+- O projeto usa autenticação stateless com JWT e autorização por perfil.
+- Há testes automatizados em `src/test/java` e cobertura via JaCoCo.
+- O banco principal é PostgreSQL.
+- O sistema possui regras agendadas para cancelamento e abandono técnico.
+- O fluxo de recepção no código é administrado pelo perfil de admin do sistema, não como um papel de recepcionista separado.
+- A regra de quantidade mínima de estoque foi identificada como débito técnico e não como regra plenamente implementada na camada de negócio atual.
 
-Recomendado: altere a senha e crie um projeto local no Sonar.
+### Execução local
 
-### 2) Gerar a cobertura de testes
+**Pré-requisitos:**
 
-O projeto já está configurado com JaCoCo e gera o relatório em:
+- JDK 25;
+- Maven Wrapper ou Maven instalado;
+- PostgreSQL acessível por configuração de ambiente;
+- Docker e Docker Compose opcionalmente para execução e Sonar.
 
-```text
-target/site/jacoco/jacoco.xml
-```
-
-Execute:
+**Comandos básicos:**
 
 ```bash
-mvn clean verify
+./mvnw clean package
+./mvnw spring-boot:run
+./mvnw test
 ```
 
-Isso gera os relatórios de testes e cobertura para o Sonar consumir.
+**No Windows:**
 
-### 3) Enviar análise para o SonarQube
-
-Para analisar o projeto no Sonar local, execute:
-
-```bash
-mvn sonar:sonar \
-  -Dsonar.host.url=http://localhost:9000 \
-  -Dsonar.login=admin \
-  -Dsonar.password=admin
+```powershell
+.\mvnw.cmd clean package
+.\mvnw.cmd spring-boot:run
+.\mvnw.cmd test
 ```
 
-Se preferir usar um token do projeto no Sonar:
+###### NOTA: O repositório não contém um `application.properties` na pasta `src/main/resources`, portanto os valores de datasource e JWT precisam ser informados no ambiente da execução.
 
-```bash
-mvn sonar:sonar \
-  -Dsonar.host.url=http://localhost:9000 \
-  -Dsonar.token=SEU_TOKEN_AQUI
-```
-
-### 4) Observações
-
-- O comando `docker compose up` sobe todos os serviços do projeto (aplicação + SonarQube), conforme necessário.
-- Para subir apenas o SonarQube, use `docker compose up -d sonarqube`.
-- Para o build local em CI ou desenvolvimento, o comando recomendado é:
-
-```bash
-mvn clean verify
-```
-
-- Para rodar tudo em Docker pela primeira vez, ainda use:
-
-```bash
-docker compose up --build
-```
-
-- Se já tiver o ambiente montado, o uso mais rápido é:
-
-```bash
-docker compose up
-```
+---
