@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 public interface OrcamentoMapper {
 
     @Mapping(source = "ordemServico.idOs", target = "idOs")
-    @Mapping(target = "avisosEstoque", ignore = true)
     OrcamentoResponse toResponse(Orcamento orcamento);
 
     @Mapping(source = "orcamentoServico.id", target = "idOrcamento")
@@ -46,7 +45,6 @@ public interface OrcamentoMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(source = "idServico", target = "servico.idServico")
     @Mapping(source = "maoDeObra", target = "maoDeObra")
-    @Mapping(target = "orcamento", ignore = true)
     OrcamentoServico toEntity(OrcamentoServicoRequest request);
 
     @AfterMapping
