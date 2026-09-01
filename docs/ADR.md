@@ -1,6 +1,6 @@
 # ADR - Architecture Decision Record
 
-![V1.1.0](https://img.shields.io/badge/V1.1.0-gray?style=for-the-badge)
+![V1.2.0](https://img.shields.io/badge/V1.2.0-gray?style=for-the-badge)
 
 _Registro das decisões arquiteturais tomadas para o AutoFlow, com contexto, decisão e consequências observadas no projeto._
 
@@ -8,12 +8,16 @@ _Registro das decisões arquiteturais tomadas para o AutoFlow, com contexto, dec
 
 ## 🗄️ Seções do Documento
 
-| Seção                                                   | Subseções                                                                                                                 |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| [🎯 Decisões Atuais](#-decisões-atuais)                 | [ADR-01](#adr-01--monólito-modular-em-spring-boot), [ADR-02](#adr-02--persistência-relacional-com-jpa--postgresql)        |
-| [🏗️ Arquitetura e Segurança](#-arquitetura-e-segurança) | [ADR-03](#adr-03--autenticação-stateless-com-jwt), [ADR-04](#adr-04--autorização-por-perfil-e-rota)                       |
-| [💼 Regras e Automação](#-regras-e-automação)           | [ADR-05](#adr-05--regras-de-negócio-em-serviço-e-domínio), [ADR-06](#adr-06--regras-agendadas-para-processos-automáticos) |
-| [⚙️ Infraestrutura](#-infraestrutura)                   | [ADR-07](#adr-07--docker-como-ambiente-de-execução-e-validação), [Em aberto](#decisões-futuras-em-aberto)                 |
+| Seção | Subseções |
+| --- | --- |
+| [🎯 Decisões Atuais](#-decisões-atuais) | [ADR-01](#adr-01--monólito-modular-em-spring-boot), [ADR-02](#adr-02--persistência-relacional-com-jpa--postgresql) |
+| [🏗️ Arquitetura e Segurança](#️-arquitetura-e-segurança) | [ADR-03](#adr-03--autenticação-stateless-com-jwt), [ADR-04](#adr-04--autorização-por-perfil-e-rota) |
+| [💼 Regras e Automação](#-regras-e-automação) | [ADR-05](#adr-05--regras-de-negócio-em-serviço-e-domínio), [ADR-06](#adr-06--regras-agendadas-para-processos-automáticos) |
+| [⚙️ Infraestrutura](#️-infraestrutura) | [ADR-07](#adr-07--docker-como-ambiente-de-execução-e-validação) |
+| [📊 Design e Contratos](#-design-e-contratos) | [ADR-08](#adr-08--dtos-como-contratos-da-api), [ADR-09](#adr-09--mapstruct-para-conversão-entre-dtos-e-entidades) |
+| [🗃️ Modelo de Dados](#️-modelo-de-dados) | [ADR-10](#adr-10--ordem-de-serviço-com-múltiplos-orçamentos), [ADR-11](#adr-11--composição-do-orçamento-por-serviços-e-itens) |
+| [⚠️ Tratamento de Falhas](#️-tratamento-de-falhas) | [ADR-12](#adr-12--tratamento-centralizado-de-exceções-da-api) |
+| [🔭 Decisões Futuras](#-decisões-futuras) | [Em aberto](#decisões-futuras-em-aberto) |
 
 ---
 
@@ -25,18 +29,24 @@ _Registro das decisões arquiteturais tomadas para o AutoFlow, com contexto, dec
 
 **Contexto:**
 
-O domínio principal é operacional e relativamente coeso: gestão de ordem de serviço, orçamento, estoque e acompanhamento. O projeto não apresenta, no momento, necessidade comprovada de decomposição em serviços independentes.
+O domínio principal é operacional e relativamente coeso, concentrando gestão de Ordem de Serviço, orçamento, estoque, atendimento e acompanhamento da oficina.
+
+O projeto não apresenta, no estado atual, necessidade comprovada de decomposição em serviços independentes.
 
 **Decisão:**
 
-Adotar um monólito modular em Java com Spring Boot, organizando o código por pacotes e camadas.
+Adotar uma aplicação monolítica em Java com Spring Boot, estruturada internamente por responsabilidades e camadas.
+
+A aplicação mantém os principais componentes dentro de uma única unidade de execução, utilizando pacotes para separar domínio, aplicação, interface e infraestrutura.
 
 **Consequências:**
 
-- desenvolvimento e manutenção mais simples para a primeira fase do sistema;
-- baixa complexidade operacional e infraestrutural;
-- maior facilidade de rastrear regras de negócio dentro de um mesmo processo de execução;
-- limitação de autonomia de escala por domínio, caso o sistema cresça em volume e complexidade.
+- desenvolvimento e manutenção mais simples para a fase atual do projeto;
+- menor complexidade operacional e infraestrutural;
+- facilidade de rastrear regras e fluxos dentro do mesmo processo;
+- comunicação direta entre componentes internos;
+- menor independência de implantação e escalabilidade entre partes do domínio;
+- eventual crescimento do sistema pode exigir revisão dessa decisão.
 
 ### ADR-02 — Persistência relacional com JPA + PostgreSQL
 
@@ -44,18 +54,35 @@ Adotar um monólito modular em Java com Spring Boot, organizando o código por p
 
 **Contexto:**
 
-O domínio possui relações fortes entre cliente, veículo, OS, orçamento, serviços e estoque. Isso favorece modelos transacionais e consultas históricas estruturadas.
+O domínio possui relações fortes entre:
+
+- cliente;
+- veículo;
+- Ordem de Serviço;
+- orçamento;
+- serviços;
+- itens;
+- estoque;
+- usuários;
+- funcionários.
+
+Parte relevante das operações exige consistência entre diferentes registros e manutenção do histórico dos atendimentos.
 
 **Decisão:**
 
-Usar Spring Data JPA com PostgreSQL como banco principal da aplicação.
+Utilizar PostgreSQL como banco de dados relacional principal e Spring Data JPA como abstração de persistência da aplicação.
+
+Os repositories realizam o acesso aos dados através das abstrações fornecidas pelo Spring Data JPA.
 
 **Consequências:**
 
-- bom suporte a integridade e consistência transacional;
-- aderência à modelagem de histórico e status do atendimento;
-- facilidade de consulta por veículo, OS e status;
-- dependência de um banco relacional e de schema bem definido.
+- suporte a integridade referencial;
+- suporte a operações transacionais;
+- aderência ao modelo de relacionamentos do domínio;
+- facilidade de consulta por veículo, OS, orçamento e status;
+- possibilidade de utilizar recursos relacionais do PostgreSQL;
+- dependência de um schema relacional bem definido;
+- mudanças estruturais no domínio podem exigir evolução do modelo de dados.
 
 ---
 
@@ -67,18 +94,24 @@ Usar Spring Data JPA com PostgreSQL como banco principal da aplicação.
 
 **Contexto:**
 
-A API precisa autenticar múltiplos papéis e manter a comunicação sem estado entre requisições. Foi necessário reforçar segurança sem depender de sessão do servidor.
+A API precisa autenticar diferentes perfis e manter a comunicação entre cliente e servidor sem depender de sessão armazenada na aplicação.
+
+Também existe necessidade de proteger os endpoints e transportar informações de autenticação entre requisições REST.
 
 **Decisão:**
 
-Implementar autenticação com JWT e política stateless em Spring Security.
+Implementar autenticação utilizando JWT integrado ao Spring Security, com política stateless.
+
+O token é gerado durante a autenticação e posteriormente validado pelo filtro de segurança nas requisições protegidas.
 
 **Consequências:**
 
-- maior simplicidade para integrações REST;
-- melhor aderência a aplicações com API pública ou controlada por token;
-- proteção por token e perfil de usuário;
-- necessidade de reforço de ciclo de vida de token e gestão de segredos em ambiente real.
+- ausência de estado de sessão mantido pelo servidor;
+- facilidade de integração com consumidores REST;
+- autenticação baseada em token;
+- possibilidade de transportar perfil e informações de autorização;
+- necessidade de gerenciamento seguro do segredo utilizado para assinatura;
+- necessidade de controle adequado do tempo de validade dos tokens.
 
 ### ADR-04 — Autorização por perfil e rota
 
@@ -86,18 +119,29 @@ Implementar autenticação com JWT e política stateless em Spring Security.
 
 **Contexto:**
 
-O sistema possui diferentes papéis operacionais: admin, mecânico e cliente. As ações e permissões variam conforme o tipo de usuário e o tipo de operação.
+O sistema possui diferentes perfis de acesso:
+
+- `ADMIN`;
+- `MECANICO`;
+- `CLIENTE`.
+
+O perfil `ADMIN` é utilizado pela recepcionista para executar as operações administrativas da oficina.
+
+As funcionalidades disponíveis variam de acordo com o perfil autenticado e com a operação solicitada.
 
 **Decisão:**
 
-Mapear perfis e aplicar autorizações por rota e por ação, com controle explícito no Spring Security.
+Aplicar autorização utilizando Spring Security, considerando perfil e rota acessada.
+
+As operações públicas, administrativas e autenticadas são configuradas explicitamente na camada de segurança.
 
 **Consequências:**
 
-- melhor segregação de responsabilidades operacionais;
-- maior controle de acesso aos endpoints;
-- manutenção mais clara de permissões por perfil;
-- possibilidade de evolução para políticas mais granulares no futuro.
+- maior segregação entre responsabilidades;
+- controle explícito de acesso aos endpoints;
+- redução do risco de operações administrativas por usuários sem permissão;
+- regras de autorização concentradas em componentes específicos;
+- possibilidade de evolução para regras mais granulares caso o domínio exija.
 
 ---
 
@@ -109,18 +153,35 @@ Mapear perfis e aplicar autorizações por rota e por ação, com controle expl�
 
 **Contexto:**
 
-A aplicação lida com transições de status, validações de orçamento, posições de pagamento, regras de execução e controle de estoque. Essas regras são sensíveis e exigem consistência.
+A aplicação possui regras relacionadas a:
+
+- ciclo de vida da Ordem de Serviço;
+- transições de status;
+- orçamento;
+- pagamento;
+- estoque;
+- alocação de funcionário;
+- execução dos serviços;
+- cancelamento e abandono técnico.
+
+Concentrar essas validações apenas nos controllers aumentaria o acoplamento da interface HTTP com o comportamento do negócio.
 
 **Decisão:**
 
-Centralizar a validação principal em serviços e na própria entidade do domínio, em vez de apenas validar no controller.
+Distribuir as regras conforme sua responsabilidade.
+
+Regras intrínsecas ao estado das entidades e suas transições permanecem no domínio, enquanto coordenação de casos de uso, validações entre componentes e orquestração permanecem nos services.
+
+Os controllers ficam responsáveis principalmente pela interface HTTP e delegação dos casos de uso.
 
 **Consequências:**
 
-- maior consistência de regras operacionais;
-- melhor aderência ao conceito de domínio da oficina;
-- maior clareza de responsabilidade entre API, serviço e modelo;
-- necessidade de manter a lógica de negócio bem documentada para evitar acoplamento.
+- melhor separação de responsabilidades;
+- maior consistência das regras;
+- redução de lógica de negócio nos controllers;
+- maior reutilização das regras em diferentes fluxos;
+- necessidade de manter claros os limites entre domínio e application services;
+- regras distribuídas exigem documentação e testes adequados para preservar rastreabilidade.
 
 ### ADR-06 — Regras agendadas para processos automáticos
 
@@ -128,18 +189,27 @@ Centralizar a validação principal em serviços e na própria entidade do domí
 
 **Contexto:**
 
-O sistema precisa verificar pendências e aplicar ações automáticas, como cancelamento de orçamento e reconhecimento de abandono técnico.
+Algumas regras dependem do tempo transcorrido e precisam ser verificadas independentemente de interação manual do usuário.
+
+Entre elas estão:
+
+- processamento de cancelamentos automáticos;
+- identificação de abandono técnico.
 
 **Decisão:**
 
-Usar agendamento com `@Scheduled` para executar varreduras diárias em períodos definidos.
+Utilizar `@Scheduled` do Spring para executar rotinas periódicas responsáveis por verificar as Ordens de Serviço elegíveis e aplicar as regras correspondentes.
+
+As rotinas principais são executadas diariamente em horários definidos pela aplicação.
 
 **Consequências:**
 
-- melhora na automação operacional;
-- redução da necessidade de ação manual para processos recorrentes;
-- depende de cron e de regras de tempo bem definidas;
-- exige monitoramento dos logs para garantir consistência da operação.
+- redução da necessidade de execução manual;
+- aplicação automática das regras temporais;
+- centralização das verificações recorrentes;
+- dependência da disponibilidade da aplicação durante a execução das tarefas;
+- necessidade de observar logs e possíveis falhas das rotinas;
+- mudanças nas regras de prazo precisam ser refletidas tanto no domínio quanto no agendamento.
 
 ---
 
@@ -151,24 +221,113 @@ Usar agendamento com `@Scheduled` para executar varreduras diárias em períodos
 
 **Contexto:**
 
-O projeto exige execução local consistente e também apoio à análise de qualidade com SonarQube.
+O projeto precisa oferecer um ambiente reproduzível para execução local e suporte às ferramentas utilizadas durante desenvolvimento e análise de qualidade.
+
+Também existe necessidade de executar componentes auxiliares, como SonarQube.
 
 **Decisão:**
 
-Utilizar Docker e Docker Compose para a aplicação e para o ambiente de análise estática.
+Utilizar Docker para empacotamento da aplicação e Docker Compose para orquestração dos componentes utilizados no ambiente local.
+
+O `Dockerfile` utiliza múltiplos estágios para separar build e runtime.
 
 **Consequências:**
 
-- execução mais previsível em diferentes ambientes;
-- fácil replicação de ambiente de desenvolvimento e validação;
-- suporte à análise de qualidade e observabilidade local;
-- aumenta a dependência de contêineres para execução do projeto.
-
-### Decisões futuras em aberto
-
-- integração com gateway de pagamento externo;
-- notificações automáticas para cliente e equipe;
-- evolução para autenticação multifator ou policies mais avançadas;
-- separação operacional em módulos mais independentes, caso o sistema cresça.
+- maior previsibilidade entre ambientes;
+- facilidade de replicação do ambiente local;
+- isolamento das dependências da aplicação;
+- suporte à execução de ferramentas auxiliares;
+- necessidade de Docker disponível no ambiente;
+- manutenção adicional dos arquivos de containerização.
 
 ---
+
+## 📊 Design e Contratos
+
+### ADR-08 — DTOs como contratos da API
+
+**Status:** Aceito
+
+**Contexto:**
+
+As entidades utilizadas pelo domínio também representam estruturas persistidas pela aplicação.
+
+Expor essas entidades diretamente através da API criaria acoplamento entre:
+
+- contratos HTTP;
+- modelo interno;
+- persistência;
+- relacionamentos JPA.
+
+Além disso, diferentes operações exigem conjuntos distintos de dados de entrada e saída.
+
+**Decisão:**
+
+Utilizar DTOs específicos para representar os contratos de entrada e saída da API.
+
+Os DTOs permanecem organizados na camada `application` e são utilizados pelos controllers e services para comunicação entre a interface e a aplicação.
+
+**Consequências:**
+
+- redução do acoplamento entre API e entidades;
+- contratos específicos por operação;
+- menor exposição de atributos internos;
+- possibilidade de validações específicas nos objetos de entrada;
+- maior independência para evolução do modelo persistido;
+- aumento da quantidade de classes mantidas pela aplicação;
+- necessidade de conversão entre DTOs e entidades.
+
+### ADR-09 — MapStruct para conversão entre DTOs e entidades
+
+**Status:** Aceito
+
+**Contexto:**
+
+A separação entre os contratos da API e as entidades exige conversões recorrentes entre DTOs e objetos do domínio.
+
+A implementação manual de todos os mapeamentos aumentaria repetição e risco de inconsistência.
+
+**Decisão:**
+
+Utilizar MapStruct nos componentes de mapeamento da infraestrutura para realizar a maior parte das conversões entre entidades e DTOs.
+
+Os mappers concentram as transformações necessárias e evitam que controllers assumam essa responsabilidade.
+
+**Consequências:**
+
+- redução de código repetitivo;
+- centralização das conversões;
+- separação entre contratos e modelo interno;
+- facilidade de manutenção de mapeamentos semelhantes;
+- geração automática de implementações em tempo de build;
+- alterações em DTOs ou entidades podem exigir atualização das interfaces de mapper.
+
+---
+
+## 🗃️ Modelo de Dados
+
+### ADR-10 — Ordem de Serviço com múltiplos orçamentos
+
+**Status:** Aceito
+
+**Contexto:**
+
+O fluxo da oficina permite que uma Ordem de Serviço possua mais de um orçamento ao longo do atendimento.
+
+Além do orçamento inicial, podem existir orçamentos complementares associados à mesma OS.
+
+Uma associação limitada a um único orçamento não representa adequadamente esse comportamento.
+
+**Decisão:**
+
+Modelar a relação entre Ordem de Serviço e orçamento como `1:N`.
+
+A referência persistida é mantida em `TB_ORCAMENTOS.id_os`.
+
+```text
+TB_ORDENS_SERVICOS
+        1
+        │
+        │
+        N
+TB_ORCAMENTOS
