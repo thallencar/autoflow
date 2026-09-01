@@ -1,6 +1,6 @@
 # Documentação Arquitetural - AutoFlow
 
-![V1.2.0](https://img.shields.io/badge/V1.1.0-gray?style=for-the-badge)
+![V1.2.0](https://img.shields.io/badge/V1.2.0-gray?style=for-the-badge)
 
 Arquitetura técnica do sistema AutoFlow, incluindo visão de alto e baixo nível, estrutura da aplicação, persistência, segurança, testes e infraestrutura.
 

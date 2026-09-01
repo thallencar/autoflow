@@ -1,6 +1,6 @@
 # AutoFlow
 
-![V1.2.0](https://img.shields.io/badge/V1.1.0-gray?style=for-the-badge)
+![V1.2.0](https://img.shields.io/badge/V1.2.0-gray?style=for-the-badge)
 
 _Sistema para gerenciamento dos processos de oficinas mecânicas, centralizando o ciclo de vida das Ordens de Serviço (OS), desde a abertura até a entrega do veículo._
 
