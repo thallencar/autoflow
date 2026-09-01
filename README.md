@@ -211,6 +211,12 @@ docker compose up -d sonarqube
 ./mvnw sonar:sonar -Dsonar.host.url=http://localhost:9000
 ```
 
+### Swagger UI
+
+Com a aplicação em execução, acesse a documentação interativa da API no navegador através do link abaixo:
+
+- **Swagger UI:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+
 ---
 
 ## ✅ Observações
