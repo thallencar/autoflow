@@ -1,8 +1,8 @@
-# DAS - Documentação de Arquitetura de Software
+# DAS - Design Approval Sheet
 
 ![V1.2.0](https://img.shields.io/badge/V1.2.0-gray?style=for-the-badge)
 
-_Visão consolidada da solução AutoFlow, relacionando contexto de negócio, arquitetura, principais componentes, decisões arquiteturais e documentação complementar._
+Registro de avaliação e aprovação do design da solução AutoFlow, consolidando escopo, arquitetura proposta, requisitos atendidos, riscos, restrições e pendências.
 
 ---
 
@@ -10,40 +10,53 @@ _Visão consolidada da solução AutoFlow, relacionando contexto de negócio, ar
 
 | Seção | Subseções |
 | --- | --- |
-| [🎯 Objetivo e Visão](#-objetivo-e-visão) | [Objetivo](#objetivo), [Visão da solução](#visão-da-solução), [Escopo](#escopo) |
-| [🏗️ Visão Arquitetural](#️-visão-arquitetural) | [Estrutura](#estrutura-da-solução), [Componentes](#componentes-principais), [Diagrama](#diagrama-da-solução) |
-| [🔄 Negócio e Arquitetura](#-negócio-e-arquitetura) | [Fluxo central](#fluxo-central), [Responsabilidades](#responsabilidades-arquiteturais) |
-| [📐 Decisões e Qualidade](#-decisões-e-qualidade) | [Decisões](#decisões-arquiteturais), [Qualidade](#qualidade-e-testes), [Segurança](#segurança) |
-| [⚠️ Limites e Evolução](#️-limites-e-evolução) | [Limites](#limites-atuais), [Evoluções](#evoluções-previstas) |
-| [📚 Documentação Relacionada](#-documentação-relacionada) | [Documentos](#mapa-da-documentação) |
+| [🎯 Identificação](#-identificação) | [Projeto](#projeto), [Objetivo](#objetivo), [Escopo da avaliação](#escopo-da-avaliação) |
+| [🏗️ Solução Avaliada](#️-solução-avaliada) | [Visão resumida](#visão-resumida), [Arquitetura](#arquitetura), [Persistência](#persistência), [Segurança](#segurança) |
+| [✅ Critérios de Aprovação](#-critérios-de-aprovação) | [Requisitos funcionais](#requisitos-funcionais), [Requisitos técnicos](#requisitos-técnicos), [Qualidade](#qualidade) |
+| [⚠️ Riscos e Restrições](#️-riscos-e-restrições) | [Riscos identificados](#riscos-identificados), [Restrições atuais](#restrições-atuais) |
+| [📌 Pendências e Evoluções](#-pendências-e-evoluções) | [Pendências](#pendências), [Evoluções futuras](#evoluções-futuras) |
+| [📝 Decisão](#-decisão) | [Resultado da avaliação](#resultado-da-avaliação), [Condições de aprovação](#condições-de-aprovação) |
+| [📚 Referências](#-referências) | [Documentação relacionada](#documentação-relacionada) |
 
 ---
 
-## 🎯 Objetivo e Visão
+## 🎯 Identificação
+
+### Projeto
+
+*Nome:* AutoFlow
+
+*Grupo:* Grupo 31
 
 ### Objetivo
 
-Esta DAS apresenta uma visão consolidada da arquitetura de software do AutoFlow.
+Este Design Approval Sheet registra a avaliação do design da solução AutoFlow e consolida os principais elementos considerados para sua aprovação.
 
-Seu objetivo não é reproduzir o detalhamento técnico existente no `ARCHITECTURE.md`, mas permitir a compreensão da solução como um todo e indicar onde cada aspecto do sistema está documentado.
+O documento não substitui a documentação arquitetural detalhada. Seu objetivo é registrar, de forma resumida, se a solução proposta atende aos requisitos funcionais, técnicos, de segurança e qualidade definidos para o projeto.
 
-A DAS relaciona:
+### Escopo da Avaliação
 
-- contexto de negócio;
-- organização arquitetural;
-- componentes principais;
-- fluxo central da solução;
+A avaliação considera:
+
+- arquitetura da aplicação;
+- principais fluxos de negócio;
 - persistência;
 - segurança;
-- qualidade;
-- decisões arquiteturais;
-- pontos de evolução.
+- APIs;
+- testes;
+- infraestrutura;
+- requisitos técnicos;
+- riscos e limitações conhecidas.
 
-### Visão da Solução
+---
 
-O AutoFlow é um sistema de gestão operacional para oficinas mecânicas que centraliza o ciclo de atendimento através da Ordem de Serviço.
+## 🏗️ Solução Avaliada
 
-A solução integra os processos relacionados a:
+### Visão Resumida
+
+O AutoFlow é uma aplicação back-end para gerenciamento dos processos operacionais de uma oficina mecânica.
+
+A solução centraliza:
 
 - clientes;
 - veículos;
@@ -53,119 +66,208 @@ A solução integra os processos relacionados a:
 - orçamentos;
 - serviços;
 - estoque;
-- pagamento;
+- pagamentos;
 - histórico;
 - métricas operacionais.
 
-A aplicação é implementada em Java com Spring Boot e organizada como uma aplicação monolítica com separação interna de responsabilidades.
+### Arquitetura
 
-A Ordem de Serviço atua como elemento central do fluxo operacional, relacionando o atendimento aos demais componentes do domínio.
+A solução utiliza uma aplicação monolítica em Java com Spring Boot, organizada internamente por responsabilidades.
 
-### Escopo
+Os principais elementos são:
 
-A solução atual contempla principalmente:
+- controllers REST;
+- application services;
+- entidades de domínio;
+- repositories;
+- DTOs;
+- mappers;
+- componentes de segurança;
+- tratamento centralizado de exceções;
+- rotinas agendadas.
 
-- autenticação e autorização de usuários;
-- gestão de clientes e veículos;
-- gestão de funcionários;
-- abertura e acompanhamento de Ordens de Serviço;
-- diagnóstico;
-- orçamento inicial e complementar;
-- aprovação ou recusa de orçamento;
-- controle e reserva de estoque;
-- execução dos serviços;
-- acompanhamento do pagamento;
-- encerramento e entrega da OS;
-- histórico por veículo;
-- métricas operacionais;
-- processamento automático de regras temporais.
+O detalhamento completo está disponível no ARCHITECTURE.md.
 
-O detalhamento das regras associadas a esses processos está disponível em [BUSINESS.md](BUSINESS.md).
+### Persistência
+
+A persistência utiliza PostgreSQL com Spring Data JPA.
+
+O modelo relacional atende às principais relações do domínio, incluindo:
+
+- cliente e veículo;
+- endereço;
+- Ordem de Serviço;
+- orçamento;
+- serviços;
+- itens;
+- estoque;
+- funcionário;
+- usuários.
+
+O modelo físico e o MER estão documentados no ARCHITECTURE.md.
+
+### Segurança
+
+A aplicação utiliza:
+
+- Spring Security;
+- autenticação JWT;
+- política stateless;
+- autorização por perfil;
+- BCrypt;
+- Bean Validation;
+- tratamento centralizado de exceções.
+
+Os perfis previstos são:
+
+- ADMIN;
+- MECANICO;
+- CLIENTE.
+
+O perfil ADMIN é utilizado pela recepcionista para operações administrativas.
 
 ---
 
-## 🏗️ Visão Arquitetural
+## ✅ Critérios de Aprovação
 
-### Estrutura da Solução
+### Requisitos Funcionais
 
-A aplicação está organizada nas seguintes responsabilidades principais:
-
-| Responsabilidade | Papel |
+| Critério | Situação |
 | --- | --- |
-| **Interface** | Exposição da API REST e recebimento das requisições |
-| **Application** | Orquestração dos casos de uso e fluxos da aplicação |
-| **Domain** | Entidades, estados e comportamentos relacionados ao domínio |
-| **Repository** | Abstração de acesso aos dados |
-| **Infrastructure** | Segurança, mapeamento, persistência e mecanismos técnicos |
-| **Exception** | Tratamento centralizado das falhas da aplicação |
+| Identificação e cadastro de clientes | Atendido |
+| Cadastro de veículos | Atendido |
+| Criação e acompanhamento de OS | Atendido |
+| Controle de status da OS | Atendido |
+| Diagnóstico | Atendido |
+| Geração de orçamento | Atendido |
+| Aprovação e recusa de orçamento | Atendido |
+| Orçamento complementar | Atendido |
+| Gestão de serviços | Atendido |
+| Gestão de peças e insumos | Atendido |
+| Controle de estoque | Atendido |
+| Histórico por veículo | Atendido |
+| Controle de pagamento | Atendido |
+| Métricas operacionais | Atendido |
 
-A estrutura detalhada dos packages, classes, DTOs, mappers, services, repositories e controllers está documentada no [ARCHITECTURE.md](ARCHITECTURE.md).
+### Requisitos Técnicos
 
-### Componentes Principais
+| Critério | Situação |
+| --- | --- |
+| Back-end monolítico | Atendido |
+| Organização em camadas | Atendido |
+| API REST | Atendido |
+| Documentação OpenAPI / Swagger UI | Atendido |
+| Banco de dados relacional | Atendido |
+| Justificativa da escolha do banco | Atendido |
+| Dockerfile | Atendido |
+| Docker Compose | Atendido |
+| README com instruções | Atendido |
+| Documentação DDD | Atendido |
+| Collection para testes da API | Atendido |
 
-Os principais componentes da solução são:
+### Qualidade
 
-**API REST**
+A solução utiliza:
 
-Responsável por disponibilizar as funcionalidades do AutoFlow aos consumidores da aplicação.
+- testes automatizados;
+- JUnit;
+- Spring Boot Test;
+- JaCoCo;
+- SonarQube.
 
-**Spring Security + JWT**
+Na análise realizada, foi registrada cobertura de *84,2%*.
 
-Responsável pela autenticação, validação dos tokens e controle de acesso aos recursos protegidos.
+O resultado apresentado pelo SonarQube não indicou issues de Security, Reliability ou Maintainability no painel analisado.
 
-**Application Services**
+O Quality Gate geral apresentou status Failed, devendo o detalhamento das condições configuradas ser consultado para identificação da causa específica.
 
-Responsáveis pela coordenação dos casos de uso e integração entre diferentes elementos do domínio.
+---
 
-**Domain Model**
+## ⚠️ Riscos e Restrições
 
-Representa os conceitos e comportamentos centrais da oficina, incluindo Ordem de Serviço, orçamento, estoque, funcionário, veículo e serviço.
+### Riscos Identificados
 
-**Repositories**
+| Risco | Impacto |
+| --- | --- |
+| Dependência de uma única aplicação executável | Uma falha na aplicação pode impactar todos os módulos |
+| Processos agendados executados pela própria aplicação | Dependem da disponibilidade da instância |
+| Segredo JWT configurado externamente | Requer gerenciamento adequado nos ambientes |
+| Crescimento do domínio | Pode exigir revisão da separação modular |
+| Quality Gate não aprovado | Requer análise das condições responsáveis pelo resultado |
 
-Responsáveis pela abstração das operações de persistência através do Spring Data JPA.
+### Restrições Atuais
 
-**PostgreSQL**
+A implementação atual não contempla:
 
-Banco de dados relacional utilizado para persistência das informações da aplicação.
+- gateway externo de pagamento;
+- serviço externo completo de notificações;
+- autenticação multifator;
+- observabilidade avançada;
+- rate limiting;
+- separação em serviços independentes.
 
-**Scheduled Jobs**
+Esses itens não fazem parte do escopo obrigatório atual.
 
-Responsáveis pela execução das regras automáticas dependentes de tempo.
+---
 
-**OpenAPI**
+## 📌 Pendências e Evoluções
 
-Responsável pela descrição dos contratos HTTP da aplicação, disponibilizados através do Swagger UI.
+### Pendências
 
-### Diagrama da Solução
+As principais pendências identificadas são:
 
-```mermaid
-flowchart TD
-    Users["Recepcionista (ADMIN) / Mecânico / Cliente"]
+- verificar a condição responsável pelo Failed do Quality Gate;
+- manter documentação e diagramas sincronizados com a implementação;
+- garantir que alterações no modelo de dados sejam refletidas no MER;
+- manter testes e cobertura atualizados conforme evolução do código.
 
-    API["AutoFlow REST API"]
+### Evoluções Futuras
 
-    Security["Spring Security + JWT"]
-    Controllers["REST Controllers"]
-    Services["Application Services"]
-    Domain["Domain Model"]
-    Repository["JPA Repositories"]
-    Scheduler["Scheduled Jobs"]
+Possíveis evoluções incluem:
 
-    DB[("PostgreSQL")]
-    Docs["Springdoc OpenAPI / Swagger UI"]
+- gateway de pagamento;
+- notificações externas;
+- autenticação multifator;
+- observabilidade;
+- automação de CI/CD;
+- políticas de segurança mais granulares;
+- revisão da modularização em caso de crescimento da solução.
 
-    Users -->|HTTP / JSON| API
+Essas evoluções devem ser avaliadas separadamente antes de serem incorporadas à arquitetura.
 
-    API --> Security
-    Security --> Controllers
-    Controllers --> Services
+---
 
-    Scheduler --> Services
+## 📝 Decisão
 
-    Services --> Domain
-    Services --> Repository
+### Resultado da Avaliação
 
-    Repository --> DB
+*Status:* Aprovado com ressalvas
 
-    API --> Docs
+O design da solução AutoFlow atende aos principais requisitos funcionais e técnicos definidos para o projeto.
+
+A arquitetura adotada é adequada ao escopo atual do MVP, mantendo as responsabilidades internas separadas e permitindo evolução incremental.
+
+### Condições de Aprovação
+
+A aprovação considera as seguintes ressalvas:
+
+- acompanhamento do Quality Gate do SonarQube;
+- manutenção da cobertura mínima de testes;
+- sincronização contínua entre código, modelo de dados e documentação;
+- registro de novas decisões arquiteturais relevantes no ADR.md.
+
+As ressalvas identificadas não impedem a utilização da arquitetura proposta no escopo atual do projeto.
+
+---
+
+## 📚 Referências
+
+### Documentação Relacionada
+
+| Documento | Finalidade |
+| --- | --- |
+| README.md | Overview, instalação e execução |
+| BUSINESS.md | Domínio, regras de negócio e DDD |
+| ARCHITECTURE.md | Arquitetura técnica completa, HLD e LLD |
+| ADR.md | Decisões arquiteturais e justificativas |
+| DAS.md | Registro de avaliação e aprovação do design |
