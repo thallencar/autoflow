@@ -1,0 +1,13 @@
+services:
+  autoflow-app:
+    build: .
+    ports:
+      - "8080:8080"
+
+  sonarqube:
+    image: sonarqube:latest
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_SEARCH_JAVAADDITIONALOPTS=-Dnode.store.allow_mmap=false
