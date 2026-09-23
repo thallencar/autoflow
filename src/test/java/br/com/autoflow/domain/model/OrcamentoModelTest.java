@@ -16,54 +16,79 @@ class OrcamentoModelTest {
 
     @Test
     void aprovar_e_recusar_deveAtualizarStatusEItens() {
-        OrcamentoItem item = OrcamentoItem.builder()
-                .idEstoque(UUID.randomUUID())
-                .quantidade(1)
-                .valorUnitario(new BigDecimal("10.00"))
-                .valorTotal(new BigDecimal("10.00"))
-                .build();
+        // Instanciação das entidades base
+        UUID idEstoque = UUID.randomUUID();
+        UUID idServico = UUID.randomUUID();
+        UUID idOrcamento = UUID.randomUUID();
 
-        Servico servico = Servico.builder().idServico(UUID.randomUUID()).dsServico("Serv").vlServico(new BigDecimal("50.00")).build();
-        OrcamentoServico os = OrcamentoServico.builder().maoDeObra(new BigDecimal("20.00")).servico(servico).itens(List.of(item)).build();
+        OrcamentoItem item = new OrcamentoItem();
+        item.setIdEstoque(idEstoque);
+        item.setQuantidade(1);
+        item.setValorUnitario(new BigDecimal("10.00"));
+        item.setValorTotal(new BigDecimal("10.00"));
+
+        Servico servico = new Servico(idServico, "Serv", new BigDecimal("50.00"), 30);
+
+        OrcamentoServico os = new OrcamentoServico();
+        os.setMaoDeObra(new BigDecimal("20.00"));
+        os.setServico(servico);
+        os.setItens(List.of(item));
         item.setOrcamentoServico(os);
 
-        Orcamento orc = Orcamento.builder()
-                .id(UUID.randomUUID())
-                .tipoOrcamento(TipoOrcamento.INICIAL)
-                .dataCriacao(LocalDateTime.now())
-                .dataExpiracao(LocalDateTime.now().plusDays(1))
-                .servicos(List.of(os))
-                .build();
+        Orcamento orc = new Orcamento();
+        orc.setId(idOrcamento);
+        orc.setTipoOrcamento(TipoOrcamento.INICIAL);
+        orc.setDataCriacao(LocalDateTime.now());
+        orc.setDataExpiracao(LocalDateTime.now().plusDays(1));
+        orc.setServicos(List.of(os));
         os.setOrcamento(orc);
 
         orc.aprovar();
         assertEquals(StatusOrcamento.APROVADO, orc.getStatus());
         assertEquals(StatusReservaEstoque.VENDIDO, item.getStatusReserva());
 
-        // reset for recusar
+        // Reset para testar a recusa
         item.setStatusReserva(StatusReservaEstoque.RESERVADO);
-        orc = Orcamento.builder().tipoOrcamento(TipoOrcamento.INICIAL).dataCriacao(LocalDateTime.now()).dataExpiracao(LocalDateTime.now().plusDays(1)).servicos(List.of(os)).build();
-        os.setOrcamento(orc);
 
-        orc.recusar();
-        assertEquals(StatusOrcamento.RECUSADO, orc.getStatus());
+        Orcamento orcRecusar = new Orcamento();
+        orcRecusar.setId(idOrcamento);
+        orcRecusar.setTipoOrcamento(TipoOrcamento.INICIAL);
+        orcRecusar.setDataCriacao(LocalDateTime.now());
+        orcRecusar.setDataExpiracao(LocalDateTime.now().plusDays(1));
+        orcRecusar.setServicos(List.of(os));
+        os.setOrcamento(orcRecusar);
+
+        orcRecusar.recusar();
+        assertEquals(StatusOrcamento.RECUSADO, orcRecusar.getStatus());
         assertEquals(StatusReservaEstoque.CANCELADO, item.getStatusReserva());
     }
 
     @Test
     void aplicarNovoStatus_invalido_deveLancar() {
-        Orcamento orc = Orcamento.builder().tipoOrcamento(TipoOrcamento.INICIAL).dataCriacao(LocalDateTime.now()).dataExpiracao(LocalDateTime.now().plusDays(1)).build();
+        Orcamento orc = new Orcamento();
+        orc.setTipoOrcamento(TipoOrcamento.INICIAL);
+        orc.setDataCriacao(LocalDateTime.now());
+        orc.setDataExpiracao(LocalDateTime.now().plusDays(1));
+
         assertThrows(RuntimeException.class, () -> orc.aplicarNovoStatus(StatusOrcamento.PENDENTE));
     }
 
     @Test
     void recalcularTotais_deveSomarMaoDeObraEItens() {
-        OrcamentoItem item = OrcamentoItem.builder().quantidade(2).valorUnitario(new BigDecimal("10.00")).build();
-        Servico servico = Servico.builder().idServico(UUID.randomUUID()).dsServico("Serv").vlServico(new BigDecimal("50.00")).build();
-        OrcamentoServico os = OrcamentoServico.builder().maoDeObra(new BigDecimal("20.00")).servico(servico).itens(List.of(item)).build();
+        OrcamentoItem item = new OrcamentoItem();
+        item.setQuantidade(2);
+        item.setValorUnitario(new BigDecimal("10.00"));
+
+        Servico servico = new Servico(UUID.randomUUID(), "Serv", new BigDecimal("50.00"), 30);
+
+        OrcamentoServico os = new OrcamentoServico();
+        os.setMaoDeObra(new BigDecimal("20.00"));
+        os.setServico(servico);
+        os.setItens(List.of(item));
         item.setOrcamentoServico(os);
 
-        Orcamento orc = Orcamento.builder().servicos(List.of(os)).build();
+        Orcamento orc = new Orcamento();
+        orc.setServicos(List.of(os));
         os.setOrcamento(orc);
 
         orc.recalcularTotais();

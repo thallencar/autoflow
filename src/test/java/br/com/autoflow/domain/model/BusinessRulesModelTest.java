@@ -1,8 +1,8 @@
 package br.com.autoflow.domain.model;
 
-import br.com.autoflow.application.dto.VeiculoRequest;
+import br.com.autoflow.adapters.inbound.controller.dto.VeiculoRequest;
 import br.com.autoflow.domain.enums.*;
-import br.com.autoflow.exception.RegraNegocioException;
+import br.com.autoflow.domain.exception.RegraNegocioException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -17,39 +17,32 @@ import static org.junit.jupiter.api.Assertions.*;
 class BusinessRulesModelTest {
 
     @Test
-    void deveGerarAlertaQuandoEstoqueBaixoEInsumo() {
-        Estoque estoque = Estoque.builder()
-                .quantidadeEstoque(5)
-                .quantidadeMinima(10)
-                .tipoCategoria(TipoItemEstoque.INSUMO)
-                .build();
+    void deveGerarAlertaКогдаEstoqueBaixoEInsumo() {
+        Estoque estoque = new Estoque(
+                UUID.randomUUID(), "Item Teste", "Marca Teste", new BigDecimal("10.00"),
+                5, 10, TipoItemEstoque.INSUMO
+        );
 
         assertTrue(estoque.deveDispararAlertaEstoqueBaixo());
-        assertTrue(estoque.deveGerarAlertaEstoqueBaixo());
     }
 
     @Test
     void naoDeveGerarAlertaQuandoCategoriaNaoCritica() {
-        Estoque estoque = Estoque.builder()
-                .quantidadeEstoque(1)
-                .quantidadeMinima(3)
-                .tipoCategoria(TipoItemEstoque.PECA)
-                .build();
+        Estoque estoque = new Estoque(
+                UUID.randomUUID(), "Item Teste", "Marca Teste", new BigDecimal("10.00"),
+                1, 3, TipoItemEstoque.PECA
+        );
 
         assertFalse(estoque.deveDispararAlertaEstoqueBaixo());
     }
 
     @Test
     void funcionarioDeveAlternarEstadoEOcupacao() {
-        Funcionario funcionario = Funcionario.builder()
-                .cpf("11144477735")
-                .nome("Maria")
-                .telefone("51999887766")
-                .email("maria@email.com")
-                .genero(Genero.FEMININO)
-                .dataNascimento(LocalDate.of(1990, 3, 10))
-                .cargo(Cargo.MECANICO)
-                .build();
+        Funcionario funcionario = new Funcionario(
+                UUID.randomUUID(), "11144477735", "Maria", "51999887766",
+                "maria@email.com", Genero.FEMININO, LocalDate.of(1990, 3, 10),
+                Cargo.MECANICO, null, false,0
+        );
 
         funcionario.ocupar();
         assertTrue(funcionario.isOcupado());
@@ -66,53 +59,55 @@ class BusinessRulesModelTest {
 
     @Test
     void veiculoDeveAtualizarDadosComFormatacaoECliente() {
-        Cliente cliente = new Cliente();
-        cliente.setId(UUID.randomUUID());
+        UUID clienteId = UUID.randomUUID();
 
-        Veiculo veiculo = Veiculo.builder()
-                .placa("ABC1234")
-                .marca("Marca")
-                .modelo("Modelo")
-                .kmAtual(1000)
-                .anoFabricacao((short) 2020)
-                .cor("Azul")
-                .cliente(cliente)
-                .build();
+        Veiculo veiculo = new Veiculo(
+                UUID.randomUUID(),           // id
+                "ABC1234",                   // placa
+                "Marca",                     // marca
+                "Modelo",                    // modelo
+                1000,                        // kmAtual (Integer)
+                (short) 2020,                // anoFabricacao (Short)
+                "Azul",                      // cor
+                clienteId                    // clienteId (UUID)
+        );
 
-        VeiculoRequest request = new VeiculoRequest("  ABC1A23  ", "Nova Marca", "Novo Modelo", 2000, (short) 2023, "Vermelho", cliente.getId());
+        String novaPlaca = "  ABC1A23  ";
+        String novaMarca = "Nova Marca";
+        String novoModelo = "Novo Modelo";
+        Integer novoKm = 2000;
+        Short novoAno = 2023;
+        String novaCor = "Vermelho";
 
-        veiculo.atualizarDados(request, cliente);
+        veiculo.atualizar(novaPlaca, novaMarca, novoModelo, novoKm, novoAno, novaCor);
 
-        assertEquals("ABC1A23", veiculo.getPlaca());
+        assertEquals("ABC1A23", veiculo.getPlaca()); // Verifica se limpou e formatou a placa
         assertEquals("Nova Marca", veiculo.getMarca());
         assertEquals("Novo Modelo", veiculo.getModelo());
         assertEquals((short) 2023, veiculo.getAnoFabricacao());
         assertEquals("Vermelho", veiculo.getCor());
-        assertSame(cliente, veiculo.getCliente());
+        assertEquals(clienteId, veiculo.getClienteId());
     }
 
     @Test
     void orcamentoDeveRecalcularTotaisEAtualizarStatus() {
-        OrcamentoItem item = OrcamentoItem.builder()
-                .quantidade(2)
-                .valorUnitario(new BigDecimal("15.50"))
-                .statusReserva(StatusReservaEstoque.RESERVADO)
-                .build();
+        OrcamentoItem item = new OrcamentoItem(
+                UUID.randomUUID(), StatusReservaEstoque.RESERVADO, 2,
+                new BigDecimal("15.50"), null, UUID.randomUUID(), null, null
+        );
 
-        OrcamentoServico servico = OrcamentoServico.builder()
-                .maoDeObra(new BigDecimal("30.00"))
-                .itens(new ArrayList<>(List.of(item)))
-                .build();
+        OrcamentoServico servico = new OrcamentoServico(
+                UUID.randomUUID(), new BigDecimal("30.00"), null,
+                new ArrayList<>(List.of(item)), null
+        );
 
         item.setOrcamentoServico(servico);
 
-        Orcamento orcamento = Orcamento.builder()
-                .status(StatusOrcamento.PENDENTE)
-                .tipoOrcamento(TipoOrcamento.INICIAL)
-                .dataCriacao(LocalDateTime.now())
-                .dataExpiracao(LocalDateTime.now().plusDays(2))
-                .servicos(new ArrayList<>(List.of(servico)))
-                .build();
+        Orcamento orcamento = new Orcamento(
+                UUID.randomUUID(), TipoOrcamento.INICIAL, StatusOrcamento.PENDENTE,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(2), null,
+                null, null, null, null, new ArrayList<>(List.of(servico)), null
+        );
 
         servico.setOrcamento(orcamento);
         orcamento.recalcularTotais();
@@ -131,10 +126,11 @@ class BusinessRulesModelTest {
 
     @Test
     void orcamentoNaoDevePermitirAlteracaoDeStatusInvalida() {
-        Orcamento orcamento = Orcamento.builder()
-                .status(StatusOrcamento.APROVADO)
-                .dataExpiracao(LocalDateTime.now().plusDays(1))
-                .build();
+        Orcamento orcamento = new Orcamento(
+                UUID.randomUUID(), TipoOrcamento.INICIAL, StatusOrcamento.APROVADO,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(1), null,
+                null, null, null, null, null, null
+        );
 
         assertThrows(RegraNegocioException.class, orcamento::recusar);
         assertThrows(RegraNegocioException.class, () -> orcamento.aplicarNovoStatus(StatusOrcamento.RECUSADO));
@@ -142,41 +138,54 @@ class BusinessRulesModelTest {
 
     @Test
     void ordemServicoDeveCarregarServicosAprovadosECalcularMetricas() {
-        Servico servico = Servico.builder()
-                .idServico(UUID.randomUUID())
-                .dsServico("Balanceamento")
-                .vlServico(new BigDecimal("120.00"))
-                .qtTempoEstimadoMin(90)
-                .build();
+        Servico servico = new Servico(
+                UUID.randomUUID(), "Balanceamento", new BigDecimal("120.00"), 90
+        );
 
-        OrcamentoItem item = OrcamentoItem.builder()
-                .valorUnitario(new BigDecimal("20.00"))
-                .quantidade(1)
-                .build();
+        OrcamentoItem item = new OrcamentoItem(
+                UUID.randomUUID(), null, 1, new BigDecimal("20.00"),
+                null, UUID.randomUUID(), null, null
+        );
         item.calcularTotal();
 
-        OrcamentoServico orcamentoServico = OrcamentoServico.builder()
-                .servico(servico)
-                .maoDeObra(new BigDecimal("50.00"))
-                .itens(new ArrayList<>(List.of(item)))
-                .build();
+        OrcamentoServico orcamentoServico = new OrcamentoServico(
+                UUID.randomUUID(), new BigDecimal("50.00"), servico,
+                new ArrayList<>(List.of(item)), null
+        );
         item.setOrcamentoServico(orcamentoServico);
 
-        Orcamento orcamento = Orcamento.builder()
-                .status(StatusOrcamento.APROVADO)
-                .servicos(new ArrayList<>(List.of(orcamentoServico)))
-                .build();
+        Orcamento orcamento = new Orcamento(
+                UUID.randomUUID(), TipoOrcamento.INICIAL, StatusOrcamento.APROVADO,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(1), null,
+                null, null, null, null, new ArrayList<>(List.of(orcamentoServico)), null
+        );
         orcamentoServico.setOrcamento(orcamento);
 
-        OrdemServico os = OrdemServico.builder()
-                .statusOS(StatusOS.RECEBIDA)
-                .dsRelatoCliente("Barulho na roda")
-                .idCliente(UUID.randomUUID())
-                .idVeiculo(UUID.randomUUID())
-                .idsOrcamento(new ArrayList<>(List.of(orcamento)))
-                .servicosExecucao(new ArrayList<>())
-                .stPagamento(StatusPagamento.PENDENTE)
-                .build();
+        OrdemServico os = new OrdemServico(
+                UUID.randomUUID(),             // idOs
+                StatusOS.RECEBIDA,             // statusOS
+                "Barulho na roda",             // dsRelatoCliente
+                null,                          // dsDiagnostico
+                null,                          // stTermoAceito
+                null,                          // dtAceiteTermo
+                null,                          // nrKmEntrada
+                null,                          // dtAberturaOs
+                null,                          // dtInicioDiagnostico
+                null,                          // dtFimDiagnostico
+                null,                          // dtAprovacaoOrcamento
+                null,                          // dataInicioExecucao
+                null,                          // dataFimExecucao
+                null,                          // dtEncerramentoOs
+                null,                          // dtReagendamentoOs
+                StatusPagamento.PENDENTE,      // stPagamento
+                null,                          // dsMotivoCancelamento
+                null,                          // taxaPermanencia
+                UUID.randomUUID(),             // idCliente
+                UUID.randomUUID(),             // idVeiculo
+                null,                          // idFuncionario
+                new ArrayList<>(List.of(orcamento)), // idsOrcamento
+                new ArrayList<>()              // servicosExecucao
+        );
 
         os.carregarServicosDosOrcamentosAprovados();
         assertEquals(1, os.getServicosExecucao().size());
@@ -198,13 +207,31 @@ class BusinessRulesModelTest {
         os.verificarCancelamentoAutomatico(5, new BigDecimal("15.00"));
         assertEquals(StatusOS.CANCELADA, os.getStatusOS());
 
-        OrdemServico abandono = OrdemServico.builder()
-                .statusOS(StatusOS.AGUARDANDO_APROVACAO)
-                .dsRelatoCliente("Veículo parado")
-                .idCliente(UUID.randomUUID())
-                .idVeiculo(UUID.randomUUID())
-                .dtFimDiagnostico(LocalDateTime.now().minusDays(3))
-                .build();
+        OrdemServico abandono = new OrdemServico(
+                UUID.randomUUID(),             // idOs
+                StatusOS.RECEBIDA,             // statusOS
+                "Barulho na roda",             // dsRelatoCliente
+                null,                          // dsDiagnostico
+                null,                          // stTermoAceito
+                null,                          // dtAceiteTermo
+                null,                          // nrKmEntrada
+                null,                          // dtAberturaOs
+                null,                          // dtInicioDiagnostico
+                null,                          // dtFimDiagnostico
+                null,                          // dtAprovacaoOrcamento
+                null,                          // dataInicioExecucao
+                null,                          // dataFimExecucao
+                null,                          // dtEncerramentoOs
+                null,                          // dtReagendamentoOs
+                StatusPagamento.PENDENTE,      // stPagamento
+                null,                          // dsMotivoCancelamento
+                null,                          // taxaPermanencia
+                UUID.randomUUID(),             // idCliente
+                UUID.randomUUID(),             // idVeiculo
+                null,                          // idFuncionario
+                new ArrayList<>(List.of(orcamento)), // idsOrcamento
+                new ArrayList<>()              // servicosExecucao
+        );
 
         abandono.verificarAbandonoTecnico(2);
         assertEquals(StatusOS.ABANDONADO, abandono.getStatusOS());
@@ -212,12 +239,38 @@ class BusinessRulesModelTest {
 
     @Test
     void ordemServicoDeveValidarEntregaEPrePersist() {
-        OrdemServico os = OrdemServico.builder()
-                .dsRelatoCliente("Cliente solicita revisão")
-                .statusOS(StatusOS.FINALIZADA)
-                .stPagamento(StatusPagamento.PAGO)
-                .taxaPermanencia(null)
-                .build();
+        // Criando um orçamento mockado para satisfazer a regra de validação de requisitos
+        Orcamento orcamento = new Orcamento(
+                UUID.randomUUID(), TipoOrcamento.INICIAL, StatusOrcamento.APROVADO,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(1), null,
+                null, null, null, null, new ArrayList<>(), null
+        );
+
+        OrdemServico os = new OrdemServico(
+                UUID.randomUUID(),             // idOs
+                StatusOS.FINALIZADA,           // statusOS
+                "Cliente solicita revisão",    // dsRelatoCliente
+                null,                          // dsDiagnostico
+                null,                          // stTermoAceito
+                null,                          // dtAceiteTermo
+                null,                          // nrKmEntrada
+                null,                          // dtAberturaOs
+                null,                          // dtInicioDiagnostico
+                null,                          // dtFimDiagnostico
+                null,                          // dtAprovacaoOrcamento
+                null,                          // dataInicioExecucao
+                null,                          // dataFimExecucao
+                null,                          // dtEncerramentoOs
+                null,                          // dtReagendamentoOs
+                StatusPagamento.PAGO,          // stPagamento (Deve ser PAGO para permitir a entrega)
+                null,                          // dsMotivoCancelamento
+                null,                          // taxaPermanencia
+                UUID.randomUUID(),             // idCliente
+                UUID.randomUUID(),             // idVeiculo
+                null,                          // idFuncionario
+                new ArrayList<>(List.of(orcamento)), // idsOrcamento (Vinculado para passar na validação)
+                new ArrayList<>()              // servicosExecucao
+        );
 
         os.prePersist();
         assertEquals(BigDecimal.ZERO, os.getTaxaPermanencia());
@@ -232,25 +285,23 @@ class BusinessRulesModelTest {
 
     @Test
     void orcamentoExpirarDeveCancelarEAtualizarItens() {
-        OrcamentoItem item = OrcamentoItem.builder()
-                .quantidade(1)
-                .valorUnitario(new BigDecimal("10.00"))
-                .statusReserva(StatusReservaEstoque.RESERVADO)
-                .build();
+        OrcamentoItem item = new OrcamentoItem(
+                UUID.randomUUID(), StatusReservaEstoque.RESERVADO, 1,
+                new BigDecimal("10.00"), null, UUID.randomUUID(), null, null
+        );
 
-        OrcamentoServico servico = OrcamentoServico.builder()
-                .maoDeObra(BigDecimal.ZERO)
-                .itens(new ArrayList<>(List.of(item)))
-                .build();
+        OrcamentoServico servico = new OrcamentoServico(
+                UUID.randomUUID(), BigDecimal.ZERO, null,
+                new ArrayList<>(List.of(item)), null
+        );
 
         item.setOrcamentoServico(servico);
 
-        Orcamento orc = Orcamento.builder()
-                .status(StatusOrcamento.PENDENTE)
-                .servicos(new ArrayList<>(List.of(servico)))
-                .dataCriacao(LocalDateTime.now().minusDays(5))
-                .dataExpiracao(LocalDateTime.now().minusDays(1))
-                .build();
+        Orcamento orc = new Orcamento(
+                UUID.randomUUID(), TipoOrcamento.INICIAL, StatusOrcamento.PENDENTE,
+                LocalDateTime.now().minusDays(5), LocalDateTime.now().minusDays(1), null,
+                null, null, null, null, new ArrayList<>(List.of(servico)), null
+        );
 
         servico.setOrcamento(orc);
 

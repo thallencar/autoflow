@@ -4,39 +4,47 @@ import br.com.autoflow.domain.enums.Perfil;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Collection;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class UsuarioModelTest {
 
     @Test
-    void getAuthorities_deveRetornarRolesConformePerfil() {
-        Usuario admin = Usuario.builder().perfil(Perfil.ADMIN).build();
-        Collection<?> authAdmin = admin.getAuthorities();
-        assertTrue(authAdmin.stream().anyMatch(a -> a.toString().contains("ROLE_ADMIN")));
+    void atualizarDadosAcesso_deveModificarLoginEPerfil() {
+        Usuario usuario = new Usuario();
+        usuario.setLogin("antigo@email.com");
+        usuario.setPerfil(Perfil.CLIENTE);
 
-        Usuario mec = Usuario.builder().perfil(Perfil.MECANICO).build();
-        assertTrue(mec.getAuthorities().stream().anyMatch(a -> a.toString().contains("ROLE_MECANICO")));
+        usuario.atualizarDadosAcesso("novo@email.com", Perfil.ADMIN);
 
-        Usuario cli = Usuario.builder().perfil(Perfil.CLIENTE).build();
-        assertTrue(cli.getAuthorities().stream().anyMatch(a -> a.toString().contains("ROLE_CLIENTE")));
+        assertEquals("novo@email.com", usuario.getLogin());
+        assertEquals(Perfil.ADMIN, usuario.getPerfil());
     }
 
     @Test
-    void factoryMethods_devemCriarUsuarioComSenhaCriptografada() {
+    void factoryMethods_devemCriarUsuarioCorretamente() {
         PasswordEncoder pe = mock(PasswordEncoder.class);
         when(pe.encode(anyString())).thenReturn("encoded");
 
-        Funcionario f = Funcionario.builder().email("f@mail").cpf("111").build();
-        Usuario u = Usuario.criarUsuarioParaFuncionario(f, Perfil.MECANICO, pe);
-        assertEquals("f@mail", u.getUsername());
-        assertEquals("encoded", u.getPassword());
+        // Usando o construtor vazio + setters conforme a refatoração do Funcionario
+        Funcionario f = new Funcionario();
+        f.setEmail("f@mail");
+        f.setCpf("111");
 
-        Cliente c = Cliente.builder().email("c@mail").documento("222").build();
-        Usuario uc = Usuario.criarUsuarioParaCliente(c, Perfil.CLIENTE, pe);
-        assertEquals("c@mail", uc.getUsername());
-        assertEquals("encoded", uc.getPassword());
+        Usuario u = Usuario.criarUsuarioParaFuncionario(f, Perfil.MECANICO, "encoded");
+        assertEquals("f@mail", u.getLogin());
+        assertEquals("encoded", u.getSenha());
+        assertEquals(Perfil.MECANICO, u.getPerfil());
+        assertEquals(f, u.getFuncionario());
+
+        Cliente c = new Cliente();
+        c.setEmail("c@mail");
+        c.setDocumento("222");
+
+        Usuario uc = Usuario.criarUsuarioParaCliente(c, Perfil.CLIENTE, "encoded");
+        assertEquals("c@mail", uc.getLogin());
+        assertEquals("encoded", uc.getSenha());
+        assertEquals(Perfil.CLIENTE, uc.getPerfil());
+        assertEquals(c, uc.getCliente());
     }
 }

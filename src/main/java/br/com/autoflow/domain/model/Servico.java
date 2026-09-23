@@ -1,36 +1,34 @@
 package br.com.autoflow.domain.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.*;
-
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@Entity
-@Table(name = "TB_SERVICOS")
-@Getter
-@Setter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class Servico {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id_servico", nullable = false, updatable = false)
     private UUID idServico;
-
-    @Column(name = "ds_servico", nullable = false, length = 255)
     private String dsServico;
-
-    @Column(name = "vl_servico", nullable = false, precision = 10, scale = 2)
     private BigDecimal vlServico;
-
-    @Column(name = "qt_tempo_estimado_min", nullable = false)
     private Integer qtTempoEstimadoMin;
+
+    public Servico(UUID idServico, String dsServico, BigDecimal vlServico, Integer qtTempoEstimadoMin) {
+        this.idServico = idServico;
+        this.dsServico = dsServico;
+        this.vlServico = vlServico;
+        this.qtTempoEstimadoMin = qtTempoEstimadoMin;
+    }
+
+    public void atualizar(String dsServico, BigDecimal vlServico, Integer qtTempoEstimadoMin) {
+        this.dsServico = dsServico;
+        this.vlServico = vlServico;
+        this.qtTempoEstimadoMin = qtTempoEstimadoMin;
+    }
+
+    public UUID getIdServico() { return idServico; }
+    public String getDsServico() { return dsServico; }
+    public BigDecimal getVlServico() { return vlServico; }
+    public Integer getQtTempoEstimadoMin() { return qtTempoEstimadoMin; }
+
+    public void setIdServico(UUID idServico) { this.idServico = idServico; }
+    public void setDsServico(String dsServico) { this.dsServico = dsServico; }
+    public void setVlServico(BigDecimal vlServico) { this.vlServico = vlServico; }
+    public void setQtTempoEstimadoMin(Integer qtTempoEstimadoMin) { this.qtTempoEstimadoMin = qtTempoEstimadoMin; }
 }

@@ -1,5 +1,6 @@
 package br.com.autoflow.exception;
 
+import br.com.autoflow.domain.exception.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

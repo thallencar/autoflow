@@ -1,5 +1,7 @@
 package br.com.autoflow.exception;
 
+import br.com.autoflow.domain.exception.EmailJaCadastradoException;
+import br.com.autoflow.domain.exception.EnderecoNaoEncontradoException;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;

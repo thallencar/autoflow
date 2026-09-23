@@ -2,6 +2,7 @@ package br.com.autoflow.domain.model;
 
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
+import br.com.autoflow.domain.enums.TipoOrcamento;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -24,20 +25,46 @@ class OrdemServicoModelTest {
 
     @Test
     void carregarServicosDosOrcamentosAprovados_deveAdicionarServico() {
-        Servico serv = Servico.builder().idServico(UUID.randomUUID()).dsServico("S").vlServico(new BigDecimal("10.00")).build();
-        OrcamentoServico osServ = OrcamentoServico.builder().servico(serv).build();
-        Orcamento orc = Orcamento.builder().status(StatusOrcamento.APROVADO).servicos(List.of(osServ)).build();
-        osServ.setOrcamento(orc);
+        Servico serv = new Servico(
+                UUID.randomUUID(),
+                "S",
+                new BigDecimal("10.00"),
+                30
+        );
 
-        OrdemServico ordem = OrdemServico.builder().idsOrcamento(List.of(orc)).build();
+        // Usando o construtor vazio + setters para Orcamento
+        Orcamento orc = new Orcamento();
+        orc.setId(UUID.randomUUID());
+        orc.setTipoOrcamento(TipoOrcamento.INICIAL);
+        orc.setStatus(StatusOrcamento.APROVADO);
+        orc.setDataCriacao(LocalDateTime.now());
+        orc.setDataExpiracao(LocalDateTime.now().plusDays(1));
+
+        OrcamentoServico osServ = new OrcamentoServico(
+                UUID.randomUUID(),
+                BigDecimal.ZERO,
+                serv,
+                List.of(),
+                orc
+        );
+
+        orc.setServicos(List.of(osServ));
+
+        OrdemServico ordem = new OrdemServico();
+        ordem.setIdsOrcamento(List.of(orc));
+
         ordem.carregarServicosDosOrcamentosAprovados();
         assertFalse(ordem.getServicosExecucao().isEmpty());
     }
 
     @Test
     void verificarCancelamentoAutomatico_deveCancelarECalcularTaxa() {
-        OrdemServico ordem = OrdemServico.builder().statusOS(StatusOS.AGUARDANDO_APROVACAO).dtFimDiagnostico(LocalDateTime.now().minusDays(10)).build();
+        OrdemServico ordem = new OrdemServico();
+        ordem.setStatusOS(StatusOS.AGUARDANDO_APROVACAO);
+        ordem.setDtFimDiagnostico(LocalDateTime.now().minusDays(10));
+
         ordem.verificarCancelamentoAutomatico(5, new BigDecimal("10.00"));
+
         assertEquals(StatusOS.CANCELADA, ordem.getStatusOS());
         assertNotNull(ordem.getDtEncerramentoOs());
         assertTrue(ordem.getTaxaPermanencia().compareTo(BigDecimal.ZERO) > 0);

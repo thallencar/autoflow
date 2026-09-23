@@ -3,9 +3,8 @@ package br.com.autoflow.domain.model;
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusReservaEstoque;
 import br.com.autoflow.domain.enums.TipoOrcamento;
-import br.com.autoflow.exception.RegraNegocioException;
-import jakarta.persistence.*;
-import lombok.*;
+import br.com.autoflow.domain.exception.RegraNegocioException;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -14,58 +13,40 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-@Entity
-@Table(name = "TB_ORCAMENTOS")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Orcamento {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id_orcamento", updatable = false, nullable = false)
     private UUID id;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "tp_orcamento", length = 20, nullable = false)
     private TipoOrcamento tipoOrcamento;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "st_orcamento", nullable = false, length = 15)
-    @Builder.Default
-    private StatusOrcamento status = StatusOrcamento.PENDENTE;
-
-    @Column(name = "dt_criacao", nullable = false)
+    private StatusOrcamento status;
     private LocalDateTime dataCriacao;
-
-    @Column(name = "dt_expiracao", nullable = false)
     private LocalDateTime dataExpiracao;
-
-    @Column(name = "dt_decisao")
     private LocalDateTime dataDecisao;
-
-    @Column(name = "vl_subtotal_pecas", precision = 10, scale = 2, nullable = false)
     private BigDecimal subtotalPecas;
-
-    @Column(name = "vl_mao_obra", precision = 10, scale = 2, nullable = false)
     private BigDecimal maoObra;
-
-    @Column(name = "vl_total", precision = 10, scale = 2, nullable = false)
     private BigDecimal total;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_os", nullable = false)
     private OrdemServico ordemServico;
+    private List<OrcamentoServico> servicos;
+    private List<OrcamentoItem> itens;
 
-    @Builder.Default
-    @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrcamentoServico> servicos = new ArrayList<>();
+    public Orcamento() {}
 
-    @Builder.Default
-    @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrcamentoItem> itens = new ArrayList<>();
+    public Orcamento(UUID id, TipoOrcamento tipoOrcamento, StatusOrcamento status, LocalDateTime dataCriacao,
+                     LocalDateTime dataExpiracao, LocalDateTime dataDecisao, BigDecimal subtotalPecas,
+                     BigDecimal maoObra, BigDecimal total, OrdemServico ordemServico,
+                     List<OrcamentoServico> servicos, List<OrcamentoItem> itens) {
+        this.id = id;
+        this.tipoOrcamento = tipoOrcamento;
+        this.status = status != null ? status : StatusOrcamento.PENDENTE;
+        this.dataCriacao = dataCriacao;
+        this.dataExpiracao = dataExpiracao;
+        this.dataDecisao = dataDecisao;
+        this.subtotalPecas = subtotalPecas != null ? subtotalPecas : BigDecimal.ZERO;
+        this.maoObra = maoObra != null ? maoObra : BigDecimal.ZERO;
+        this.total = total != null ? total : BigDecimal.ZERO;
+        this.ordemServico = ordemServico;
+        this.servicos = servicos != null ? servicos : new ArrayList<>();
+        this.itens = itens != null ? itens : new ArrayList<>();
+        recalcularTotais();
+    }
 
     public void aprovar() {
         validarMudancaStatus();
@@ -115,8 +96,6 @@ public class Orcamento {
         }
     }
 
-    @PrePersist
-    @PreUpdate
     public void recalcularTotais() {
         this.maoObra = (this.servicos == null) ? BigDecimal.ZERO : this.servicos.stream()
                 .map(OrcamentoServico::getMaoDeObra)
@@ -133,4 +112,27 @@ public class Orcamento {
 
         this.total = this.maoObra.add(this.subtotalPecas);
     }
+
+    // Getters e Setters de Domínio
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    public TipoOrcamento getTipoOrcamento() { return tipoOrcamento; }
+    public void setTipoOrcamento(TipoOrcamento tipoOrcamento) { this.tipoOrcamento = tipoOrcamento; }
+    public StatusOrcamento getStatus() { return status; }
+    public void setStatus(StatusOrcamento status) { this.status = status; }
+    public LocalDateTime getDataCriacao() { return dataCriacao; }
+    public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
+    public LocalDateTime getDataExpiracao() { return dataExpiracao; }
+    public void setDataExpiracao(LocalDateTime dataExpiracao) { this.dataExpiracao = dataExpiracao; }
+    public LocalDateTime getDataDecisao() { return dataDecisao; }
+    public void setDataDecisao(LocalDateTime dataDecisao) { this.dataDecisao = dataDecisao; }
+    public BigDecimal getSubtotalPecas() { return subtotalPecas; }
+    public BigDecimal getMaoObra() { return maoObra; }
+    public BigDecimal getTotal() { return total; }
+    public OrdemServico getOrdemServico() { return ordemServico; }
+    public void setOrdemServico(OrdemServico ordemServico) { this.ordemServico = ordemServico; }
+    public List<OrcamentoServico> getServicos() { return servicos; }
+    public void setServicos(List<OrcamentoServico> servicos) { this.servicos = servicos; recalcularTotais(); }
+    public List<OrcamentoItem> getItens() { return itens; }
+    public void setItens(List<OrcamentoItem> itens) { this.itens = itens; }
 }

@@ -12,17 +12,20 @@ import static org.junit.jupiter.api.Assertions.*;
 class FuncionarioModelTest {
 
     @Test
-    void builder_e_metodosDeEstadoFuncionamCorretamente() {
-        Funcionario f = Funcionario.builder()
-                .idFuncionario(UUID.randomUUID())
-                .cpf("12345678900")
-                .nome("João")
-                .telefone("51999999999")
-                .email("joao@email.com")
-                .genero(Genero.MASCULINO)
-                .dataNascimento(LocalDate.of(1990,1,1))
-                .cargo(Cargo.MECANICO)
-                .build();
+    void construtor_e_metodosDeEstadoFuncionamCorretamente() {
+        Funcionario f = new Funcionario(
+                UUID.randomUUID(),
+                "12345678900",
+                "João",
+                "51999999999",
+                "joao@email.com",
+                Genero.MASCULINO,
+                LocalDate.of(1990, 1, 1),
+                Cargo.MECANICO,
+                null,
+                false,
+                0
+        );
 
         assertEquals("João", f.getNome());
         assertFalse(f.isOcupado());

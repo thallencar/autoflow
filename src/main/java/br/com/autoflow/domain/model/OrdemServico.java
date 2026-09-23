@@ -3,104 +3,84 @@ package br.com.autoflow.domain.model;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusPagamento;
-import br.com.autoflow.exception.RegraNegocioException;
-import jakarta.persistence.*;
-import lombok.*;
+import br.com.autoflow.domain.exception.RegraNegocioException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
-@Entity
-@Table(name = "TB_ORDENS_SERVICOS")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class OrdemServico {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id_os", nullable = false)
     private UUID idOs;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "st_os", nullable = false, length = 30)
-    private StatusOS statusOS = StatusOS.RECEBIDA;
-
-    @Column(name = "ds_relato_cliente", nullable = false, length = 255)
+    private StatusOS statusOS;
     private String dsRelatoCliente;
-
-    @Column(name = "ds_diagnostico", length = 255)
     private String dsDiagnostico;
-
-    @Builder.Default
-    @Column(name = "st_termo_aceito", nullable = false, updatable = false)
-    private Boolean stTermoAceito = false;
-
-    @Column(name = "dt_aceite_termo", updatable = false)
+    private Boolean stTermoAceito;
     private LocalDateTime dtAceiteTermo;
-
-    @Column(name = "nr_km_entrada")
     private Integer nrKmEntrada;
-
-    @Column(name = "dt_abertura_os", nullable = false, updatable = false)
     private LocalDateTime dtAberturaOs;
-
-    @Column(name = "dt_inicio_diagnostico")
     private LocalDateTime dtInicioDiagnostico;
-
-    @Column(name = "dt_fim_diagnostico")
     private LocalDateTime dtFimDiagnostico;
-
-    @Column(name = "dt_aprovacao_orcamento")
     private LocalDateTime dtAprovacaoOrcamento;
-
-    @Column(name = "dt_inicio_execucao")
     private LocalDateTime dataInicioExecucao;
-
-    @Column(name = "dt_fim_execucao")
     private LocalDateTime dataFimExecucao;
-
-    @Column(name = "dt_encerramento_os")
     private LocalDateTime dtEncerramentoOs;
-
-    @Column(name = "dt_reagendamento_os")
     private LocalDateTime dtReagendamentoOs;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "st_pagamento", nullable = false, length = 15)
-    private StatusPagamento stPagamento = StatusPagamento.PENDENTE;
-
-    @Column(name = "ds_motivo_cancelamento", length = 255)
+    private StatusPagamento stPagamento;
     private String dsMotivoCancelamento;
-
-    @Column(name = "vl_taxa_permanencia", precision = 10, scale = 2)
-    @Builder.Default
-    private BigDecimal taxaPermanencia = BigDecimal.ZERO;
-
-    @Column(name = "id_cliente", nullable = false)
+    private BigDecimal taxaPermanencia;
     private UUID idCliente;
-
-    @Column(name = "id_veiculo", nullable = false)
     private UUID idVeiculo;
-
-    @Column(name = "id_funcionario", nullable = true)
     private UUID idFuncionario;
+    private List<Orcamento> idsOrcamento;
+    private List<OsServico> servicosExecucao;
 
-    @OneToMany(mappedBy = "ordemServico", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Orcamento> idsOrcamento = new ArrayList<>();
+    public OrdemServico() {
+        this.statusOS = StatusOS.RECEBIDA;
+        this.stTermoAceito = false;
+        this.stPagamento = StatusPagamento.PENDENTE;
+        this.taxaPermanencia = BigDecimal.ZERO;
+        this.idsOrcamento = new ArrayList<>();
+        this.servicosExecucao = new ArrayList<>();
+    }
 
-    @Builder.Default
-    @OneToMany(mappedBy = "ordemServico", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OsServico> servicosExecucao = new ArrayList<>();
+    public OrdemServico(UUID idOs, StatusOS statusOS, String dsRelatoCliente, String dsDiagnostico,
+                        Boolean stTermoAceito, LocalDateTime dtAceiteTermo, Integer nrKmEntrada,
+                        LocalDateTime dtAberturaOs, LocalDateTime dtInicioDiagnostico, LocalDateTime dtFimDiagnostico,
+                        LocalDateTime dtAprovacaoOrcamento, LocalDateTime dataInicioExecucao, LocalDateTime dataFimExecucao,
+                        LocalDateTime dtEncerramentoOs, LocalDateTime dtReagendamentoOs, StatusPagamento stPagamento,
+                        String dsMotivoCancelamento, BigDecimal taxaPermanencia, UUID idCliente, UUID idVeiculo,
+                        UUID idFuncionario, List<Orcamento> idsOrcamento, List<OsServico> servicosExecucao) {
+        this.idOs = idOs;
+        this.statusOS = statusOS != null ? statusOS : StatusOS.RECEBIDA;
+        this.dsRelatoCliente = dsRelatoCliente;
+        this.dsDiagnostico = dsDiagnostico;
+        this.stTermoAceito = stTermoAceito != null ? stTermoAceito : false;
+        this.dtAceiteTermo = dtAceiteTermo;
+        this.nrKmEntrada = nrKmEntrada;
+        this.dtAberturaOs = dtAberturaOs;
+        this.dtInicioDiagnostico = dtInicioDiagnostico;
+        this.dtFimDiagnostico = dtFimDiagnostico;
+        this.dtAprovacaoOrcamento = dtAprovacaoOrcamento;
+        this.dataInicioExecucao = dataInicioExecucao;
+        this.dataFimExecucao = dataFimExecucao;
+        this.dtEncerramentoOs = dtEncerramentoOs;
+        this.dtReagendamentoOs = dtReagendamentoOs;
+        this.stPagamento = stPagamento != null ? stPagamento : StatusPagamento.PENDENTE;
+        this.dsMotivoCancelamento = dsMotivoCancelamento;
+        this.taxaPermanencia = taxaPermanencia != null ? taxaPermanencia : BigDecimal.ZERO;
+        this.idCliente = idCliente;
+        this.idVeiculo = idVeiculo;
+        this.idFuncionario = idFuncionario;
+        this.idsOrcamento = idsOrcamento != null ? idsOrcamento : new ArrayList<>();
+        this.servicosExecucao = servicosExecucao != null ? servicosExecucao : new ArrayList<>();
+    }
 
-    @PrePersist
     public void prePersist() {
         if (this.dtAberturaOs == null) {
             this.dtAberturaOs = LocalDateTime.now(ZoneId.systemDefault());
@@ -120,15 +100,15 @@ public class OrdemServico {
                 .map(OrcamentoServico::getServico)
                 .distinct()
                 .toList();
+
         for (Servico servico : servicosAprovados) {
             boolean jaExiste = this.servicosExecucao.stream()
                     .anyMatch(osServico -> osServico.getServico().getIdServico().equals(servico.getIdServico()));
 
             if (!jaExiste) {
-                OsServico osServico = OsServico.builder()
-                        .ordemServico(this)
-                        .servico(servico)
-                        .build();
+                OsServico osServico = new OsServico();
+                osServico.setOrdemServico(this);
+                osServico.setServico(servico);
                 this.servicosExecucao.add(osServico);
             }
         }
@@ -185,11 +165,8 @@ public class OrdemServico {
             case FINALIZADA -> tratarFinalizada(agora);
             case ENTREGUE -> tratarEntregue(agora);
             case CANCELADA -> tratarCancelada(agora, observacao);
-            case RECEBIDA, ABANDONADO -> {
-                // Status iniciais ou passivos não requerem tratamentos de data adicionais na mudança de status
-            }
-            default ->
-                    throw new RegraNegocioException("Status de Ordem de Serviço não suportado: " + novoStatus);
+            case RECEBIDA, ABANDONADO -> { }
+            default -> throw new RegraNegocioException("Status de Ordem de Serviço não suportado: " + novoStatus);
         }
     }
 
@@ -263,8 +240,8 @@ public class OrdemServico {
     public Long getTempoTotalExecucaoMinutos() {
         if (this.dataInicioExecucao != null && this.dataFimExecucao != null) {
             return java.time.Duration.between(
-                    this.dataInicioExecucao.atZone(java.time.ZoneId.systemDefault()),
-                    this.dataFimExecucao.atZone(java.time.ZoneId.systemDefault())
+                    this.dataInicioExecucao.atZone(ZoneId.systemDefault()),
+                    this.dataFimExecucao.atZone(ZoneId.systemDefault())
             ).toMinutes();
         }
         return null;
@@ -276,9 +253,9 @@ public class OrdemServico {
         }
         return this.servicosExecucao.stream()
                 .map(OsServico::getServico)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .map(Servico::getQtTempoEstimadoMin)
-                .filter(java.util.Objects::nonNull)
+                .filter(Objects::nonNull)
                 .reduce(0, Integer::sum);
     }
 
@@ -313,9 +290,9 @@ public class OrdemServico {
 
     public void verificarCancelamentoAutomatico(int diasLimite, BigDecimal valorDiaria) {
         if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
-            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(
-                    this.dtFimDiagnostico.atZone(java.time.ZoneId.systemDefault()),
-                    LocalDateTime.now(java.time.ZoneId.systemDefault()).atZone(java.time.ZoneId.systemDefault())
+            long diasDecorridos = ChronoUnit.DAYS.between(
+                    this.dtFimDiagnostico.atZone(ZoneId.systemDefault()),
+                    LocalDateTime.now(ZoneId.systemDefault()).atZone(ZoneId.systemDefault())
             );
             if (diasDecorridos > diasLimite) {
                 long diasExcedidos = diasDecorridos - diasLimite;
@@ -330,9 +307,9 @@ public class OrdemServico {
 
     public void verificarAbandonoTecnico(int diasLimiteAbandono) {
         if (this.statusOS == StatusOS.AGUARDANDO_APROVACAO && this.dtFimDiagnostico != null) {
-            long diasDecorridos = java.time.temporal.ChronoUnit.DAYS.between(
-                    this.dtFimDiagnostico.atZone(java.time.ZoneId.systemDefault()),
-                    LocalDateTime.now(java.time.ZoneId.systemDefault()).atZone(java.time.ZoneId.systemDefault())
+            long diasDecorridos = ChronoUnit.DAYS.between(
+                    this.dtFimDiagnostico.atZone(ZoneId.systemDefault()),
+                    LocalDateTime.now(ZoneId.systemDefault()).atZone(ZoneId.systemDefault())
             );
             if (diasDecorridos >= diasLimiteAbandono) {
                 this.statusOS = StatusOS.ABANDONADO;
@@ -341,4 +318,73 @@ public class OrdemServico {
             }
         }
     }
+
+    public UUID getIdOs() { return idOs; }
+    public void setIdOs(UUID idOs) { this.idOs = idOs; }
+
+    public StatusOS getStatusOS() { return statusOS; }
+    public void setStatusOS(StatusOS statusOS) { this.statusOS = statusOS; }
+
+    public String getDsRelatoCliente() { return dsRelatoCliente; }
+    public void setDsRelatoCliente(String dsRelatoCliente) { this.dsRelatoCliente = dsRelatoCliente; }
+
+    public String getDsDiagnostico() { return dsDiagnostico; }
+    public void setDsDiagnostico(String dsDiagnostico) { this.dsDiagnostico = dsDiagnostico; }
+
+    public Boolean getStTermoAceito() { return stTermoAceito; }
+    public void setStTermoAceito(Boolean stTermoAceito) { this.stTermoAceito = stTermoAceito; }
+
+    public LocalDateTime getDtAceiteTermo() { return dtAceiteTermo; }
+    public void setDtAceiteTermo(LocalDateTime dtAceiteTermo) { this.dtAceiteTermo = dtAceiteTermo; }
+
+    public Integer getNrKmEntrada() { return nrKmEntrada; }
+    public void setNrKmEntrada(Integer nrKmEntrada) { this.nrKmEntrada = nrKmEntrada; }
+
+    public LocalDateTime getDtAberturaOs() { return dtAberturaOs; }
+    public void setDtAberturaOs(LocalDateTime dtAberturaOs) { this.dtAberturaOs = dtAberturaOs; }
+
+    public LocalDateTime getDtInicioDiagnostico() { return dtInicioDiagnostico; }
+    public void setDtInicioDiagnostico(LocalDateTime dtInicioDiagnostico) { this.dtInicioDiagnostico = dtInicioDiagnostico; }
+
+    public LocalDateTime getDtFimDiagnostico() { return dtFimDiagnostico; }
+    public void setDtFimDiagnostico(LocalDateTime dtFimDiagnostico) { this.dtFimDiagnostico = dtFimDiagnostico; }
+
+    public LocalDateTime getDtAprovacaoOrcamento() { return dtAprovacaoOrcamento; }
+    public void setDtAprovacaoOrcamento(LocalDateTime dtAprovacaoOrcamento) { this.dtAprovacaoOrcamento = dtAprovacaoOrcamento; }
+
+    public LocalDateTime getDataInicioExecucao() { return dataInicioExecucao; }
+    public void setDataInicioExecucao(LocalDateTime dataInicioExecucao) { this.dataInicioExecucao = dataInicioExecucao; }
+
+    public LocalDateTime getDataFimExecucao() { return dataFimExecucao; }
+    public void setDataFimExecucao(LocalDateTime dataFimExecucao) { this.dataFimExecucao = dataFimExecucao; }
+
+    public LocalDateTime getDtEncerramentoOs() { return dtEncerramentoOs; }
+    public void setDtEncerramentoOs(LocalDateTime dtEncerramentoOs) { this.dtEncerramentoOs = dtEncerramentoOs; }
+
+    public LocalDateTime getDtReagendamentoOs() { return dtReagendamentoOs; }
+    public void setDtReagendamentoOs(LocalDateTime dtReagendamentoOs) { this.dtReagendamentoOs = dtReagendamentoOs; }
+
+    public StatusPagamento getStPagamento() { return stPagamento; }
+    public void setStPagamento(StatusPagamento stPagamento) { this.stPagamento = stPagamento; }
+
+    public String getDsMotivoCancelamento() { return dsMotivoCancelamento; }
+    public void setDsMotivoCancelamento(String dsMotivoCancelamento) { this.dsMotivoCancelamento = dsMotivoCancelamento; }
+
+    public BigDecimal getTaxaPermanencia() { return taxaPermanencia; }
+    public void setTaxaPermanencia(BigDecimal taxaPermanencia) { this.taxaPermanencia = taxaPermanencia; }
+
+    public UUID getIdCliente() { return idCliente; }
+    public void setIdCliente(UUID idCliente) { this.idCliente = idCliente; }
+
+    public UUID getIdVeiculo() { return idVeiculo; }
+    public void setIdVeiculo(UUID idVeiculo) { this.idVeiculo = idVeiculo; }
+
+    public UUID getIdFuncionario() { return idFuncionario; }
+    public void setIdFuncionario(UUID idFuncionario) { this.idFuncionario = idFuncionario; }
+
+    public List<Orcamento> getIdsOrcamento() { return idsOrcamento; }
+    public void setIdsOrcamento(List<Orcamento> idsOrcamento) { this.idsOrcamento = idsOrcamento; }
+
+    public List<OsServico> getServicosExecucao() { return servicosExecucao; }
+    public void setServicosExecucao(List<OsServico> servicosExecucao) { this.servicosExecucao = servicosExecucao; }
 }

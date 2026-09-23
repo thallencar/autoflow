@@ -112,7 +112,7 @@ A arquitetura segue um padrão MVC/clean-ish, com foco em Spring Boot + JPA + Sp
 ## 2. Entidades do domínio
 
 ### 2.1 Cliente
-Package: `br.com.autoflow.domain.model`
+Package: `br.com.autoflow.domain_clean.model`
 
 Atributos:
 - `UUID id`
@@ -403,7 +403,7 @@ Responsabilidade:
 ---
 
 ## 3. Enums do sistema
-Os enums principais estão em `br.com.autoflow.domain.enums`.
+Os enums principais estão em `br.com.autoflow.domain_clean.enums`.
 
 Principais enums:
 - `StatusOS`: estados da ordem de serviço
@@ -474,7 +474,7 @@ Todos seguem o padrão JPA CRUD com consultas extras conforme necessário.
 ---
 
 ## 5. DTOs (Data Transfer Objects)
-Os DTOs ficam em `br.com.autoflow.application.dto`.
+Os DTOs ficam em `br.com.autoflow.application_clean.dto`.
 
 ### 5.1 DTOs da API de estoque
 - `EstoqueRequest`
@@ -517,14 +517,14 @@ Função:
 ---
 
 ## 6. Mappers
-Os mappers ficam em `br.com.autoflow.infrastructure.mapper` e em sua maioria usam MapStruct.
+Os mappers ficam em `br.com.autoflow.infrastructure_clean.mapper` e em sua maioria usam MapStruct.
 
 Mappers importantes:
 - `EstoqueMapper`
 - `OrcamentoMapper`
 - `OrcamentoItemMapper`
 - `OrcamentoServicoMapper`
-- `OrdemServicoMapper`
+- `OrdemServicoMapper_`
 - `ServicoMapper`
 - `VeiculoMapper`
 - `FuncionarioMapper`
