@@ -3,7 +3,7 @@ package br.com.autoflow.application.usecase;
 import br.com.autoflow.adapters.inbound.controller.dto.ServicoRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.ServicoResponse;
 import br.com.autoflow.adapters.inbound.mapper.ServicoMapper;
-import br.com.autoflow.application.service.ServicoValidator;
+import br.com.autoflow.application.validator.ServicoValidator;
 import br.com.autoflow.domain.model.Servico;
 import br.com.autoflow.ports.outbound.ServicoRepositoryPort;
 import lombok.RequiredArgsConstructor;

@@ -29,7 +29,7 @@ public class OrcamentoValidator {
 
     private final OrdemServicoRepositoryPort ordemServicoRepositoryPort;
     private final EstoqueRepositoryPort estoqueRepositoryPort;
-    private final br.com.autoflow.application.service.ServicoValidator servicoValidator;
+    private final ServicoValidator servicoValidator;
     private final OrcamentoRepositoryPort orcamentoRepositoryPort;
 
     public void validarCriacao(OrcamentoRequest request) {

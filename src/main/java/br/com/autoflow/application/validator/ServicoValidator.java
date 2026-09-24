@@ -1,4 +1,4 @@
-package br.com.autoflow.application.service;
+package br.com.autoflow.application.validator;
 
 import br.com.autoflow.adapters.inbound.controller.dto.ServicoRequest;
 import br.com.autoflow.domain.model.Servico;

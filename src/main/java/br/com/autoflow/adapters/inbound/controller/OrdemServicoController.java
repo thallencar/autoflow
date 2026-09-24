@@ -1,4 +1,4 @@
-package br.com.autoflow.adapter.inbound.controller;
+package br.com.autoflow.adapters.inbound.controller;
 
 import br.com.autoflow.adapters.inbound.controller.dto.*;
 import br.com.autoflow.application.usecase.OrdemServicoUseCase;
