@@ -1,6 +1,5 @@
 package br.com.autoflow.domain.model;
 
-import br.com.autoflow.adapters.inbound.controller.dto.VeiculoRequest;
 import br.com.autoflow.domain.enums.*;
 import br.com.autoflow.domain.exception.RegraNegocioException;
 import org.junit.jupiter.api.Test;

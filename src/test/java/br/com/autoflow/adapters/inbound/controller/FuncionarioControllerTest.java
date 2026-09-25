@@ -3,10 +3,12 @@ package br.com.autoflow.adapters.inbound.controller;
 import br.com.autoflow.adapters.inbound.controller.dto.EnderecoResponse;
 import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioResponse;
+import br.com.autoflow.adapters.inbound.mapper.FuncionarioMapper;
 import br.com.autoflow.application.usecase.FuncionarioUseCase;
 import br.com.autoflow.domain.enums.Cargo;
 import br.com.autoflow.domain.enums.Genero;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
+import br.com.autoflow.domain.model.Funcionario;
 import jakarta.servlet.ServletException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +45,9 @@ class FuncionarioControllerTest {
     @Mock
     private FuncionarioUseCase service;
 
+    @Mock
+    private FuncionarioMapper funcionarioMapper;
+
     @InjectMocks
     private FuncionarioController controller;
 
@@ -67,7 +72,7 @@ class FuncionarioControllerTest {
                     "cidade": "Cidade C",
                     "bairro": "Bairro C",
                     "numero": "123",
-                    "cep": 93500000,
+                    "cep": "93500000",
                     "complemento": "casa"
                   }
                 }
@@ -92,9 +97,12 @@ class FuncionarioControllerTest {
         @DisplayName("Deve retornar HTTP 201 Created e o funcionário criado")
         void deveCriarFuncionarioComSucesso() throws Exception {
             UUID id = UUID.randomUUID();
+            Funcionario funcionarioDomain = new Funcionario();
             FuncionarioResponse response = criarResponseExemplo(id);
 
-            when(service.criar(any(FuncionarioRequest.class))).thenReturn(response);
+            when(funcionarioMapper.toDomain(any(FuncionarioRequest.class))).thenReturn(funcionarioDomain);
+            when(service.criar(any(Funcionario.class))).thenReturn(funcionarioDomain);
+            when(funcionarioMapper.toResponse(any(Funcionario.class))).thenReturn(response);
 
             mockMvc.perform(post("/funcionarios")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -106,7 +114,9 @@ class FuncionarioControllerTest {
                     .andExpect(jsonPath("$.cpf").value("62157435000"))
                     .andExpect(jsonPath("$.email").value("carlos@gmail.com"));
 
-            verify(service).criar(any(FuncionarioRequest.class));
+            verify(funcionarioMapper).toDomain(any(FuncionarioRequest.class));
+            verify(service).criar(any(Funcionario.class));
+            verify(funcionarioMapper).toResponse(any(Funcionario.class));
         }
     }
 
@@ -118,9 +128,11 @@ class FuncionarioControllerTest {
         @DisplayName("Deve retornar HTTP 200 OK com lista de funcionários")
         void deveListarFuncionariosComSucesso() throws Exception {
             UUID id = UUID.randomUUID();
+            Funcionario funcionarioDomain = new Funcionario();
             FuncionarioResponse response = criarResponseExemplo(id);
 
-            when(service.listar()).thenReturn(List.of(response));
+            when(service.listar()).thenReturn(List.of(funcionarioDomain));
+            when(funcionarioMapper.toResponse(any(Funcionario.class))).thenReturn(response);
 
             mockMvc.perform(get("/funcionarios")
                             .contentType(MediaType.APPLICATION_JSON))
@@ -130,6 +142,7 @@ class FuncionarioControllerTest {
                     .andExpect(jsonPath("$[0].nome").value("Carlos Silva"));
 
             verify(service).listar();
+            verify(funcionarioMapper).toResponse(any(Funcionario.class));
         }
 
         @Test
@@ -143,6 +156,7 @@ class FuncionarioControllerTest {
                     .andExpect(jsonPath("$", hasSize(0)));
 
             verify(service).listar();
+            verifyNoInteractions(funcionarioMapper);
         }
     }
 
@@ -154,9 +168,11 @@ class FuncionarioControllerTest {
         @DisplayName("Deve retornar HTTP 200 OK quando encontrar o funcionário por ID")
         void deveBuscarPorIdComSucesso() throws Exception {
             UUID id = UUID.randomUUID();
+            Funcionario funcionarioDomain = new Funcionario();
             FuncionarioResponse response = criarResponseExemplo(id);
 
-            when(service.buscar(id)).thenReturn(response);
+            when(service.buscar(id)).thenReturn(funcionarioDomain);
+            when(funcionarioMapper.toResponse(funcionarioDomain)).thenReturn(response);
 
             mockMvc.perform(get("/funcionarios/{id}", id)
                             .contentType(MediaType.APPLICATION_JSON))
@@ -165,6 +181,7 @@ class FuncionarioControllerTest {
                     .andExpect(jsonPath("$.nome").value("Carlos Silva"));
 
             verify(service).buscar(id);
+            verify(funcionarioMapper).toResponse(funcionarioDomain);
         }
 
         @Test
@@ -192,9 +209,12 @@ class FuncionarioControllerTest {
         @DisplayName("Deve retornar HTTP 200 OK e o funcionário atualizado")
         void deveAtualizarComSucesso() throws Exception {
             UUID id = UUID.randomUUID();
+            Funcionario funcionarioDomain = new Funcionario();
             FuncionarioResponse response = criarResponseExemplo(id);
 
-            when(service.atualizar(eq(id), any(FuncionarioRequest.class))).thenReturn(response);
+            when(funcionarioMapper.toDomain(any(FuncionarioRequest.class))).thenReturn(funcionarioDomain);
+            when(service.atualizar(eq(id), any(Funcionario.class))).thenReturn(funcionarioDomain);
+            when(funcionarioMapper.toResponse(any(Funcionario.class))).thenReturn(response);
 
             mockMvc.perform(put("/funcionarios/{id}", id)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -203,14 +223,19 @@ class FuncionarioControllerTest {
                     .andExpect(jsonPath("$.id").value(id.toString()))
                     .andExpect(jsonPath("$.nome").value("Carlos Silva"));
 
-            verify(service).atualizar(eq(id), any(FuncionarioRequest.class));
+            verify(funcionarioMapper).toDomain(any(FuncionarioRequest.class));
+            verify(service).atualizar(eq(id), any(Funcionario.class));
+            verify(funcionarioMapper).toResponse(any(Funcionario.class));
         }
 
         @Test
         @DisplayName("Deve propagar exceção ao tentar atualizar ID inexistente")
         void deveLancarExcecaoAoAtualizarInexistente() {
             UUID id = UUID.randomUUID();
-            when(service.atualizar(eq(id), any(FuncionarioRequest.class)))
+            Funcionario funcionarioDomain = new Funcionario();
+
+            when(funcionarioMapper.toDomain(any(FuncionarioRequest.class))).thenReturn(funcionarioDomain);
+            when(service.atualizar(eq(id), any(Funcionario.class)))
                     .thenThrow(new EntidadeNaoEncontradaException("Funcionário", id));
 
             ServletException exception = assertThrows(ServletException.class, () ->
@@ -221,7 +246,8 @@ class FuncionarioControllerTest {
 
             assertTrue(exception.getCause() instanceof EntidadeNaoEncontradaException);
             assertEquals("Funcionário com ID " + id + " nao encontrado.", exception.getCause().getMessage());
-            verify(service).atualizar(eq(id), any(FuncionarioRequest.class));
+            verify(funcionarioMapper).toDomain(any(FuncionarioRequest.class));
+            verify(service).atualizar(eq(id), any(Funcionario.class));
         }
     }
 

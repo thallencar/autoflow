@@ -2,7 +2,9 @@ package br.com.autoflow.adapters.inbound.controller;
 
 import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioResponse;
+import br.com.autoflow.adapters.inbound.mapper.FuncionarioMapper;
 import br.com.autoflow.application.usecase.FuncionarioUseCase;
+import br.com.autoflow.domain.model.Funcionario;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,26 +19,34 @@ import java.util.UUID;
 public class FuncionarioController {
 
     private final FuncionarioUseCase useCase;
+    private final FuncionarioMapper funcionarioMapper;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FuncionarioResponse criar(@RequestBody @Valid FuncionarioRequest request) {
-        return useCase.criar(request);
+        Funcionario domain = funcionarioMapper.toDomain(request);
+        Funcionario salvo = useCase.criar(domain);
+        return funcionarioMapper.toResponse(salvo);
     }
 
     @GetMapping
     public List<FuncionarioResponse> listar() {
-        return useCase.listar();
+        return useCase.listar().stream()
+                .map(funcionarioMapper::toResponse)
+                .toList();
     }
 
     @GetMapping("/{id}")
     public FuncionarioResponse buscar(@PathVariable UUID id) {
-        return useCase.buscar(id);
+        Funcionario funcionario = useCase.buscar(id);
+        return funcionarioMapper.toResponse(funcionario);
     }
 
     @PutMapping("/{id}")
     public FuncionarioResponse atualizar(@PathVariable UUID id, @RequestBody @Valid FuncionarioRequest request) {
-        return useCase.atualizar(id, request);
+        Funcionario domain = funcionarioMapper.toDomain(request);
+        Funcionario atualizado = useCase.atualizar(id, domain);
+        return funcionarioMapper.toResponse(atualizado);
     }
 
     @DeleteMapping("/{id}")

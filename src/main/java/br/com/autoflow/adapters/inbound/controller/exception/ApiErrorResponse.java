@@ -1,4 +1,4 @@
-package br.com.autoflow.domain.exception;
+package br.com.autoflow.adapters.inbound.controller.exception;
 
 import java.time.LocalDateTime;
 

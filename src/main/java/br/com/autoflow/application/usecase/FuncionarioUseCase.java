@@ -1,14 +1,13 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioResponse;
-import br.com.autoflow.adapters.inbound.mapper.FuncionarioMapper;
 import br.com.autoflow.application.validator.FuncionarioValidator;
 import br.com.autoflow.domain.enums.Cargo;
 import br.com.autoflow.domain.enums.Perfil;
+import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Usuario;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
+import br.com.autoflow.ports.outbound.EnderecoRepositoryPort;
 import br.com.autoflow.ports.outbound.FuncionarioRepositoryPort;
 import br.com.autoflow.ports.outbound.UsuarioRepositoryPort;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -25,55 +25,53 @@ import java.util.UUID;
 public class FuncionarioUseCase {
 
     private final FuncionarioRepositoryPort repositoryPort;
-    private final FuncionarioMapper funcionarioMapper;
+    private final EnderecoRepositoryPort enderecoRepository;
     private final FuncionarioValidator funcionarioValidator;
     private final UsuarioRepositoryPort usuarioRepositoryPort;
     private final PasswordEncoder passwordEncoder;
     private static final String NOME_ENTIDADE = "Funcionário";
 
     @Transactional
-    public FuncionarioResponse criar(FuncionarioRequest request) {
-        funcionarioValidator.validarParaCriar(request);
+    public Funcionario criar(Funcionario funcionario) {
+        funcionarioValidator.validarParaCriar(funcionario);
+        tratarEndereco(funcionario);
 
-        Funcionario funcionario = funcionarioMapper.toDomain(request);
-        funcionario = repositoryPort.save(funcionario);
+        Funcionario funcionarioSalvo = repositoryPort.save(funcionario);
+        Perfil perfil = definirPerfilPorCargo(funcionarioSalvo.getCargo());
+        String senhaCriptografada = passwordEncoder.encode(funcionarioSalvo.getCpf());
 
-        Perfil perfil = definirPerfilPorCargo(funcionario.getCargo());
-        String senhaCriptografada = passwordEncoder.encode(funcionario.getCpf());
-
-        Usuario usuario = Usuario.criarUsuarioParaFuncionario(funcionario, perfil, senhaCriptografada);
+        Usuario usuario = Usuario.criarUsuarioParaFuncionario(funcionarioSalvo, perfil, senhaCriptografada);
         usuarioRepositoryPort.save(usuario);
 
-        return funcionarioMapper.toResponse(funcionario);
+        return funcionarioSalvo;
     }
 
-    public List<FuncionarioResponse> listar() {
-        return repositoryPort.findAll().stream()
-                .map(funcionarioMapper::toResponse)
-                .toList();
+    public List<Funcionario> listar() {
+        return repositoryPort.findAll();
     }
 
-    public FuncionarioResponse buscar(UUID id) {
-        Funcionario funcionario = repositoryPort.findById(id)
+    public Funcionario buscar(UUID id) {
+        return repositoryPort.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
-        return funcionarioMapper.toResponse(funcionario);
     }
 
     @Transactional
-    public FuncionarioResponse atualizar(UUID id, FuncionarioRequest request) {
-        funcionarioValidator.validarParaAtualizar(id, request);
+    public Funcionario atualizar(UUID id, Funcionario funcionarioParam) {
+        funcionarioValidator.validarParaAtualizar(id, funcionarioParam);
 
         Funcionario funcionario = repositoryPort.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
 
+        tratarEndereco(funcionarioParam);
+
         funcionario.atualizar(
-                request.nome(),
-                request.telefone(),
-                request.email(),
-                request.genero(),
-                request.dataNascimento(),
-                request.cargo(),
-                null
+                funcionarioParam.getNome(),
+                funcionarioParam.getTelefone(),
+                funcionarioParam.getEmail(),
+                funcionarioParam.getGenero(),
+                funcionarioParam.getDataNascimento(),
+                funcionarioParam.getCargo(),
+                funcionarioParam.getEndereco()
         );
 
         repositoryPort.save(funcionario);
@@ -84,7 +82,7 @@ public class FuncionarioUseCase {
                     usuarioRepositoryPort.save(usuario);
                 });
 
-        return funcionarioMapper.toResponse(funcionario);
+        return funcionario;
     }
 
     @Transactional
@@ -114,6 +112,21 @@ public class FuncionarioUseCase {
         }
 
         return "Advertência registrada com sucesso. Total atual de advertências: " + totalAdvertencias;
+    }
+
+    private void tratarEndereco(Funcionario funcionario) {
+        if (funcionario.getEndereco() != null) {
+            String cep = funcionario.getEndereco().getCep();
+            Integer numero = funcionario.getEndereco().getNumero();
+
+            Optional<Endereco> enderecoExistente = enderecoRepository.findByCepAndNumero(cep, numero);
+
+            if (enderecoExistente.isPresent()) {
+                funcionario.setEndereco(enderecoExistente.get());
+            } else {
+                funcionario.getEndereco().setId(null);
+            }
+        }
     }
 
     private Perfil definirPerfilPorCargo(Cargo cargo) {

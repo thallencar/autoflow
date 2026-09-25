@@ -1,16 +1,12 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.EnderecoRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioResponse;
-import br.com.autoflow.adapters.inbound.mapper.EnderecoMapper;
-import br.com.autoflow.adapters.inbound.mapper.FuncionarioMapper;
 import br.com.autoflow.application.validator.FuncionarioValidator;
 import br.com.autoflow.domain.enums.Cargo;
 import br.com.autoflow.domain.enums.Genero;
 import br.com.autoflow.domain.enums.Perfil;
 import br.com.autoflow.domain.exception.DadosJaCadastradosException;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
+import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Usuario;
 import br.com.autoflow.ports.outbound.EnderecoRepositoryPort;
@@ -56,12 +52,6 @@ class FuncionarioServiceTest {
     private EnderecoRepositoryPort enderecoRepository;
 
     @Mock
-    private FuncionarioMapper funcionarioMapper;
-
-    @Mock
-    private EnderecoMapper enderecoMapper;
-
-    @Mock
     private FuncionarioValidator funcionarioValidator;
 
     @Mock
@@ -73,11 +63,11 @@ class FuncionarioServiceTest {
     @InjectMocks
     private FuncionarioUseCase service;
 
-    private FuncionarioRequest criarRequestExemplo(Cargo cargo) {
-        EnderecoRequest enderecoRequest = new EnderecoRequest("Rua A", "RS", "Cidade C", "Bairro C", "123", 93500000, "casa");
-        return new FuncionarioRequest(
-                "12345678901", "Carlos Silva", "51999999999", "carlos@gmail.com",
-                Genero.MASCULINO, LocalDate.of(2000, 9, 12), cargo, enderecoRequest
+    private Funcionario criarFuncionarioExemplo(Cargo cargo) {
+        Endereco endereco = new Endereco(UUID.randomUUID(), "Rua A", "RS", "casa", "Bairro C", "Cidade C", 123, "93500000");
+        return new Funcionario(
+                UUID.randomUUID(), "12345678901", "Carlos Silva", "51999999999", "carlos@gmail.com",
+                Genero.MASCULINO, LocalDate.of(2000, 9, 12), cargo,  endereco,false,0
         );
     }
 
@@ -95,29 +85,22 @@ class FuncionarioServiceTest {
         @DisplayName("Deve criar funcionário e vincular usuário com o perfil correto para cada cargo")
         void deveCriarFuncionarioEUsuarioComSucesso(Cargo cargo, Perfil perfilEsperado) {
             // Arrange
-            FuncionarioRequest request = criarRequestExemplo(cargo);
+            Funcionario funcionario = criarFuncionarioExemplo(cargo);
 
-            Funcionario funcionarioMock = mock(Funcionario.class);
-            when(funcionarioMock.getCargo()).thenReturn(cargo);
-
-            FuncionarioResponse responseEsperada = mock(FuncionarioResponse.class);
-
-            doNothing().when(funcionarioValidator).validarParaCriar(request);
-            when(funcionarioMapper.toDomain(request)).thenReturn(funcionarioMock);
-            when(repository.save(funcionarioMock)).thenReturn(funcionarioMock);
-            when(funcionarioMapper.toResponse(funcionarioMock)).thenReturn(responseEsperada);
+            doNothing().when(funcionarioValidator).validarParaCriar(funcionario);
+            when(repository.save(funcionario)).thenReturn(funcionario);
+            when(passwordEncoder.encode(funcionario.getCpf())).thenReturn("encodedPass");
 
             // Act
-            FuncionarioResponse response = service.criar(request);
+            Funcionario resultado = service.criar(funcionario);
 
             // Assert
-            assertNotNull(response);
-            assertEquals(responseEsperada, response);
+            assertNotNull(resultado);
+            assertEquals(funcionario, resultado);
 
             // Verificações dos serviços chamados
-            verify(funcionarioValidator).validarParaCriar(request);
-            verify(funcionarioMapper).toDomain(request);
-            verify(repository).save(funcionarioMock);
+            verify(funcionarioValidator).validarParaCriar(funcionario);
+            verify(repository).save(funcionario);
 
             // Captura do usuário salvo para garantir que foi associado
             ArgumentCaptor<Usuario> usuarioCaptor = ArgumentCaptor.forClass(Usuario.class);
@@ -129,14 +112,14 @@ class FuncionarioServiceTest {
         @DisplayName("Não deve salvar entidades se a validação lançar exceção")
         void naoDeveCriarSeValidacaoFalhar() {
             // Arrange
-            FuncionarioRequest request = criarRequestExemplo(Cargo.GERENTE);
+            Funcionario funcionario = criarFuncionarioExemplo(Cargo.GERENTE);
             doThrow(new DadosJaCadastradosException("CPF já cadastrado"))
-                    .when(funcionarioValidator).validarParaCriar(request);
+                    .when(funcionarioValidator).validarParaCriar(funcionario);
 
             // Act & Assert
-            assertThrows(DadosJaCadastradosException.class, () -> service.criar(request));
+            assertThrows(DadosJaCadastradosException.class, () -> service.criar(funcionario));
 
-            verify(enderecoRepository, never()).save(any());
+            verify(enderecoRepository, never()).findByCepAndNumero(any(), any());
             verify(repository, never()).save(any());
             verify(usuarioRepository, never()).save(any());
         }
@@ -150,15 +133,13 @@ class FuncionarioServiceTest {
         @DisplayName("Deve retornar lista de funcionários quando houver registros")
         void deveListarFuncionariosComSucesso() {
             // Arrange
-            Funcionario f1 = mock(Funcionario.class);
-            Funcionario f2 = mock(Funcionario.class);
-            FuncionarioResponse responseMock = mock(FuncionarioResponse.class);
+            Funcionario f1 = criarFuncionarioExemplo(Cargo.GERENTE);
+            Funcionario f2 = criarFuncionarioExemplo(Cargo.MECANICO);
 
             when(repository.findAll()).thenReturn(List.of(f1, f2));
-            when(funcionarioMapper.toResponse(any(Funcionario.class))).thenReturn(responseMock);
 
             // Act
-            List<FuncionarioResponse> resultado = service.listar();
+            List<Funcionario> resultado = service.listar();
 
             // Assert
             assertNotNull(resultado);
@@ -173,7 +154,7 @@ class FuncionarioServiceTest {
             when(repository.findAll()).thenReturn(Collections.emptyList());
 
             // Act
-            List<FuncionarioResponse> resultado = service.listar();
+            List<Funcionario> resultado = service.listar();
 
             // Assert
             assertNotNull(resultado);
@@ -191,18 +172,16 @@ class FuncionarioServiceTest {
         void deveBuscarPorIdComSucesso() {
             // Arrange
             UUID id = UUID.randomUUID();
-            Funcionario funcionario = mock(Funcionario.class);
-            FuncionarioResponse responseEsperada = mock(FuncionarioResponse.class);
+            Funcionario funcionario = criarFuncionarioExemplo(Cargo.GERENTE);
 
             when(repository.findById(id)).thenReturn(Optional.of(funcionario));
-            when(funcionarioMapper.toResponse(funcionario)).thenReturn(responseEsperada);
 
             // Act
-            FuncionarioResponse response = service.buscar(id);
+            Funcionario resultado = service.buscar(id);
 
             // Assert
-            assertNotNull(response);
-            assertEquals(responseEsperada, response);
+            assertNotNull(resultado);
+            assertEquals(funcionario, resultado);
             verify(repository).findById(id);
         }
 
@@ -234,30 +213,26 @@ class FuncionarioServiceTest {
         void deveAtualizarFuncionarioEUsuarioComPerfilCorreto(Cargo cargo, Perfil perfilEsperado) {
             // Arrange
             UUID id = UUID.randomUUID();
-            FuncionarioRequest request = criarRequestExemplo(cargo);
-
-            Funcionario funcionario = mock(Funcionario.class);
-            when(funcionario.getEmail()).thenReturn("carlos@gmail.com");
-            when(funcionario.getCargo()).thenReturn(cargo);
+            Funcionario funcionarioParam = criarFuncionarioExemplo(cargo);
+            Funcionario funcionarioExistente = criarFuncionarioExemplo(Cargo.AUXILIAR_MECANICO);
 
             Usuario usuarioMock = mock(Usuario.class);
-            FuncionarioResponse responseEsperada = mock(FuncionarioResponse.class);
 
-            doNothing().when(funcionarioValidator).validarParaAtualizar(id, request);
-            when(repository.findById(id)).thenReturn(Optional.of(funcionario));
-            when(usuarioRepository.findByFuncionario(funcionario)).thenReturn(Optional.of(usuarioMock));
-            when(funcionarioMapper.toResponse(funcionario)).thenReturn(responseEsperada);
+            doNothing().when(funcionarioValidator).validarParaAtualizar(id, funcionarioParam);
+            when(repository.findById(id)).thenReturn(Optional.of(funcionarioExistente));
+            when(usuarioRepository.findByFuncionarioId(id)).thenReturn(Optional.of(usuarioMock));
 
             // Act
-            FuncionarioResponse response = service.atualizar(id, request);
+            Funcionario resultado = service.atualizar(id, funcionarioParam);
 
             // Assert
-            assertNotNull(response);
-            assertEquals(responseEsperada, response);
-
-            verify(funcionarioValidator).validarParaAtualizar(id, request);
-            verify(funcionarioMapper).updateEntityFromDto(request, funcionario);
-            verify(usuarioMock).atualizarDadosAcesso("carlos@gmail.com", perfilEsperado);
+            assertNotNull(resultado);
+            verify(funcionarioValidator).validarParaAtualizar(id, funcionarioParam);
+            verify(repository).findById(id);
+            verify(repository).save(funcionarioExistente);
+            verify(usuarioRepository).findByFuncionarioId(id);
+            verify(usuarioMock).atualizarDadosAcesso(funcionarioParam.getEmail(), perfilEsperado);
+            verify(usuarioRepository).save(usuarioMock);
         }
 
         @Test
@@ -265,22 +240,22 @@ class FuncionarioServiceTest {
         void deveAtualizarApenasFuncionarioQuandoNaoHouverUsuario() {
             // Arrange
             UUID id = UUID.randomUUID();
-            FuncionarioRequest request = criarRequestExemplo(Cargo.MECANICO);
-            Funcionario funcionario = mock(Funcionario.class);
-            FuncionarioResponse responseEsperada = mock(FuncionarioResponse.class);
+            Funcionario funcionarioParam = criarFuncionarioExemplo(Cargo.MECANICO);
+            Funcionario funcionarioExistente = criarFuncionarioExemplo(Cargo.MECANICO);
 
-            doNothing().when(funcionarioValidator).validarParaAtualizar(id, request);
-            when(repository.findById(id)).thenReturn(Optional.of(funcionario));
-            when(usuarioRepository.findByFuncionario(funcionario)).thenReturn(Optional.empty());
-            when(funcionarioMapper.toResponse(funcionario)).thenReturn(responseEsperada);
+            doNothing().when(funcionarioValidator).validarParaAtualizar(id, funcionarioParam);
+            when(repository.findById(id)).thenReturn(Optional.of(funcionarioExistente));
+            when(usuarioRepository.findByFuncionarioId(id)).thenReturn(Optional.empty());
 
             // Act
-            FuncionarioResponse response = service.atualizar(id, request);
+            Funcionario resultado = service.atualizar(id, funcionarioParam);
 
             // Assert
-            assertNotNull(response);
-            verify(funcionarioValidator).validarParaAtualizar(id, request);
-            verify(funcionarioMapper).updateEntityFromDto(request, funcionario);
+            assertNotNull(resultado);
+            verify(funcionarioValidator).validarParaAtualizar(id, funcionarioParam);
+            verify(repository).save(funcionarioExistente);
+            verify(usuarioRepository).findByFuncionarioId(id);
+            verify(usuarioRepository, never()).save(any());
         }
 
         @Test
@@ -288,17 +263,16 @@ class FuncionarioServiceTest {
         void deveLancarExcecaoAoAtualizarInexistente() {
             // Arrange
             UUID id = UUID.randomUUID();
-            FuncionarioRequest request = criarRequestExemplo(Cargo.GERENTE);
+            Funcionario funcionarioParam = criarFuncionarioExemplo(Cargo.GERENTE);
 
-            doNothing().when(funcionarioValidator).validarParaAtualizar(id, request);
+            doNothing().when(funcionarioValidator).validarParaAtualizar(id, funcionarioParam);
             when(repository.findById(id)).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThrows(EntidadeNaoEncontradaException.class, () -> service.atualizar(id, request));
+            assertThrows(EntidadeNaoEncontradaException.class, () -> service.atualizar(id, funcionarioParam));
 
-            verify(funcionarioValidator).validarParaAtualizar(id, request);
-            verify(funcionarioMapper, never()).updateEntityFromDto(any(), any());
-            verify(usuarioRepository, never()).findByFuncionario(any());
+            verify(funcionarioValidator).validarParaAtualizar(id, funcionarioParam);
+            verify(repository, never()).save(any());
         }
 
         @Test
@@ -306,16 +280,16 @@ class FuncionarioServiceTest {
         void naoDeveAtualizarSeValidacaoFalhar() {
             // Arrange
             UUID id = UUID.randomUUID();
-            FuncionarioRequest request = criarRequestExemplo(Cargo.GERENTE);
+            Funcionario funcionarioParam = criarFuncionarioExemplo(Cargo.GERENTE);
 
             doThrow(new DadosJaCadastradosException("E-mail já cadastrado para outro funcionário"))
-                    .when(funcionarioValidator).validarParaAtualizar(id, request);
+                    .when(funcionarioValidator).validarParaAtualizar(id, funcionarioParam);
 
             // Act & Assert
-            assertThrows(DadosJaCadastradosException.class, () -> service.atualizar(id, request));
+            assertThrows(DadosJaCadastradosException.class, () -> service.atualizar(id, funcionarioParam));
 
             verify(repository, never()).findById(any());
-            verify(funcionarioMapper, never()).updateEntityFromDto(any(), any());
+            verify(repository, never()).save(any());
         }
     }
 
@@ -324,19 +298,23 @@ class FuncionarioServiceTest {
     class DeletarTests {
 
         @Test
-        @DisplayName("Deve deletar funcionário quando ID for encontrado")
+        @DisplayName("Deve deletar funcionário e usuário quando ID for encontrado")
         void deveDeletarComSucesso() {
             // Arrange
             UUID id = UUID.randomUUID();
-            Funcionario funcionario = mock(Funcionario.class);
+            Funcionario funcionario = criarFuncionarioExemplo(Cargo.GERENTE);
+            Usuario usuario = mock(Usuario.class);
 
             when(repository.findById(id)).thenReturn(Optional.of(funcionario));
+            when(usuarioRepository.findByFuncionarioId(id)).thenReturn(Optional.of(usuario));
 
             // Act
             service.deletar(id);
 
             // Assert
             verify(repository).findById(id);
+            verify(usuarioRepository).findByFuncionarioId(id);
+            verify(usuarioRepository).delete(usuario);
             verify(repository).delete(funcionario);
         }
 

@@ -1,13 +1,14 @@
 package br.com.autoflow.adapters.outbound.persistence;
 
+import br.com.autoflow.adapters.outbound.persistence.entity.UsuarioEntity;
 import br.com.autoflow.adapters.outbound.persistence.mapper.UsuarioEntityMapper;
+import br.com.autoflow.adapters.outbound.persistence.repository.SpringDataFuncionarioRepository;
 import br.com.autoflow.adapters.outbound.persistence.repository.SpringDataUsuarioRepository;
 import br.com.autoflow.domain.model.Cliente;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Usuario;
 import br.com.autoflow.ports.outbound.UsuarioRepositoryPort;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -19,12 +20,29 @@ public class UsuarioRepositoryAdapter implements UsuarioRepositoryPort {
 
     private final SpringDataUsuarioRepository repository;
     private final UsuarioEntityMapper mapper;
+    private final SpringDataFuncionarioRepository funcionarioRepository;
 
     @Override
     public Usuario save(Usuario usuario) {
-        var entity = mapper.toEntity(usuario);
-        var savedEntity = repository.save(entity);
-        return mapper.toDomain(savedEntity);
+        UsuarioEntity entity = mapper.toEntity(usuario);
+
+        // Se o usuário possui um funcionário associado com ID, buscamos a instância gerenciada
+        // para evitar que o Hibernate tente persistir entidades destacadas (detached) em cascata.
+        if (entity.getFuncionario() != null && entity.getFuncionario().getIdFuncionario() != null) {
+            var funcionarioGerenciado = funcionarioRepository.findById(entity.getFuncionario().getIdFuncionario())
+                    .orElseThrow(() -> new RuntimeException("Funcionário não encontrado"));
+
+            // Se o funcionário possui um endereço com ID preenchido, garantimos que ele também seja gerenciado
+            if (funcionarioGerenciado.getEndereco() != null && entity.getFuncionario().getEndereco() != null
+                    && entity.getFuncionario().getEndereco().getId() != null) {
+                entity.getFuncionario().getEndereco().setId(funcionarioGerenciado.getEndereco().getId());
+            }
+
+            entity.setFuncionario(funcionarioGerenciado);
+        }
+
+        entity = repository.save(entity);
+        return mapper.toDomain(entity);
     }
 
     @Override

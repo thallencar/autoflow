@@ -1,5 +1,8 @@
-package br.com.autoflow.domain.exception;
+package br.com.autoflow.adapters.inbound.controller.exception;
 
+import br.com.autoflow.domain.exception.DadosJaCadastradosException;
+import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
+import br.com.autoflow.domain.exception.RegraNegocioException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;

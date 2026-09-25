@@ -1,6 +1,9 @@
 package br.com.autoflow.exception;
 
-import br.com.autoflow.domain.exception.*;
+import br.com.autoflow.adapters.inbound.controller.exception.*;
+import br.com.autoflow.domain.exception.DadosJaCadastradosException;
+import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
+import br.com.autoflow.domain.exception.RegraNegocioException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

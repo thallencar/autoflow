@@ -10,4 +10,5 @@ public interface EnderecoRepositoryPort {
     List<Endereco> findAll();
     Optional<Endereco> findById(UUID id);
     void delete(Endereco endereco);
+    Optional<Endereco> findByCepAndNumero(String cep, Integer numero);
 }

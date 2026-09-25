@@ -1,5 +1,6 @@
 package br.com.autoflow.adapters.outbound.security;
 
+import br.com.autoflow.domain.enums.Perfil;
 import br.com.autoflow.domain.model.Usuario;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,13 +17,22 @@ public class UserDetailsImpl implements UserDetails {
         this.usuario = usuario;
     }
 
+    public Usuario getUsuario() {
+        return this.usuario;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Converte o Perfil do usuário em uma Authority do Spring Security
-        if (usuario.getPerfil() != null) {
-            return List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getPerfil().name()));
+        if (usuario.getPerfil() == Perfil.ADMIN) {
+            return List.of(
+                    new SimpleGrantedAuthority("ROLE_ADMIN"),
+                    new SimpleGrantedAuthority("ROLE_MECANICO"),
+                    new SimpleGrantedAuthority("ROLE_CLIENTE")
+            );
+        } else if (usuario.getPerfil() == Perfil.MECANICO) {
+            return List.of(new SimpleGrantedAuthority("ROLE_MECANICO"));
         }
-        return List.of();
+        return List.of(new SimpleGrantedAuthority("ROLE_CLIENTE"));
     }
 
     @Override
@@ -37,14 +47,13 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public boolean isAccountNonExpired() { return true; }
+
     @Override
     public boolean isAccountNonLocked() { return true; }
+
     @Override
     public boolean isCredentialsNonExpired() { return true; }
+
     @Override
     public boolean isEnabled() { return true; }
-
-    public Usuario getUsuario() {
-        return usuario;
-    }
 }

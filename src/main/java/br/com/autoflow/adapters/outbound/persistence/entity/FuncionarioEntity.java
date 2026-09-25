@@ -46,7 +46,7 @@ public class FuncionarioEntity implements Serializable {
     @Column(name = "ds_cargo", nullable = false)
     private Cargo cargo;
 
-    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = {CascadeType.MERGE}, fetch = FetchType.LAZY)
     @JoinColumn(name = "id_endereco", nullable = false)
     private EnderecoEntity endereco;
 

@@ -42,4 +42,10 @@ public class EnderecoRepositoryAdapter implements EnderecoRepositoryPort {
     public void delete(Endereco endereco) {
         repository.delete(mapper.toEntity(endereco));
     }
+
+    @Override
+    public Optional<Endereco> findByCepAndNumero(String cep, Integer numero) {
+        return repository.findByCepAndNumero(cep, numero)
+                .map(mapper::toDomain);
+    }
 }

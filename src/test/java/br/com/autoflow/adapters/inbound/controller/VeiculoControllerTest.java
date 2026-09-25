@@ -3,7 +3,7 @@ package br.com.autoflow.adapters.inbound.controller;
 import br.com.autoflow.adapters.inbound.controller.dto.VeiculoRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.VeiculoResponse;
 import br.com.autoflow.application.usecase.VeiculoUseCaseImpl;
-import br.com.autoflow.domain.exception.GlobalExceptionHandler;
+import br.com.autoflow.adapters.inbound.controller.exception.GlobalExceptionHandler;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;

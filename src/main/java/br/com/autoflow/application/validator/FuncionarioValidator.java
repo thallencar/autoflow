@@ -1,8 +1,8 @@
 package br.com.autoflow.application.validator;
 
-import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioRequest;
 import br.com.autoflow.domain.exception.DadosJaCadastradosException;
 import br.com.autoflow.domain.exception.RegraNegocioException;
+import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.ports.outbound.FuncionarioRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,16 +17,16 @@ public class FuncionarioValidator {
 
     private final FuncionarioRepositoryPort repositoryPort;
 
-    public void validarParaCriar(FuncionarioRequest request) {
-        validarIdadeMinima(request.dataNascimento());
-        validarCpfUnico(request.cpf());
-        validarEmailUnico(request.email());
+    public void validarParaCriar(Funcionario funcionario) {
+        validarIdadeMinima(funcionario.getDataNascimento());
+        validarCpfUnico(funcionario.getCpf());
+        validarEmailUnico(funcionario.getEmail());
     }
 
-    public void validarParaAtualizar(UUID id, FuncionarioRequest request) {
-        validarIdadeMinima(request.dataNascimento());
-        validarCpfUnicoParaOutroFuncionario(id, request.cpf());
-        validarEmailUnicoParaOutroFuncionario(id, request.email());
+    public void validarParaAtualizar(UUID id, Funcionario funcionario) {
+        validarIdadeMinima(funcionario.getDataNascimento());
+        validarCpfUnicoParaOutroFuncionario(id, funcionario.getCpf());
+        validarEmailUnicoParaOutroFuncionario(id, funcionario.getEmail());
     }
 
     private void validarIdadeMinima(LocalDate dataNascimento) {

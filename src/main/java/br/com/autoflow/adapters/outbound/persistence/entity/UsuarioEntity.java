@@ -33,7 +33,7 @@ public class UsuarioEntity {
     @JoinColumn(name = "id_cliente")
     private ClienteEntity cliente;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "id_funcionario")
     private FuncionarioEntity funcionario;
 }
