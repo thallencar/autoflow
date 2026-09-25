@@ -1,6 +1,5 @@
 package br.com.autoflow.application.validator;
 
-import br.com.autoflow.adapters.inbound.controller.dto.ServicoRequest;
 import br.com.autoflow.domain.model.Servico;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.domain.exception.RegraNegocioException;
@@ -17,19 +16,19 @@ import java.util.UUID;
 public class ServicoValidator {
 
     private final ServicoRepositoryPort servicoRepositoryPort;
-    private final OsServicoRepositoryPort osServicoRepositoryPort; // Porta de OS/Serviço correspondente
+    private final OsServicoRepositoryPort osServicoRepositoryPort;
     private final OrcamentoServicoRepositoryPort orcamentoServicoRepositoryPort;
 
-    public void validarCriacao(ServicoRequest request) {
-        validarDescricaoDuplicada(request.dsServico());
+    public void validarCriacao(Servico servico) {
+        validarDescricaoDuplicada(servico.getDsServico());
     }
 
-    public void validarAtualizacao(UUID id, ServicoRequest request) {
+    public void validarAtualizacao(UUID id, Servico servico) {
         validarExistencia(id);
-        servicoRepositoryPort.findByDsServicoIgnoreCase(request.dsServico())
+        servicoRepositoryPort.findByDsServicoIgnoreCase(servico.getDsServico())
                 .ifPresent(servicoExistente -> {
                     if (!servicoExistente.getIdServico().equals(id)) {
-                        throw new RegraNegocioException("Já existe outro serviço cadastrado com a descrição: " + request.dsServico());
+                        throw new RegraNegocioException("Já existe outro serviço cadastrado com a descrição: " + servico.getDsServico());
                     }
                 });
     }

@@ -36,7 +36,7 @@ class ServicoServiceTest {
     private br.com.autoflow.application.service.ServicoValidator servicoValidator;
 
     @InjectMocks
-    private ServicoUseCase servicoService;
+    private ServicoUseCaseImpl servicoService;
 
     @Test
     @DisplayName("Deve criar um serviço com sucesso")

@@ -1,6 +1,6 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.ServicoRequest;
+import br.com.autoflow.application.validator.ServicoValidator;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.domain.exception.RegraNegocioException;
 import br.com.autoflow.domain.model.Servico;
@@ -34,28 +34,27 @@ class ServicoValidatorTest {
     private OrcamentoServicoRepositoryPort orcamentoServicoRepository;
 
     @InjectMocks
-    private br.com.autoflow.application.service.ServicoValidator validator;
-
+    private ServicoValidator validator;
 
     @Test
     @DisplayName("Deve validar criação de serviço com sucesso quando descrição não estiver duplicada")
     void deveValidarCriacaoComSucesso() {
-        ServicoRequest request = new ServicoRequest("Alinhamento", BigDecimal.valueOf(100.00), 30);
+        Servico servico = new Servico(null, "Alinhamento", BigDecimal.valueOf(100.00), 30);
 
         when(servicoRepository.existsByDsServicoIgnoreCase("Alinhamento")).thenReturn(false);
 
-        assertDoesNotThrow(() -> validator.validarCriacao(request));
+        assertDoesNotThrow(() -> validator.validarCriacao(servico));
         verify(servicoRepository, times(1)).existsByDsServicoIgnoreCase("Alinhamento");
     }
 
     @Test
     @DisplayName("Deve lançar exceção ao tentar criar serviço com descrição já existente")
     void deveLancarExcecaoCriacaoDescricaoDuplicada() {
-        ServicoRequest request = new ServicoRequest("Alinhamento", BigDecimal.valueOf(100.00), 30);
+        Servico servico = new Servico(null, "Alinhamento", BigDecimal.valueOf(100.00), 30);
 
         when(servicoRepository.existsByDsServicoIgnoreCase("Alinhamento")).thenReturn(true);
 
-        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(request));
+        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(servico));
     }
 
     // --- TESTES DE ATUALIZAÇÃO ---
@@ -64,26 +63,24 @@ class ServicoValidatorTest {
     @DisplayName("Deve validar atualização de serviço com sucesso quando descrição não existe ou é do mesmo ID")
     void deveValidarAtualizacaoComSucesso() {
         UUID id = UUID.randomUUID();
-        ServicoRequest request = new ServicoRequest("Balanceamento", BigDecimal.valueOf(80.00), 30);
-
+        Servico servicoParam = new Servico(null, "Balanceamento", BigDecimal.valueOf(80.00), 30);
         Servico servicoExistenteComMesmoId = new Servico(id, "Balanceamento", BigDecimal.valueOf(80.00), 30);
 
         when(servicoRepository.existsById(id)).thenReturn(true);
-        // Simula encontrar a mesma descrição, mas pertencente ao ID que está sendo atualizado (permite a edição)
         when(servicoRepository.findByDsServicoIgnoreCase("Balanceamento")).thenReturn(Optional.of(servicoExistenteComMesmoId));
 
-        assertDoesNotThrow(() -> validator.validarAtualizacao(id, request));
+        assertDoesNotThrow(() -> validator.validarAtualizacao(id, servicoParam));
     }
 
     @Test
     @DisplayName("Deve lançar exceção se serviço não existir ao tentar atualizar")
     void deveLancarExcecaoAtualizacaoServicoInexistente() {
         UUID id = UUID.randomUUID();
-        ServicoRequest request = new ServicoRequest("Balanceamento", BigDecimal.valueOf(80.00), 30);
+        Servico servicoParam = new Servico(null, "Balanceamento", BigDecimal.valueOf(80.00), 30);
 
         when(servicoRepository.existsById(id)).thenReturn(false);
 
-        assertThrows(EntidadeNaoEncontradaException.class, () -> validator.validarAtualizacao(id, request));
+        assertThrows(EntidadeNaoEncontradaException.class, () -> validator.validarAtualizacao(id, servicoParam));
     }
 
     @Test
@@ -91,14 +88,13 @@ class ServicoValidatorTest {
     void deveLancarExcecaoAtualizacaoDescricaoConflitante() {
         UUID idCorrente = UUID.randomUUID();
         UUID outroId = UUID.randomUUID();
-        ServicoRequest request = new ServicoRequest("Troca de Óleo", BigDecimal.valueOf(150.00), 30);
-
+        Servico servicoParam = new Servico(null, "Troca de Óleo", BigDecimal.valueOf(150.00), 30);
         Servico outroServico = new Servico(outroId, "Troca de Óleo", BigDecimal.valueOf(150.00), 30);
 
         when(servicoRepository.existsById(idCorrente)).thenReturn(true);
         when(servicoRepository.findByDsServicoIgnoreCase("Troca de Óleo")).thenReturn(Optional.of(outroServico));
 
-        assertThrows(RegraNegocioException.class, () -> validator.validarAtualizacao(idCorrente, request));
+        assertThrows(RegraNegocioException.class, () -> validator.validarAtualizacao(idCorrente, servicoParam));
     }
 
     // --- TESTES DE BUSCA POR ID ---
