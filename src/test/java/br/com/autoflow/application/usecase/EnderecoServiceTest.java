@@ -1,8 +1,5 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.EnderecoRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.EnderecoResponse;
-import br.com.autoflow.adapters.inbound.mapper.EnderecoMapper;
 import br.com.autoflow.application.validator.EnderecoValidator;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.domain.model.Endereco;
@@ -39,17 +36,21 @@ class EnderecoServiceTest {
     private EnderecoRepositoryPort repository;
 
     @Mock
-    private EnderecoMapper enderecoMapper;
-
-    @Mock
     private EnderecoValidator enderecoValidator;
 
     @InjectMocks
-    private EnderecoUseCase service;
+    private EnderecoUseCaseImpl service;
 
-    private EnderecoRequest criarRequestExemplo() {
-        return new EnderecoRequest(
-                "Rua Principal", "RS", "Novo Hamburgo", "Centro", "100", 93520000, "Apto 101"
+    private Endereco criarDominioExemplo() {
+        return new Endereco(
+                UUID.randomUUID(),
+                "Rua Principal",
+                "RS",
+                "Apto 101",
+                "Centro",
+                "Novo Hamburgo",
+                100,
+                "93520000"
         );
     }
 
@@ -61,40 +62,33 @@ class EnderecoServiceTest {
         @DisplayName("Deve criar endereço com sucesso quando os dados forem válidos")
         void deveCriarEnderecoComSucesso() {
             // Arrange
-            EnderecoRequest request = criarRequestExemplo();
-            Endereco enderecoMock = mock(Endereco.class);
-            EnderecoResponse responseEsperada = mock(EnderecoResponse.class);
+            Endereco endereco = criarDominioExemplo();
 
-            doNothing().when(enderecoValidator).validarUf(request);
-            when(enderecoMapper.toDomain(request)).thenReturn(enderecoMock);
-            when(repository.save(enderecoMock)).thenReturn(enderecoMock);
-            when(enderecoMapper.toResponse(enderecoMock)).thenReturn(responseEsperada);
+            doNothing().when(enderecoValidator).validarUf(endereco);
+            when(repository.save(endereco)).thenReturn(endereco);
 
             // Act
-            EnderecoResponse response = service.criar(request);
+            Endereco resultado = service.criar(endereco);
 
             // Assert
-            assertNotNull(response);
-            assertEquals(responseEsperada, response);
+            assertNotNull(resultado);
+            assertEquals(endereco, resultado);
 
-            verify(enderecoValidator).validarUf(request);
-            verify(enderecoMapper).toDomain(request);
-            verify(repository).save(enderecoMock);
-            verify(enderecoMapper).toResponse(enderecoMock);
+            verify(enderecoValidator).validarUf(endereco);
+            verify(repository).save(endereco);
         }
 
         @Test
         @DisplayName("Não deve salvar endereço se a validação da UF falhar")
         void naoDeveCriarSeValidacaoFalhar() {
             // Arrange
-            EnderecoRequest request = criarRequestExemplo();
-            doThrow(new IllegalArgumentException("UF inválida")).when(enderecoValidator).validarUf(request);
+            Endereco endereco = criarDominioExemplo();
+            doThrow(new IllegalArgumentException("UF inválida")).when(enderecoValidator).validarUf(endereco);
 
             // Act & Assert
-            assertThrows(IllegalArgumentException.class, () -> service.criar(request));
+            assertThrows(IllegalArgumentException.class, () -> service.criar(endereco));
 
-            verify(enderecoValidator).validarUf(request);
-            verify(enderecoMapper, never()).toDomain(any());
+            verify(enderecoValidator).validarUf(endereco);
             verify(repository, never()).save(any());
         }
     }
@@ -107,15 +101,13 @@ class EnderecoServiceTest {
         @DisplayName("Deve retornar lista de endereços quando houver registros")
         void deveListarEnderecosComSucesso() {
             // Arrange
-            Endereco e1 = mock(Endereco.class);
-            Endereco e2 = mock(Endereco.class);
-            EnderecoResponse responseMock = mock(EnderecoResponse.class);
+            Endereco e1 = criarDominioExemplo();
+            Endereco e2 = criarDominioExemplo();
 
             when(repository.findAll()).thenReturn(List.of(e1, e2));
-            when(enderecoMapper.toResponse(any(Endereco.class))).thenReturn(responseMock);
 
             // Act
-            List<EnderecoResponse> resultado = service.listar();
+            List<Endereco> resultado = service.listar();
 
             // Assert
             assertNotNull(resultado);
@@ -130,7 +122,7 @@ class EnderecoServiceTest {
             when(repository.findAll()).thenReturn(Collections.emptyList());
 
             // Act
-            List<EnderecoResponse> resultado = service.listar();
+            List<Endereco> resultado = service.listar();
 
             // Assert
             assertNotNull(resultado);
@@ -148,18 +140,16 @@ class EnderecoServiceTest {
         void deveBuscarPorIdComSucesso() {
             // Arrange
             UUID id = UUID.randomUUID();
-            Endereco endereco = mock(Endereco.class);
-            EnderecoResponse responseEsperada = mock(EnderecoResponse.class);
+            Endereco endereco = criarDominioExemplo();
 
             when(repository.findById(id)).thenReturn(Optional.of(endereco));
-            when(enderecoMapper.toResponse(endereco)).thenReturn(responseEsperada);
 
             // Act
-            EnderecoResponse response = service.buscar(id);
+            Endereco resultado = service.buscar(id);
 
             // Assert
-            assertNotNull(response);
-            assertEquals(responseEsperada, response);
+            assertNotNull(resultado);
+            assertEquals(endereco, resultado);
             verify(repository).findById(id);
         }
 
@@ -188,24 +178,23 @@ class EnderecoServiceTest {
         void deveAtualizarComSucesso() {
             // Arrange
             UUID id = UUID.randomUUID();
-            EnderecoRequest request = criarRequestExemplo();
-            Endereco endereco = mock(Endereco.class);
-            EnderecoResponse responseEsperada = mock(EnderecoResponse.class);
+            Endereco enderecoExistente = mock(Endereco.class);
+            Endereco enderecoParam = criarDominioExemplo();
 
-            when(repository.findById(id)).thenReturn(Optional.of(endereco));
-            when(repository.save(endereco)).thenReturn(endereco);
-            when(enderecoMapper.toResponse(endereco)).thenReturn(responseEsperada);
+            when(repository.findById(id)).thenReturn(Optional.of(enderecoExistente));
+            doNothing().when(enderecoValidator).validarUf(enderecoParam);
+            when(repository.save(enderecoExistente)).thenReturn(enderecoExistente);
 
             // Act
-            EnderecoResponse response = service.atualizar(id, request);
+            Endereco resultado = service.atualizar(id, enderecoParam);
 
             // Assert
-            assertNotNull(response);
-            assertEquals(responseEsperada, response);
+            assertNotNull(resultado);
 
             verify(repository).findById(id);
-            verify(endereco).atualizar(any(), any(), any(), any(), any(), any(), any());
-            verify(repository).save(endereco);
+            verify(enderecoValidator).validarUf(enderecoParam);
+            verify(enderecoExistente).atualizar(any(), any(), any(), any(), any(), any(), any());
+            verify(repository).save(enderecoExistente);
         }
 
         @Test
@@ -213,12 +202,12 @@ class EnderecoServiceTest {
         void deveLancarExcecaoAoAtualizarInexistente() {
             // Arrange
             UUID id = UUID.randomUUID();
-            EnderecoRequest request = criarRequestExemplo();
+            Endereco enderecoParam = criarDominioExemplo();
 
             when(repository.findById(id)).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThrows(EntidadeNaoEncontradaException.class, () -> service.atualizar(id, request));
+            assertThrows(EntidadeNaoEncontradaException.class, () -> service.atualizar(id, enderecoParam));
 
             verify(repository).findById(id);
             verify(repository, never()).save(any());
@@ -234,7 +223,7 @@ class EnderecoServiceTest {
         void deveDeletarComSucesso() {
             // Arrange
             UUID id = UUID.randomUUID();
-            Endereco endereco = mock(Endereco.class);
+            Endereco endereco = criarDominioExemplo();
 
             when(repository.findById(id)).thenReturn(Optional.of(endereco));
 

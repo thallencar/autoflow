@@ -10,11 +10,10 @@ class EnderecoModelTest {
 
     @Test
     void atualizarDados_deveAtualizarCamposCorretamente() {
-        // Instanciação da entidade Endereco via construtor cheio
         Endereco endereco = new Endereco(
                 UUID.randomUUID(),
                 "11111-111",
-                "rj", // testando se normaliza para maiúsculo
+                "rj",
                 "Rio",
                 "Centro",
                 "Rua Velha",
