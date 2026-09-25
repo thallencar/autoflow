@@ -12,6 +12,8 @@ public class Veiculo {
     private String cor;
     private UUID clienteId;
 
+    public Veiculo() {  }
+
     public Veiculo(UUID id, String placa, String marca, String modelo, Integer kmAtual, Short anoFabricacao, String cor, UUID clienteId) {
         this.id = id;
         this.placa = placa;
@@ -42,4 +44,13 @@ public class Veiculo {
     public Short getAnoFabricacao() { return anoFabricacao; }
     public String getCor() { return cor; }
     public UUID getClienteId() { return clienteId; }
+
+    public void setId(UUID id) { this.id = id; }
+    public void setPlaca(String placa) { this.placa = placa; }
+    public void setMarca(String marca) { this.marca = marca; }
+    public void setModelo(String modelo) { this.modelo = modelo; }
+    public void setKmAtual(Integer kmAtual) { this.kmAtual = kmAtual; }
+    public void setAnoFabricacao(Short anoFabricacao) { this.anoFabricacao = anoFabricacao; }
+    public void setCor(String cor) { this.cor = cor; }
+    public void setClienteId(UUID clienteId) { this.clienteId = clienteId; }
 }

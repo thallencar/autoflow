@@ -1,10 +1,8 @@
 package br.com.autoflow.ports.inbound.veiculo;
 
-import br.com.autoflow.adapters.inbound.controller.dto.VeiculoRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.VeiculoResponse;
-
+import br.com.autoflow.domain.model.Veiculo;
 import java.util.UUID;
 
 public interface AtualizarVeiculoUseCase {
-    VeiculoResponse atualizar(UUID id, VeiculoRequest request);
+    Veiculo atualizar(UUID id, Veiculo veiculo);
 }

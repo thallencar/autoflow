@@ -1,9 +1,9 @@
 package br.com.autoflow.ports.inbound.veiculo;
 
-import br.com.autoflow.adapters.inbound.controller.dto.VeiculoResponse;
+import br.com.autoflow.domain.model.Veiculo;
 
 import java.util.List;
 
 public interface ListarVeiculosUseCase {
-    List<VeiculoResponse> listar();
+    List<Veiculo> listar();
 }

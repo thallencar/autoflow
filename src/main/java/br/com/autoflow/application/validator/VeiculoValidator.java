@@ -1,6 +1,5 @@
 package br.com.autoflow.application.validator;
 
-import br.com.autoflow.adapters.inbound.controller.dto.VeiculoRequest;
 import br.com.autoflow.domain.exception.DadosJaCadastradosException;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.domain.exception.RegraNegocioException;
@@ -23,11 +22,11 @@ public class VeiculoValidator {
     private final ClienteRepositoryPort clienteRepository;
     private final OrdemServicoRepositoryPort ordemServicoRepository;
 
-    public void validarParaCriar(VeiculoRequest request) {
-        String placaFormatada = formatarPlaca(request.placa());
+    public void validarParaCriar(Veiculo veiculo) {
+        String placaFormatada = formatarPlaca(veiculo.getPlaca());
         validarPlacaUnica(placaFormatada);
-        validarClienteExiste(request.clienteId());
-        validarAnoFabricacao(request.anoFabricacao());
+        validarClienteExiste(veiculo.getClienteId());
+        validarAnoFabricacao(veiculo.getAnoFabricacao());
     }
 
     private void validarPlacaUnica(String placa) {
@@ -37,12 +36,13 @@ public class VeiculoValidator {
     }
 
     private void validarClienteExiste(UUID clienteId) {
-        if (!clienteRepository.existsById(clienteId)) {
+        if (clienteId == null || !clienteRepository.existsById(clienteId)) {
             throw new EntidadeNaoEncontradaException("Cliente", clienteId);
         }
     }
 
     private void validarAnoFabricacao(Short ano) {
+        if (ano == null) return;
         int anoAtual = Year.now(java.time.ZoneId.systemDefault()).getValue();
         if (ano > anoAtual + 1) {
             throw new RegraNegocioException("O ano de fabricação não pode ser maior que " + (anoAtual + 1));
@@ -59,28 +59,24 @@ public class VeiculoValidator {
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Veículo : ", id));
     }
 
-    public Cliente buscarCliente(UUID clienteId) {
-        return clienteRepository.findById(clienteId)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Cliente não encontrado com o ID: ", clienteId));
-    }
-
-    public void validarParaAtualizar(UUID veiculoId, VeiculoRequest request) {
-        String placaFormatada = formatarPlaca(request.placa());
-        if (placaFormatada != null) {
-            veiculoRepository.findByPlaca(placaFormatada).ifPresent(veiculoEncontrado -> {
+    public void validarParaAtualizar(UUID veiculoId, Veiculo veiculoParam) {
+        if (veiculoParam.getPlaca() != null) {
+            veiculoRepository.findByPlaca(veiculoParam.getPlaca()).ifPresent(veiculoEncontrado -> {
                 if (!veiculoEncontrado.getId().equals(veiculoId)) {
-                    throw new DadosJaCadastradosException("Placa já cadastrada: " + placaFormatada);
+                    throw new DadosJaCadastradosException("Placa já cadastrada: " + veiculoParam.getPlaca());
                 }
             });
         }
-        if (request.clienteId() != null) {
-            validarClienteExiste(request.clienteId());
+        if (veiculoParam.getClienteId() != null) {
+            validarClienteExiste(veiculoParam.getClienteId());
+        }
+        if (veiculoParam.getAnoFabricacao() != null) {
+            validarAnoFabricacao(veiculoParam.getAnoFabricacao());
         }
     }
 
     public Veiculo validarParaDeletar(UUID id) {
-        Veiculo veiculo = veiculoRepository.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Veículo: ", id));
+        Veiculo veiculo = buscarVeiculo(id);
         if (ordemServicoRepository.existsByIdVeiculo(id)) {
             throw new RegraNegocioException("Não é possível excluir o veículo pois existem ordens de serviço vinculadas a ele.");
         }
