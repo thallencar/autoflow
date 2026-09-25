@@ -49,7 +49,7 @@ class OrdemServicoUseCaseImplTest {
     private FuncionarioRepositoryPort funcionarioRepository;
 
     @Mock
-    private OrcamentoUseCase orcamentoUseCase;
+    private OrcamentoUseCaseImpl orcamentoUseCaseImpl;
 
     @InjectMocks
     private OrdemServicoUseCase service;

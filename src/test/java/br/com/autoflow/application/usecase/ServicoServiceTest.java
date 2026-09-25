@@ -1,8 +1,6 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.ServicoRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.ServicoResponse;
-import br.com.autoflow.adapters.inbound.mapper.ServicoMapper;
+import br.com.autoflow.application.validator.ServicoValidator;
 import br.com.autoflow.domain.model.Servico;
 import br.com.autoflow.ports.outbound.ServicoRepositoryPort;
 import org.junit.jupiter.api.DisplayName;
@@ -30,10 +28,7 @@ class ServicoServiceTest {
     private ServicoRepositoryPort servicoRepository;
 
     @Mock
-    private ServicoMapper servicoMapper;
-
-    @Mock
-    private br.com.autoflow.application.service.ServicoValidator servicoValidator;
+    private ServicoValidator servicoValidator;
 
     @InjectMocks
     private ServicoUseCaseImpl servicoService;
@@ -41,24 +36,20 @@ class ServicoServiceTest {
     @Test
     @DisplayName("Deve criar um serviço com sucesso")
     void deveCriarServicoComSucesso() {
-        ServicoRequest request = new ServicoRequest("Troca de Óleo", BigDecimal.valueOf(150.00), 30);
+        Servico servicoInput = new Servico(null, "Troca de Óleo", BigDecimal.valueOf(150.00), 30);
         UUID idGerado = UUID.randomUUID();
+        Servico servicoSalvo = new Servico(idGerado, "Troca de Óleo", BigDecimal.valueOf(150.00), 30);
 
-        Servico entity = new Servico(null, "Troca de Óleo", BigDecimal.valueOf(150.00), 30);
-        Servico entitySalva = new Servico(idGerado, "Troca de Óleo", BigDecimal.valueOf(150.00), 30);
-        ServicoResponse responseEsperado = new ServicoResponse(idGerado, "Troca de Óleo", BigDecimal.valueOf(150.00), 30);
+        doNothing().when(servicoValidator).validarCriacao(servicoInput);
+        when(servicoRepository.save(servicoInput)).thenReturn(servicoSalvo);
 
-        doNothing().when(servicoValidator).validarCriacao(request);
-        when(servicoMapper.toDomain(request)).thenReturn(entity);
-        when(servicoRepository.save(entity)).thenReturn(entitySalva);
-        when(servicoMapper.toResponse(entitySalva)).thenReturn(responseEsperado);
-
-        ServicoResponse response = servicoService.criar(request);
+        Servico response = servicoService.criar(servicoInput);
 
         assertNotNull(response);
-        assertEquals(responseEsperado, response);
-        verify(servicoValidator, times(1)).validarCriacao(request);
-        verify(servicoRepository, times(1)).save(entity);
+        assertEquals(idGerado, response.getIdServico());
+        assertEquals("Troca de Óleo", response.getDsServico());
+        verify(servicoValidator, times(1)).validarCriacao(servicoInput);
+        verify(servicoRepository, times(1)).save(servicoInput);
     }
 
     @Test
@@ -69,16 +60,14 @@ class ServicoServiceTest {
 
         Servico servico = new Servico(idServico, "Alinhamento", BigDecimal.valueOf(80.00), 30);
         Page<Servico> paginaEntity = new PageImpl<>(List.of(servico), pageable, 1);
-        ServicoResponse responseDto = new ServicoResponse(idServico, "Alinhamento", BigDecimal.valueOf(80.00), 30);
 
         when(servicoRepository.findAll(pageable)).thenReturn(paginaEntity);
-        when(servicoMapper.toResponse(servico)).thenReturn(responseDto);
 
-        Page<ServicoResponse> resultado = servicoService.listarTodos(pageable);
+        Page<Servico> resultado = servicoService.listarTodos(pageable);
 
         assertNotNull(resultado);
         assertEquals(1, resultado.getTotalElements());
-        assertEquals(responseDto, resultado.getContent().get(0));
+        assertEquals("Alinhamento", resultado.getContent().get(0).getDsServico());
         verify(servicoRepository, times(1)).findAll(pageable);
     }
 
@@ -87,15 +76,14 @@ class ServicoServiceTest {
     void deveBuscarServicoPorIdComSucesso() {
         UUID id = UUID.randomUUID();
         Servico servico = new Servico(id, "Balanceamento", BigDecimal.valueOf(60.00), 40);
-        ServicoResponse responseEsperado = new ServicoResponse(id, "Balanceamento", BigDecimal.valueOf(60.00), 40);
 
         when(servicoValidator.buscarPorId(id)).thenReturn(servico);
-        when(servicoMapper.toResponse(servico)).thenReturn(responseEsperado);
 
-        ServicoResponse response = servicoService.buscarPorId(id);
+        Servico response = servicoService.buscarPorId(id);
 
         assertNotNull(response);
-        assertEquals(responseEsperado, response);
+        assertEquals(id, response.getIdServico());
+        assertEquals("Balanceamento", response.getDsServico());
         verify(servicoValidator, times(1)).buscarPorId(id);
     }
 
@@ -103,23 +91,21 @@ class ServicoServiceTest {
     @DisplayName("Deve atualizar um serviço com sucesso")
     void deveAtualizarServicoComSucesso() {
         UUID id = UUID.randomUUID();
-        ServicoRequest request = new ServicoRequest("Revisão Completa", BigDecimal.valueOf(500.00), 30);
+        Servico servicoParam = new Servico(null, "Revisão Completa", BigDecimal.valueOf(500.00), 30);
+        Servico servicoExistente = new Servico(id, "Revisão Antiga", BigDecimal.valueOf(400.00), 30);
 
-        Servico entity = new Servico(id, "Revisão Antiga", BigDecimal.valueOf(400.00), 30);
-        ServicoResponse responseEsperado = new ServicoResponse(id, "Revisão Completa", BigDecimal.valueOf(500.00), 30);
+        doNothing().when(servicoValidator).validarAtualizacao(id, servicoParam);
+        when(servicoValidator.buscarPorId(id)).thenReturn(servicoExistente);
+        when(servicoRepository.save(servicoExistente)).thenReturn(servicoExistente);
 
-        doNothing().when(servicoValidator).validarAtualizacao(id, request);
-        doNothing().when(servicoMapper).updateDomainFromDto(request, entity);
-        when(servicoRepository.save(entity)).thenReturn(entity);
-        when(servicoMapper.toResponse(entity)).thenReturn(responseEsperado);
-
-        ServicoResponse response = servicoService.atualizar(id, request);
+        Servico response = servicoService.atualizar(id, servicoParam);
 
         assertNotNull(response);
-        assertEquals(responseEsperado, response);
-        verify(servicoValidator, times(1)).validarAtualizacao(id, request);
-        verify(servicoMapper, times(1)).updateDomainFromDto(request, entity);
-        verify(servicoRepository, times(1)).save(entity);
+        assertEquals("Revisão Completa", response.getDsServico());
+        assertEquals(BigDecimal.valueOf(500.00), response.getVlServico());
+        verify(servicoValidator, times(1)).validarAtualizacao(id, servicoParam);
+        verify(servicoValidator, times(1)).buscarPorId(id);
+        verify(servicoRepository, times(1)).save(servicoExistente);
     }
 
     @Test

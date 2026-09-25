@@ -2,16 +2,20 @@ package br.com.autoflow.adapters.inbound.controller;
 
 import br.com.autoflow.adapters.inbound.controller.dto.VeiculoRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.VeiculoResponse;
-import br.com.autoflow.application.usecase.VeiculoUseCaseImpl;
+import br.com.autoflow.adapters.inbound.mapper.VeiculoMapper;
 import br.com.autoflow.adapters.inbound.controller.exception.GlobalExceptionHandler;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
+import br.com.autoflow.domain.model.Veiculo;
+import br.com.autoflow.ports.inbound.veiculo.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,7 +46,22 @@ class VeiculoControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
-    private VeiculoUseCaseImpl veiculoService;
+    private CriarVeiculoUseCase criarVeiculoUseCase;
+
+    @Mock
+    private ListarVeiculosUseCase listarVeiculosUseCase;
+
+    @Mock
+    private BuscarVeiculoPorIdUseCase buscarVeiculoPorIdUseCase;
+
+    @Mock
+    private AtualizarVeiculoUseCase atualizarVeiculoUseCase;
+
+    @Mock
+    private DeletarVeiculoUseCase deletarVeiculoUseCase;
+
+    @Spy
+    private VeiculoMapper veiculoMapper = Mappers.getMapper(VeiculoMapper.class);
 
     @InjectMocks
     private VeiculoController veiculoController;
@@ -50,22 +69,27 @@ class VeiculoControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(veiculoController)
-                .setControllerAdvice(new GlobalExceptionHandler()) // Adicione seu ExceptionHandler aqui se tiver!
+                .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+    }
+
+    private Veiculo criarDominioExemplo(UUID id, UUID clienteId) {
+        return new Veiculo(
+                id, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2022"), "Prata", clienteId
+        );
     }
 
     @Test
     @DisplayName("Deve retornar HTTP 201 Created ao criar veículo válido")
     void deveCriarVeiculoComSucesso() throws Exception {
         UUID clienteId = UUID.randomUUID();
+        UUID veiculoId = UUID.randomUUID();
         VeiculoRequest request = new VeiculoRequest(
                 "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2022"), "Prata", clienteId
         );
-        VeiculoResponse response = new VeiculoResponse(
-                UUID.randomUUID(), "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2022"), "Prata", clienteId
-        );
+        Veiculo dominio = criarDominioExemplo(veiculoId, clienteId);
 
-        when(veiculoService.criar(any())).thenReturn(response);
+        when(criarVeiculoUseCase.criar(any(Veiculo.class))).thenReturn(dominio);
 
         mockMvc.perform(post("/veiculos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -82,7 +106,7 @@ class VeiculoControllerTest {
     @DisplayName("Deve retornar HTTP 404 Not Found quando veículo não existir")
     void deveRetornarNotFoundQuandoVeiculoNaoExistir() throws Exception {
         UUID idInexistente = UUID.randomUUID();
-        when(veiculoService.buscarPorId(idInexistente))
+        when(buscarVeiculoPorIdUseCase.buscarPorId(idInexistente))
                 .thenThrow(new EntidadeNaoEncontradaException("Veículo", idInexistente));
 
         mockMvc.perform(get("/veiculos/{id}", idInexistente))
@@ -94,11 +118,9 @@ class VeiculoControllerTest {
     void deveBuscarVeiculoPorIdComSucesso() throws Exception {
         UUID id = UUID.randomUUID();
         UUID clienteId = UUID.randomUUID();
-        VeiculoResponse response = new VeiculoResponse(
-                id, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2022"), "Prata", clienteId
-        );
+        Veiculo dominio = criarDominioExemplo(id, clienteId);
 
-        when(veiculoService.buscarPorId(id)).thenReturn(response);
+        when(buscarVeiculoPorIdUseCase.buscarPorId(id)).thenReturn(dominio);
 
         mockMvc.perform(get("/veiculos/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -113,11 +135,9 @@ class VeiculoControllerTest {
     void deveListarTodosOsVeiculosComSucesso() throws Exception {
         UUID id = UUID.randomUUID();
         UUID clienteId = UUID.randomUUID();
-        VeiculoResponse response = new VeiculoResponse(
-                id, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2022"), "Prata", clienteId
-        );
+        Veiculo dominio = criarDominioExemplo(id, clienteId);
 
-        when(veiculoService.listar()).thenReturn(List.of(response));
+        when(listarVeiculosUseCase.listar()).thenReturn(List.of(dominio));
 
         mockMvc.perform(get("/veiculos")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -135,11 +155,11 @@ class VeiculoControllerTest {
         VeiculoRequest request = new VeiculoRequest(
                 "ABC1D23", "Toyota", "Corolla Cross", 12000, Short.valueOf("2023"), "Preto", clienteId
         );
-        VeiculoResponse response = new VeiculoResponse(
+        Veiculo dominioAtualizado = new Veiculo(
                 id, "ABC1D23", "Toyota", "Corolla Cross", 12000, Short.valueOf("2023"), "Preto", clienteId
         );
 
-        when(veiculoService.atualizar(eq(id), any())).thenReturn(response);
+        when(atualizarVeiculoUseCase.atualizar(eq(id), any(Veiculo.class))).thenReturn(dominioAtualizado);
 
         mockMvc.perform(put("/veiculos/{id}", id)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -153,11 +173,11 @@ class VeiculoControllerTest {
     @DisplayName("Deve retornar HTTP 204 No Content ao deletar veículo com sucesso")
     void deveDeletarVeiculoComSucesso() throws Exception {
         UUID id = UUID.randomUUID();
-        doNothing().when(veiculoService).deletar(id);
+        doNothing().when(deletarVeiculoUseCase).deletar(id);
 
         mockMvc.perform(delete("/veiculos/{id}", id))
                 .andExpect(status().isNoContent());
 
-        verify(veiculoService, times(1)).deletar(id);
+        verify(deletarVeiculoUseCase, times(1)).deletar(id);
     }
 }

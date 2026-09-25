@@ -6,6 +6,7 @@ import br.com.autoflow.domain.model.Veiculo;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface VeiculoMapper {
@@ -17,4 +18,9 @@ public interface VeiculoMapper {
 
     @Mapping(target = "clienteId", source = "clienteId")
     VeiculoResponse toResponse(Veiculo domain);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "clienteId", source = "clienteId")
+    @Mapping(target = "placa", expression = "java(request.placa() != null ? request.placa().toUpperCase() : null)")
+    void updateDomainFromDto(VeiculoRequest request, @MappingTarget Veiculo veiculo);
 }

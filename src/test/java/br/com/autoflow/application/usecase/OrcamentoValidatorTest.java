@@ -1,9 +1,7 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoItemRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoServicoRequest;
 import br.com.autoflow.application.validator.OrcamentoValidator;
+import br.com.autoflow.application.validator.ServicoValidator;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.TipoItemEstoque;
@@ -41,7 +39,7 @@ class OrcamentoValidatorTest {
     private EstoqueRepositoryPort estoqueRepository;
 
     @Mock
-    private br.com.autoflow.application.service.ServicoValidator servicoValidator;
+    private ServicoValidator servicoValidator;
 
     @Mock
     private OrcamentoRepositoryPort orcamentoRepository;
@@ -58,96 +56,107 @@ class OrcamentoValidatorTest {
         UUID idServico = UUID.randomUUID();
         UUID idEstoque = UUID.randomUUID();
 
-        OrcamentoItemRequest itemRequest = new OrcamentoItemRequest(2, BigDecimal.valueOf(50.00), BigDecimal.valueOf(100.00), idEstoque);
-        OrcamentoServicoRequest servicoRequest = new OrcamentoServicoRequest(idServico, BigDecimal.valueOf(150.00), List.of(itemRequest));
+        OrcamentoItem item = new OrcamentoItem(
+                UUID.randomUUID(), null, 2, BigDecimal.valueOf(50.00), BigDecimal.valueOf(100.00), idEstoque, null, null
+        );
 
-        OrcamentoRequest request = new OrcamentoRequest(
-                idOs,
-                TipoOrcamento.INICIAL,
-                LocalDateTime.now().plusDays(5),
-                List.of(servicoRequest),
-                null
+        Servico servicoModel = new Servico(idServico, "Servico Exemplo", BigDecimal.valueOf(150.00), 60);
+
+        OrcamentoServico servico = new OrcamentoServico(
+                UUID.randomUUID(), BigDecimal.valueOf(150.00), servicoModel, List.of(item), null
+        );
+
+        Orcamento orcamento = new Orcamento(
+                null, TipoOrcamento.INICIAL, StatusOrcamento.PENDENTE,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(5), null,
+                BigDecimal.valueOf(100.00), BigDecimal.valueOf(150.00), BigDecimal.valueOf(250.00),
+                null, List.of(servico), List.of(item)
         );
 
         OrdemServico os = new OrdemServico();
         os.setStatusOS(StatusOS.EM_EXECUCAO);
 
         Estoque estoque = new Estoque(
-                idEstoque,
-                "Filtro de Óleo",
-                "Marca",
-                BigDecimal.valueOf(50.00),
-                10,
-                2,
-                TipoItemEstoque.PECA
+                idEstoque, "Filtro de Óleo", "Marca", BigDecimal.valueOf(50.00), 10, 2, TipoItemEstoque.PECA
         );
-
-        Servico servico = new Servico(idServico, "Servico Exemplo", BigDecimal.valueOf(150.00), 60);
 
         when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
         when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(Collections.emptyList());
-        when(servicoValidator.buscarPorId(idServico)).thenReturn(servico);
         when(estoqueRepository.findById(idEstoque)).thenReturn(Optional.of(estoque));
 
-        assertDoesNotThrow(() -> validator.validarCriacao(request));
+        assertDoesNotThrow(() -> validator.validarCriacao(idOs, orcamento));
     }
 
     @Test
     @DisplayName("Deve lançar exceção se tipo de orçamento for nulo")
     void deveLancarExcecaoTipoOrcamentoNulo() {
-        OrcamentoRequest request = new OrcamentoRequest(UUID.randomUUID(), null, LocalDateTime.now().plusDays(1), null, null);
-        assertThrows(EntidadeNaoEncontradaException.class, () -> validator.validarCriacao(request));
+        UUID idOs = UUID.randomUUID();
+        Orcamento orcamento = new Orcamento(
+                null, null, StatusOrcamento.PENDENTE,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(1), null,
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                null, Collections.emptyList(), Collections.emptyList()
+        );
+
+        OrdemServico os = new OrdemServico();
+        os.setStatusOS(StatusOS.EM_EXECUCAO);
+
+        when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
+        when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(Collections.emptyList());
+
+        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(idOs, orcamento));
     }
 
     @Test
-    @DisplayName("Deve lançar exceção se ID da OS for nulo")
-    void deveLancarExcecaoIdOsNulo() {
-        OrcamentoRequest request = new OrcamentoRequest(null, TipoOrcamento.INICIAL, LocalDateTime.now().plusDays(1), null, null);
-        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(request));
+    @DisplayName("Deve lançar exceção se ID da OS não for encontrado")
+    void deveLancarExcecaoIdOsNaoEncontrado() {
+        UUID idOs = UUID.randomUUID();
+        Orcamento orcamento = new Orcamento();
+
+        when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.empty());
+
+        assertThrows(EntidadeNaoEncontradaException.class, () -> validator.validarCriacao(idOs, orcamento));
     }
 
     @Test
     @DisplayName("Deve lançar exceção se Ordem de Serviço estiver com status restrito (Ex: Cancelada)")
     void deveLancarExcecaoOsCancelada() {
         UUID idOs = UUID.randomUUID();
-        OrcamentoRequest request = new OrcamentoRequest(idOs, TipoOrcamento.INICIAL, LocalDateTime.now().plusDays(1), null, null);
+        Orcamento orcamento = new Orcamento();
 
         OrdemServico os = new OrdemServico();
         os.setStatusOS(StatusOS.CANCELADA);
 
         when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
 
-        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(request));
+        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(idOs, orcamento));
     }
 
     @Test
     @DisplayName("Deve lançar exceção ao tentar criar segundo orçamento INICIAL")
     void deveLancarExcecaoJaExisteInicial() {
         UUID idOs = UUID.randomUUID();
-        OrcamentoRequest request = new OrcamentoRequest(idOs, TipoOrcamento.INICIAL, LocalDateTime.now().plusDays(1), null, null);
+        Orcamento orcamento = new Orcamento(
+                null, TipoOrcamento.INICIAL, StatusOrcamento.PENDENTE,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(1), null,
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                null, Collections.emptyList(), Collections.emptyList()
+        );
 
         OrdemServico os = new OrdemServico();
         os.setStatusOS(StatusOS.EM_EXECUCAO);
 
         Orcamento orcamentoExistente = new Orcamento(
-                UUID.randomUUID(),
-                TipoOrcamento.INICIAL,
-                StatusOrcamento.PENDENTE,
-                LocalDateTime.now(),
-                LocalDateTime.now().plusDays(5),
-                null,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList()
+                UUID.randomUUID(), TipoOrcamento.INICIAL, StatusOrcamento.PENDENTE,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(5), null,
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                null, Collections.emptyList(), Collections.emptyList()
         );
 
         when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
         when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(List.of(orcamentoExistente));
 
-        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(request));
+        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(idOs, orcamento));
     }
 
     @Test
@@ -156,124 +165,50 @@ class OrcamentoValidatorTest {
         UUID idOs = UUID.randomUUID();
         UUID idServicoNovo = UUID.randomUUID();
 
-        OrcamentoServicoRequest servicoRequest = new OrcamentoServicoRequest(idServicoNovo, BigDecimal.valueOf(100.00), null);
-        OrcamentoRequest request = new OrcamentoRequest(idOs, TipoOrcamento.COMPLEMENTAR, null, List.of(servicoRequest), null);
+        Servico servicoModel = new Servico(idServicoNovo, "Servico Novo", BigDecimal.valueOf(100.00), 30);
+        OrcamentoServico servicoReq = new OrcamentoServico(UUID.randomUUID(), BigDecimal.valueOf(100.00), servicoModel, Collections.emptyList(), null);
+
+        Orcamento orcamento = new Orcamento(
+                null, TipoOrcamento.COMPLEMENTAR, StatusOrcamento.PENDENTE,
+                LocalDateTime.now(), null, null,
+                BigDecimal.ZERO, BigDecimal.valueOf(100.00), BigDecimal.valueOf(100.00),
+                null, List.of(servicoReq), Collections.emptyList()
+        );
 
         OrdemServico os = new OrdemServico();
         os.setStatusOS(StatusOS.EM_EXECUCAO);
 
         Orcamento orcamentoAnterior = new Orcamento(
-                UUID.randomUUID(),
-                TipoOrcamento.INICIAL,
-                StatusOrcamento.APROVADO,
-                LocalDateTime.now(),
-                LocalDateTime.now().plusDays(5),
-                null,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList()
+                UUID.randomUUID(), TipoOrcamento.INICIAL, StatusOrcamento.APROVADO,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(5), null,
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                null, Collections.emptyList(), Collections.emptyList()
         );
-
-        Servico servico = new Servico(idServicoNovo, "Servico Novo", BigDecimal.valueOf(100.00), 30);
 
         when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
         when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(List.of(orcamentoAnterior));
-        when(servicoValidator.buscarPorId(idServicoNovo)).thenReturn(servico);
 
-        assertDoesNotThrow(() -> validator.validarCriacao(request));
+        assertDoesNotThrow(() -> validator.validarCriacao(idOs, orcamento));
     }
 
     @Test
     @DisplayName("Deve lançar exceção ao criar COMPLEMENTAR sem orçamento anterior")
     void deveLancarExcecaoComplementarSemAnterior() {
         UUID idOs = UUID.randomUUID();
-        OrcamentoRequest request = new OrcamentoRequest(idOs, TipoOrcamento.COMPLEMENTAR, null, null, null);
-
-        OrdemServico os = new OrdemServico();
-        os.setStatusOS(StatusOS.EM_EXECUCAO);
-
-        when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
-        when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(Collections.emptyList());
-
-        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(request));
-    }
-
-    @Test
-    @DisplayName("Deve lançar exceção se serviço do COMPLEMENTAR já foi adicionado em outro orçamento")
-    void deveLancarExcecaoServicoDuplicadoEmComplementar() {
-        UUID idOs = UUID.randomUUID();
-        UUID idServico = UUID.randomUUID();
-
-        OrcamentoServicoRequest servicoRequest = new OrcamentoServicoRequest(idServico, BigDecimal.valueOf(100.00), null);
-        OrcamentoRequest request = new OrcamentoRequest(idOs, TipoOrcamento.COMPLEMENTAR, null, List.of(servicoRequest), null);
-
-        OrdemServico os = new OrdemServico();
-        os.setStatusOS(StatusOS.EM_EXECUCAO);
-
-        Servico servicoModel = new Servico(idServico, "Servico Duplicado", BigDecimal.valueOf(100.00), 30);
-
-        OrcamentoServico orcamentoServicoAnterior = new OrcamentoServico(
-                UUID.randomUUID(),
-                BigDecimal.valueOf(50.00),
-                servicoModel,
-                Collections.emptyList(),
-                null
+        Orcamento orcamento = new Orcamento(
+                null, TipoOrcamento.COMPLEMENTAR, StatusOrcamento.PENDENTE,
+                LocalDateTime.now(), null, null,
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                null, Collections.emptyList(), Collections.emptyList()
         );
 
-        Orcamento orcamentoAnterior = new Orcamento(
-                UUID.randomUUID(),
-                TipoOrcamento.INICIAL,
-                StatusOrcamento.APROVADO,
-                LocalDateTime.now(),
-                LocalDateTime.now().plusDays(5),
-                null,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                null,
-                List.of(orcamentoServicoAnterior),
-                Collections.emptyList()
-        );
-
-        when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
-        when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(List.of(orcamentoAnterior));
-
-        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(request));
-    }
-
-    // --- TESTES DE VALIDAÇÃO DE DATA DE EXPIRAÇÃO ---
-
-    @Test
-    @DisplayName("Deve lançar exceção se data de expiração for nula em orçamento inicial")
-    void deveLancarExcecaoDataExpiracaoNula() {
-        UUID idOs = UUID.randomUUID();
-        OrcamentoRequest request = new OrcamentoRequest(idOs, TipoOrcamento.INICIAL, null, List.of(mock(OrcamentoServicoRequest.class)), null);
-
         OrdemServico os = new OrdemServico();
         os.setStatusOS(StatusOS.EM_EXECUCAO);
 
         when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
         when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(Collections.emptyList());
 
-        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(request));
-    }
-
-    @Test
-    @DisplayName("Deve lançar exceção se data de expiração estiver no passado")
-    void deveLancarExcecaoDataExpiracaoPassada() {
-        UUID idOs = UUID.randomUUID();
-        OrcamentoRequest request = new OrcamentoRequest(idOs, TipoOrcamento.INICIAL, LocalDateTime.now().minusDays(1), List.of(mock(OrcamentoServicoRequest.class)), null);
-
-        OrdemServico os = new OrdemServico();
-        os.setStatusOS(StatusOS.EM_EXECUCAO);
-
-        when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
-        when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(Collections.emptyList());
-
-        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(request));
+        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(idOs, orcamento));
     }
 
     // --- TESTES DE STATUS E SERVIÇOS ---
@@ -291,58 +226,35 @@ class OrcamentoValidatorTest {
         assertThrows(RegraNegocioException.class, () -> validator.validarAtualizacaoStatus(StatusOrcamento.PENDENTE));
     }
 
-    @Test
-    @DisplayName("Deve lançar exceção se lista de serviços estiver vazia ou nula")
-    void deveLancarExcecaoServicosVazios() {
-        assertThrows(RegraNegocioException.class, () -> validator.validarServicosRequest(null));
-        assertThrows(RegraNegocioException.class, () -> validator.validarServicosRequest(Collections.emptyList()));
-    }
-
-    @Test
-    @DisplayName("Deve lançar exceção se ID do serviço for nulo")
-    void deveLancarExcecaoIdServicoNulo() {
-        OrcamentoServicoRequest request = new OrcamentoServicoRequest(null, BigDecimal.valueOf(100.00), null);
-        assertThrows(RegraNegocioException.class, () -> validator.validarEBuscarServico(request));
-    }
-
-    @Test
-    @DisplayName("Deve lançar exceção se mão de obra for menor ou igual a zero")
-    void deveLancarExcecaoMaoDeObraInvalida() {
-        OrcamentoServicoRequest reqZero = new OrcamentoServicoRequest(UUID.randomUUID(), BigDecimal.ZERO, null);
-        OrcamentoServicoRequest reqNegativa = new OrcamentoServicoRequest(UUID.randomUUID(), BigDecimal.valueOf(-10), null);
-
-        assertThrows(RegraNegocioException.class, () -> validator.validarEBuscarServico(reqZero));
-        assertThrows(RegraNegocioException.class, () -> validator.validarEBuscarServico(reqNegativa));
-    }
-
     // --- TESTES DE ESTOQUE E ITENS DO ORÇAMENTO ---
 
     @Test
-    @DisplayName("Deve lançar exceção se quantidade em estoque for insuficiente para o item")
+    @DisplayName("Deve lançar exceção se quantidade em estoque for insuficiente")
     void deveLancarExcecaoEstoqueInsuficiente() {
-        UUID idServico = UUID.randomUUID();
         UUID idEstoque = UUID.randomUUID();
 
-        OrcamentoItemRequest itemRequest = new OrcamentoItemRequest(15, BigDecimal.valueOf(10.00), BigDecimal.valueOf(10.00), idEstoque);
-        OrcamentoServicoRequest servicoRequest = new OrcamentoServicoRequest(idServico, BigDecimal.valueOf(100.00), List.of(itemRequest));
-
-        Estoque estoque = new Estoque(
-                idEstoque,
-                "Pastilha de Freio",
-                "Marca",
-                BigDecimal.valueOf(10.00),
-                5,
-                2,
-                TipoItemEstoque.PECA
+        OrcamentoItem item = new OrcamentoItem(
+                UUID.randomUUID(), null, 15, BigDecimal.valueOf(10.00), BigDecimal.valueOf(150.00), idEstoque, null, null
         );
 
-        Servico servico = new Servico(idServico, "Servico", BigDecimal.valueOf(100.00), 30);
+        OrcamentoServico servico = new OrcamentoServico(
+                UUID.randomUUID(), BigDecimal.valueOf(100.00), new Servico(UUID.randomUUID(), "Servico", BigDecimal.valueOf(100), 30), List.of(item), null
+        );
 
-        when(servicoValidator.buscarPorId(idServico)).thenReturn(servico);
+        Orcamento orcamento = new Orcamento(
+                UUID.randomUUID(), TipoOrcamento.INICIAL, StatusOrcamento.PENDENTE,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(5), null,
+                BigDecimal.valueOf(150.00), BigDecimal.valueOf(100.00), BigDecimal.valueOf(250.00),
+                null, List.of(servico), List.of(item)
+        );
+
+        Estoque estoque = new Estoque(
+                idEstoque, "Pastilha de Freio", "Marca", BigDecimal.valueOf(10.00), 5, 2, TipoItemEstoque.PECA
+        );
+
         when(estoqueRepository.findById(idEstoque)).thenReturn(Optional.of(estoque));
 
-        List<OrcamentoServicoRequest> servicosList = List.of(servicoRequest);
-        assertThrows(RegraNegocioException.class, () -> validator.validarServicosRequest(servicosList));
+        assertThrows(RegraNegocioException.class, () -> validator.validarEstoqueDisponivel(orcamento));
     }
 
     @Test
@@ -351,47 +263,22 @@ class OrcamentoValidatorTest {
         UUID idEstoque = UUID.randomUUID();
 
         OrcamentoItem item = new OrcamentoItem(
-                UUID.randomUUID(),
-                null,
-                2,
-                BigDecimal.valueOf(10.00),
-                BigDecimal.valueOf(20.00),
-                idEstoque,
-                null,
-                null
+                UUID.randomUUID(), null, 2, BigDecimal.valueOf(10.00), BigDecimal.valueOf(20.00), idEstoque, null, null
         );
 
         OrcamentoServico servico = new OrcamentoServico(
-                UUID.randomUUID(),
-                BigDecimal.valueOf(50.00),
-                null,
-                List.of(item),
-                null
+                UUID.randomUUID(), BigDecimal.valueOf(50.00), null, List.of(item), null
         );
 
         Orcamento orcamento = new Orcamento(
-                UUID.randomUUID(),
-                TipoOrcamento.INICIAL,
-                StatusOrcamento.PENDENTE,
-                LocalDateTime.now(),
-                LocalDateTime.now().plusDays(5),
-                null,
-                BigDecimal.valueOf(20.00),
-                BigDecimal.valueOf(50.00),
-                BigDecimal.valueOf(70.00),
-                null,
-                List.of(servico),
-                List.of(item)
+                UUID.randomUUID(), TipoOrcamento.INICIAL, StatusOrcamento.PENDENTE,
+                LocalDateTime.now(), LocalDateTime.now().plusDays(5), null,
+                BigDecimal.valueOf(20.00), BigDecimal.valueOf(50.00), BigDecimal.valueOf(70.00),
+                null, List.of(servico), List.of(item)
         );
 
         Estoque estoque = new Estoque(
-                idEstoque,
-                "Item",
-                "Marca",
-                BigDecimal.valueOf(10.00),
-                10,
-                2,
-                TipoItemEstoque.PECA
+                idEstoque, "Item", "Marca", BigDecimal.valueOf(10.00), 10, 2, TipoItemEstoque.PECA
         );
 
         when(estoqueRepository.findById(idEstoque)).thenReturn(Optional.of(estoque));

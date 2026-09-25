@@ -1,19 +1,18 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.AtualizarStatusOrcamentoRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoResponse;
 import br.com.autoflow.application.validator.OrcamentoValidator;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusReservaEstoque;
+import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
+import br.com.autoflow.domain.exception.RegraNegocioException;
 import br.com.autoflow.domain.model.Estoque;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.model.OrdemServico;
-import br.com.autoflow.ports.outbound.*;
-import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
-import br.com.autoflow.domain.exception.RegraNegocioException;
-import br.com.autoflow.adapters.inbound.mapper.OrcamentoMapper;
+import br.com.autoflow.ports.inbound.orcamento.*;
+import br.com.autoflow.ports.outbound.EstoqueRepositoryPort;
+import br.com.autoflow.ports.outbound.OrcamentoRepositoryPort;
+import br.com.autoflow.ports.outbound.OrdemServicoRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,57 +25,60 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class OrcamentoUseCase {
+public class OrcamentoUseCaseImpl implements
+        CriarOrcamentoUseCase,
+        AtualizarStatusOrcamentoUseCase,
+        ListarOrcamentosUseCase,
+        BuscarOrcamentoPorIdUseCase,
+        DeletarOrcamentoUseCase {
 
     private final OrcamentoRepositoryPort orcamentoRepositoryPort;
-    private final OrcamentoMapper orcamentoMapper;
-    private final OrcamentoValidator orcamentoValidator;
     private final OrdemServicoRepositoryPort ordemServicoRepositoryPort;
-    private final OrcamentoExpiradoUseCase orcamentoExpiradoUseCase;
     private final EstoqueRepositoryPort estoqueRepositoryPort;
+    private final OrcamentoValidator orcamentoValidator;
+    private final OrcamentoExpiradoUseCase orcamentoExpiradoUseCase;
 
+    @Override
     @Transactional
-    public OrcamentoResponse criar(OrcamentoRequest request) {
-        if (orcamentoValidator != null) {
-            orcamentoValidator.validarCriacao(request);
-        }
-        Orcamento orcamento = orcamentoMapper.toEntity(request);
-        OrdemServico ordemServico = ordemServicoRepositoryPort.findById(request.idOs())
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", request.idOs()));
-        orcamento.setOrdemServico(ordemServico);
+    public Orcamento criar(UUID idOs, Orcamento orcamento) {
+        OrdemServico ordemServico = ordemServicoRepositoryPort.findById(idOs)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", idOs));
 
+        orcamento.setOrdemServico(ordemServico);
         vincularServicosEItens(orcamento);
+
+        orcamentoValidator.validarCriacao(idOs, orcamento);
 
         orcamento.setStatus(StatusOrcamento.PENDENTE);
         orcamento.setDataCriacao(LocalDateTime.now(ZoneId.systemDefault()));
 
-        processarRegraTipoOrcamento(orcamento, ordemServico, request);
+        processarRegraTipoOrcamento(orcamento, ordemServico);
 
-        orcamento = orcamentoRepositoryPort.save(orcamento);
-        return mapToResponseComAvisos(orcamento);
+        return orcamentoRepositoryPort.save(orcamento);
     }
 
+    @Override
     @Transactional
-    public OrcamentoResponse atualizarStatus(UUID id, AtualizarStatusOrcamentoRequest request) {
-        Orcamento orcamento = orcamentoRepositoryPort.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Orçamento", id));
+    public Orcamento atualizarStatus(UUID id, StatusOrcamento novoStatus) {
+        Orcamento orcamento = buscarPorId(id);
 
         if (orcamento.getStatus() != StatusOrcamento.PENDENTE) {
             throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
         }
-        if (orcamentoValidator != null) {
-            orcamentoValidator.validarAtualizacaoStatus(request.status());
-        }
+        orcamentoValidator.validarAtualizacaoStatus(novoStatus);
 
         if (orcamento.getDataExpiracao() != null && LocalDateTime.now(ZoneId.systemDefault()).isAfter(orcamento.getDataExpiracao())) {
             orcamento.expirar();
             orcamentoExpiradoUseCase.salvarOrcamentoExpirado(orcamento);
             throw new RegraNegocioException("Não foi possível alterar o status: Este orçamento está expirado.");
         }
-        if (request.status() == StatusOrcamento.APROVADO) {
+
+        if (novoStatus == StatusOrcamento.APROVADO) {
+            orcamentoValidator.validarEstoqueDisponivel(orcamento);
             deduzirItensDoEstoque(orcamento);
             orcamento.aprovar();
             orcamento = orcamentoRepositoryPort.save(orcamento);
+
             if (orcamento.getTipoOrcamento() != null &&
                     orcamento.getTipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR")) {
                 OrdemServico ordemServico = orcamento.getOrdemServico();
@@ -85,39 +87,39 @@ public class OrcamentoUseCase {
                 ordemServicoRepositoryPort.save(ordemServico);
             }
         } else {
-            orcamento.aplicarNovoStatus(request.status());
+            orcamento.aplicarNovoStatus(novoStatus);
             orcamento = orcamentoRepositoryPort.save(orcamento);
         }
-        return mapToResponseComAvisos(orcamento);
+
+        return orcamento;
     }
 
+    @Override
     @Transactional(readOnly = true)
-    public List<OrcamentoResponse> listarTodos() {
-        return orcamentoRepositoryPort.findAll().stream()
-                .map(this::mapToResponseComAvisos)
-                .toList();
+    public List<Orcamento> listarTodos() {
+        return orcamentoRepositoryPort.findAll();
     }
 
+    @Override
     @Transactional(readOnly = true)
-    public OrcamentoResponse buscarPorId(UUID id) {
-        Orcamento orcamento = orcamentoRepositoryPort.findById(id)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Orçamento ", id));
-        return mapToResponseComAvisos(orcamento);
+    public Orcamento buscarPorId(UUID id) {
+        return orcamentoRepositoryPort.findById(id)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Orçamento", id));
     }
 
+    @Override
     @Transactional(readOnly = true)
-    public List<OrcamentoResponse> listarPorOrdemServico(UUID idOs) {
-        List<Orcamento> orcamientos = orcamentoRepositoryPort.findByOrdemServicoIdOs(idOs);
-        if (orcamientos.isEmpty()) {
+    public List<Orcamento> listarPorOrdemServico(UUID idOs) {
+        List<Orcamento> orcamentos = orcamentoRepositoryPort.findByOrdemServicoIdOs(idOs);
+        if (orcamentos.isEmpty()) {
             throw new EntidadeNaoEncontradaException("Nenhum orçamento encontrado para a Ordem de Serviço ID: ", idOs);
         }
-        return orcamientos.stream()
-                .map(this::mapToResponseComAvisos)
-                .toList();
+        return orcamentos;
     }
 
+    @Override
     @Transactional
-    public void delete(UUID id) {
+    public void deletar(UUID id) {
         if (!orcamentoRepositoryPort.existsById(id)) {
             throw new EntidadeNaoEncontradaException("Orçamento", id);
         }
@@ -126,43 +128,27 @@ public class OrcamentoUseCase {
         orcamentoRepositoryPort.deletarServicosPorOrcamento(id);
     }
 
-    public List<String> deduzirItensDoEstoque(Orcamento orcamento) {
-        List<String> avisosEstoque = new ArrayList<>();
-
-        if (orcamentoValidator != null) {
-            orcamentoValidator.validarEstoqueDisponivel(orcamento);
-        }
+    private void deduzirItensDoEstoque(Orcamento orcamento) {
         if (orcamento.getServicos() != null) {
             orcamento.getServicos().stream()
-                    .filter(servico -> servico.getItens() != null)
-                    .flatMap(servico -> servico.getItens().stream())
+                    .filter(s -> s.getItens() != null)
+                    .flatMap(s -> s.getItens().stream())
                     .forEach(item -> {
                         Estoque estoque = estoqueRepositoryPort.findById(item.getIdEstoque())
                                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Item de Estoque", item.getIdEstoque()));
 
-                        if (estoque.getQuantidadeEstoque() < item.getQuantidade()) {
-                            throw new RegraNegocioException(
-                                    String.format("Saldo insuficiente para a peça %s no momento da aprovação.", estoque.getNomeItem())
-                            );
-                        }
                         estoque.setQuantidadeEstoque(estoque.getQuantidadeEstoque() - item.getQuantidade());
                         estoqueRepositoryPort.save(estoque);
-
-                        if (estoque.deveDispararAlertaEstoqueBaixo()) {
-                            avisosEstoque.add(String.format("ALERTA: O item '%s' atingiu nível crítico (%d restantes).",
-                                    estoque.getNomeItem(), estoque.getQuantidadeEstoque()));
-                        }
                     });
         }
-        return avisosEstoque;
     }
 
-    private List<String> verificarAvisosEstoque(Orcamento orcamento) {
+    public List<String> verificarAvisosEstoque(Orcamento orcamento) {
         List<String> avisosEstoque = new ArrayList<>();
         if (orcamento.getServicos() != null) {
             orcamento.getServicos().stream()
-                    .filter(servico -> servico.getItens() != null)
-                    .flatMap(servico -> servico.getItens().stream())
+                    .filter(s -> s.getItens() != null)
+                    .flatMap(s -> s.getItens().stream())
                     .forEach(item -> estoqueRepositoryPort.findById(item.getIdEstoque()).ifPresent(estoque -> {
                         if (estoque.deveDispararAlertaEstoqueBaixo()) {
                             avisosEstoque.add(String.format("ALERTA: O item '%s' atingiu nível crítico (%d restantes).",
@@ -173,43 +159,23 @@ public class OrcamentoUseCase {
         return avisosEstoque;
     }
 
-    private OrcamentoResponse mapToResponseComAvisos(Orcamento orcamento) {
-        OrcamentoResponse response = orcamentoMapper.toResponse(orcamento);
-        List<String> avisos = verificarAvisosEstoque(orcamento);
-
-        return new OrcamentoResponse(
-                response.id(),
-                response.idOs(),
-                response.tipoOrcamento(),
-                response.status(),
-                response.dataCriacao(),
-                response.dataExpiracao(),
-                response.dataDecisao(),
-                response.subtotalPecas(),
-                response.maoObra(),
-                response.total(),
-                response.servicos(),
-                avisos
-        );
-    }
-
     private void vincularServicosEItens(Orcamento orcamento) {
         if (orcamento.getServicos() != null) {
-            for (var servico : orcamento.getServicos()) {
+            orcamento.getServicos().forEach(servico -> {
                 servico.setOrcamento(orcamento);
                 if (servico.getItens() != null) {
-                    for (var item : servico.getItens()) {
+                    servico.getItens().forEach(item -> {
                         item.setOrcamentoServico(servico);
                         item.setStatusReserva(StatusReservaEstoque.RESERVADO);
-                    }
+                    });
                 }
-            }
+            });
         }
     }
 
-    private void processarRegraTipoOrcamento(Orcamento orcamento, OrdemServico ordemServico, OrcamentoRequest request) {
-        boolean ehComplementar = request.tipoOrcamento() != null &&
-                request.tipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR");
+    private void processarRegraTipoOrcamento(Orcamento orcamento, OrdemServico ordemServico) {
+        boolean ehComplementar = orcamento.getTipoOrcamento() != null &&
+                orcamento.getTipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR");
 
         if (ehComplementar) {
             boolean temOrcamentoAprovado = ordemServico.getIdsOrcamento().stream()
@@ -220,10 +186,6 @@ public class OrcamentoUseCase {
             orcamento.setDataExpiracao(LocalDateTime.now(ZoneId.systemDefault()).plusHours(24));
             ordemServico.atualizarStatus(StatusOS.AGUARDANDO_APROVACAO, "OS pausada: Aguardando aprovação de orçamento complementar.");
             ordemServicoRepositoryPort.save(ordemServico);
-        } else {
-            if (orcamento.getDataExpiracao() == null) {
-                orcamento.setDataExpiracao(request.dataExpiracao());
-            }
         }
     }
 }

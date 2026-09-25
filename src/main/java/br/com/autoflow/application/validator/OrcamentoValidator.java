@@ -1,17 +1,12 @@
 package br.com.autoflow.application.validator;
 
-import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoItemRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoServicoRequest;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.TipoOrcamento;
-import br.com.autoflow.domain.model.Estoque;
-import br.com.autoflow.domain.model.Orcamento;
-import br.com.autoflow.domain.model.OrdemServico;
-import br.com.autoflow.domain.model.Servico;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.domain.exception.RegraNegocioException;
+import br.com.autoflow.domain.model.Orcamento;
+import br.com.autoflow.domain.model.OrdemServico;
 import br.com.autoflow.ports.outbound.EstoqueRepositoryPort;
 import br.com.autoflow.ports.outbound.OrcamentoRepositoryPort;
 import br.com.autoflow.ports.outbound.OrdemServicoRepositoryPort;
@@ -20,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,76 +28,9 @@ public class OrcamentoValidator {
     private final ServicoValidator servicoValidator;
     private final OrcamentoRepositoryPort orcamentoRepositoryPort;
 
-    public void validarCriacao(OrcamentoRequest request) {
-        validarOrdemServico(request);
-
-        List<Orcamento> orcamentosExistentes = orcamentoRepositoryPort.findByOrdemServicoIdOs(request.idOs());
-        boolean temOrcamentoAnterior = orcamentosExistentes != null && !orcamentosExistentes.isEmpty();
-
-        validarTipoDeOrcamento(request);
-
-        boolean ehComplementar = request.tipoOrcamento() != null &&
-                request.tipoOrcamento().equals(TipoOrcamento.COMPLEMENTAR);
-
-        if (ehComplementar) {
-            validarRegrasOrcamentoComplementar(orcamentosExistentes, temOrcamentoAnterior, request);
-        } else {
-            validarRegrasOrcamentoInicial(orcamentosExistentes, request);
-        }
-
-        validarServicosRequest(request.servicos());
-    }
-
-    private void validarRegrasOrcamentoComplementar(List<Orcamento> orcamentosExistentes, boolean temOrcamentoAnterior, OrcamentoRequest request) {
-        if (!temOrcamentoAnterior) {
-            throw new RegraNegocioException("Não é permitido criar um orçamento complementar sem antes existir um orçamento inicial para esta OS.");
-        }
-        List<UUID> servicosJaCadastrados = orcamentosExistentes.stream()
-                .filter(o -> o.getServicos() != null)
-                .flatMap(o -> o.getServicos().stream())
-                .map(s -> s.getServico().getIdServico())
-                .toList();
-
-        if (request.servicos() != null) {
-            for (var novoServico : request.servicos()) {
-                if (servicosJaCadastrados.contains(novoServico.idServico())) {
-                    throw new RegraNegocioException(
-                            String.format("O serviço com ID %s já foi adicionado em outro orçamento desta OS.", novoServico.idServico())
-                    );
-                }
-            }
-        }
-    }
-
-    private void validarRegrasOrcamentoInicial(List<Orcamento> orcamentosExistentes, OrcamentoRequest request) {
-        boolean jaExisteInicial = orcamentosExistentes != null && orcamentosExistentes.stream()
-                .anyMatch(o -> o.getTipoOrcamento() != null &&
-                        o.getTipoOrcamento().name().equalsIgnoreCase("INICIAL"));
-        if (jaExisteInicial) {
-            throw new RegraNegocioException("Já existe um orçamento INICIAL cadastrado para esta Ordem de Serviço. Para adicionar novos itens, utilize o tipo COMPLEMENTAR.");
-        }
-        validarDataExpiracao(request);
-    }
-
-    public void validarAtualizacaoStatus(StatusOrcamento novoStatus) {
-        if (novoStatus != StatusOrcamento.APROVADO && novoStatus != StatusOrcamento.RECUSADO) {
-            throw new RegraNegocioException("O orçamento só pode ser alterado para APROVADO ou RECUSADO.");
-        }
-    }
-
-    private void validarTipoDeOrcamento(OrcamentoRequest request){
-        if (request.tipoOrcamento() == null) {
-            throw new RegraNegocioException("O tipo de orçamento é obrigatório.");
-        }
-    }
-
-    private void validarOrdemServico(OrcamentoRequest request) {
-        if (request.idOs() == null) {
-            throw new RegraNegocioException("O ID da Ordem de Serviço é obrigatório para criar um orçamento.");
-        }
-
-        OrdemServico os = ordemServicoRepositoryPort.findById(request.idOs())
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", request.idOs()));
+    public void validarCriacao(UUID idOs, Orcamento orcamento) {
+        OrdemServico os = ordemServicoRepositoryPort.findById(idOs)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", idOs));
 
         if (os.getStatusOS() == StatusOS.CANCELADA ||
                 os.getStatusOS() == StatusOS.FINALIZADA ||
@@ -110,70 +39,91 @@ public class OrcamentoValidator {
                     String.format("Não é possível criar orçamento para uma Ordem de Serviço com status %s.", os.getStatusOS())
             );
         }
+
+        List<Orcamento> orcamentosExistentes = orcamentoRepositoryPort.findByOrdemServicoIdOs(idOs);
+        boolean temOrcamentoAnterior = orcamentosExistentes != null && !orcamentosExistentes.isEmpty();
+
+        if (orcamento.getTipoOrcamento() == null) {
+            throw new RegraNegocioException("O tipo de orçamento é obrigatório.");
+        }
+
+        boolean ehComplementar = orcamento.getTipoOrcamento().equals(TipoOrcamento.COMPLEMENTAR);
+
+        if (ehComplementar) {
+            if (!temOrcamentoAnterior) {
+                throw new RegraNegocioException("Não é permitido criar um orçamento complementar sem antes existir um orçamento inicial para esta OS.");
+            }
+            List<UUID> servicosJaCadastrados = orcamentosExistentes.stream()
+                    .filter(o -> o.getServicos() != null)
+                    .flatMap(o -> o.getServicos().stream())
+                    .map(s -> s.getServico().getIdServico())
+                    .toList();
+
+            if (orcamento.getServicos() != null) {
+                for (var novoServico : orcamento.getServicos()) {
+                    if (servicosJaCadastrados.contains(novoServico.getServico().getIdServico())) {
+                        throw new RegraNegocioException(
+                                String.format("O serviço com ID %s já foi adicionado em outro orçamento desta OS.", novoServico.getServico().getIdServico())
+                        );
+                    }
+                }
+            }
+        } else {
+            boolean jaExisteInicial = orcamentosExistentes != null && orcamentosExistentes.stream()
+                    .anyMatch(o -> o.getTipoOrcamento() != null &&
+                            o.getTipoOrcamento() == TipoOrcamento.INICIAL);
+            if (jaExisteInicial) {
+                throw new RegraNegocioException("Já existe um orçamento INICIAL cadastrado para esta Ordem de Serviço. Para adicionar novos itens, utilize o tipo COMPLEMENTAR.");
+            }
+            if (orcamento.getDataExpiracao() == null) {
+                throw new RegraNegocioException("A data de expiração do orçamento é obrigatória.");
+            }
+            if (orcamento.getDataExpiracao().isBefore(LocalDateTime.now(ZoneId.systemDefault()))) {
+                throw new RegraNegocioException("A data de expiração não pode ser anterior à data atual.");
+            }
+        }
+
+        validarServicosDoOrcamento(orcamento);
     }
 
-    private void validarDataExpiracao(OrcamentoRequest request) {
-        if (request.dataExpiracao() == null) {
-            throw new RegraNegocioException("A data de expiração do orçamento é obrigatória.");
-        }
-        if (request.dataExpiracao().isBefore(LocalDateTime.now(java.time.ZoneId.systemDefault()))) {
-            throw new RegraNegocioException("A data de expiração não pode ser anterior à data atual.");
+    public void validarAtualizacaoStatus(StatusOrcamento novoStatus) {
+        if (novoStatus != StatusOrcamento.APROVADO && novoStatus != StatusOrcamento.RECUSADO) {
+            throw new RegraNegocioException("O orçamento só pode ser alterado para APROVADO ou RECUSADO.");
         }
     }
 
-    public void validarServicosRequest(List<OrcamentoServicoRequest> servicos) {
-        if (servicos == null || servicos.isEmpty()) {
+    private void validarServicosDoOrcamento(Orcamento orcamento) {
+        if (orcamento.getServicos() == null || orcamento.getServicos().isEmpty()) {
             throw new RegraNegocioException("O orçamento deve conter pelo menos um serviço.");
         }
-        for (OrcamentoServicoRequest servico : servicos) {
-            validarEBuscarServico(servico);
-            if (servico.itens() != null) {
-                validarItensDoServico(servico.itens());
+        for (var servico : orcamento.getServicos()) {
+            if (servico.getMaoDeObra() == null || servico.getMaoDeObra().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new RegraNegocioException("O valor da mão de obra deve ser maior que zero.");
+            }
+            if (servico.getItens() != null) {
+                servico.getItens().forEach(item -> {
+                    if (item.getIdEstoque() == null) {
+                        throw new RegraNegocioException("O ID da peça/estoque é obrigatório no item.");
+                    }
+                    if (item.getQuantidade() == null || item.getQuantidade() <= 0) {
+                        throw new RegraNegocioException("A quantidade de cada item/peça deve ser maior que zero.");
+                    }
+                    if (item.getValorUnitario() == null || item.getValorUnitario().compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new RegraNegocioException("O valor unitário do item/peça deve ser maior que zero.");
+                    }
+                });
             }
         }
-    }
-
-    public Servico validarEBuscarServico(OrcamentoServicoRequest request) {
-        if (request.idServico() == null) {
-            throw new RegraNegocioException("O ID do serviço é obrigatório.");
-        }
-        if (request.maoDeObra() == null || request.maoDeObra().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RegraNegocioException("O valor da mão de obra deve ser maior que zero.");
-        }
-        return servicoValidator.buscarPorId(request.idServico());
-    }
-
-    private void validarItensDoServico(List<OrcamentoItemRequest> itens) {
-        itens.forEach(item -> {
-            if (item.idEstoque() == null) {
-                throw new RegraNegocioException("O ID da peça/estoque é obrigatório no item.");
-            }
-            if (item.quantidade() == null || item.quantidade() <= 0) {
-                throw new RegraNegocioException("A quantidade de cada item/peça deve ser maior que zero.");
-            }
-            if (item.valorUnitario() == null || item.valorUnitario().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new RegraNegocioException("O valor unitário do item/peça deve ser maior que zero.");
-            }
-            Estoque itemEstoque = estoqueRepositoryPort.findById(item.idEstoque())
-                    .orElseThrow(() -> new EntidadeNaoEncontradaException("Item de Estoque", item.idEstoque()));
-
-            if (itemEstoque.getQuantidadeEstoque() < item.quantidade()) {
-                throw new RegraNegocioException(
-                        String.format("Estoque insuficiente para a peça '%s'. Solicitado: %d, Disponível: %d.",
-                                itemEstoque.getNomeItem(), item.quantidade(), itemEstoque.getQuantidadeEstoque())
-                );
-            }
-        });
     }
 
     public void validarEstoqueDisponivel(Orcamento orcamento) {
         if (orcamento.getServicos() == null) return;
 
         orcamento.getServicos().stream()
-                .filter(servico -> servico.getItens() != null)
-                .flatMap(servico -> servico.getItens().stream())
+                .filter(s -> s.getItens() != null)
+                .flatMap(s -> s.getItens().stream())
                 .forEach(item -> {
-                    Estoque estoque = estoqueRepositoryPort.findById(item.getIdEstoque())
+                    var estoque = estoqueRepositoryPort.findById(item.getIdEstoque())
                             .orElseThrow(() -> new EntidadeNaoEncontradaException("Item de Estoque", item.getIdEstoque()));
 
                     if (estoque.getQuantidadeEstoque() < item.getQuantidade()) {

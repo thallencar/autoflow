@@ -41,7 +41,7 @@ public class OrdemServicoUseCase {
     private final OrdemServicoEntityMapper entityMapper;
     private final OrdemServicoValidator validator;
     private final FuncionarioRepositoryPort funcionarioRepository;
-    private final OrcamentoUseCase orcamentoUseCase;
+    private final OrcamentoUseCaseImpl orcamentoUseCaseImpl;
 
     @Transactional(readOnly = true)
     public Page<OrdemServicoResponse> listarTodas(Pageable pageable) {
