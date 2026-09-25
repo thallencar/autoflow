@@ -2,8 +2,6 @@ package br.com.autoflow.application.usecase;
 
 import br.com.autoflow.adapters.inbound.controller.dto.AtualizarValorEstoqueRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.EstoqueRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.EstoqueResponse;
-import br.com.autoflow.adapters.inbound.mapper.EstoqueMapper;
 import br.com.autoflow.domain.enums.TipoItemEstoque;
 import br.com.autoflow.domain.model.Estoque;
 import br.com.autoflow.ports.outbound.EstoqueRepositoryPort;
@@ -29,50 +27,27 @@ class EstoqueServiceTest {
     @Mock
     private EstoqueRepositoryPort estoqueRepository;
 
-    @Mock
-    private EstoqueMapper estoqueMapper;
-
     @InjectMocks
-    private EstoqueUseCase estoqueService;
+    private EstoqueUseCaseImpl estoqueService;
 
     @Test
     @DisplayName("Deve criar item no estoque com sucesso.")
     void deveCriarItemNoEstoqueComSucesso() {
         // Arrange
-        EstoqueRequest request = new EstoqueRequest(
-                "Filtro de óleo",
-                "Tecfil",
-                BigDecimal.valueOf(55),
-                35,
-                5,
-                TipoItemEstoque.INSUMO
-        );
-
         UUID idGerado = UUID.randomUUID();
-        Estoque estoqueEntity = new Estoque(null, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO);
+        Estoque estoqueInput = new Estoque(null, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO);
         Estoque estoqueSalvo = new Estoque(idGerado, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO);
 
-        EstoqueResponse responseEsperado = new EstoqueResponse(
-                idGerado,
-                "Filtro de óleo",
-                "Tecfil",
-                BigDecimal.valueOf(55),
-                35,
-                5,
-                TipoItemEstoque.INSUMO
-        );
-
-        when(estoqueMapper.toDomain(request)).thenReturn(estoqueEntity);
         when(estoqueRepository.save(any(Estoque.class))).thenReturn(estoqueSalvo);
-        when(estoqueMapper.toResponse(estoqueSalvo)).thenReturn(responseEsperado);
 
         // Act
-        EstoqueResponse resultado = estoqueService.criar(request);
+        Estoque resultado = estoqueService.criar(estoqueInput);
 
         // Assert
         assertNotNull(resultado);
-        assertEquals("Filtro de óleo", resultado.nomeItem());
-        assertEquals(TipoItemEstoque.INSUMO, resultado.tipoCategoria());
+        assertEquals(idGerado, resultado.getId());
+        assertEquals("Filtro de óleo", resultado.getNomeItem());
+        assertEquals(TipoItemEstoque.INSUMO, resultado.getTipoCategoria());
         verify(estoqueRepository, times(1)).save(any(Estoque.class));
     }
 
@@ -98,19 +73,16 @@ class EstoqueServiceTest {
         // Arrange
         UUID id = UUID.randomUUID();
         Estoque estoque = new Estoque(id, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO);
-        EstoqueResponse response = new EstoqueResponse(
-                id, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO
-        );
 
         when(estoqueRepository.findById(id)).thenReturn(Optional.of(estoque));
-        when(estoqueMapper.toResponse(estoque)).thenReturn(response);
 
         // Act
-        EstoqueResponse resultado = estoqueService.buscarPorId(id);
+        Estoque resultado = estoqueService.buscarPorId(id);
 
         // Assert
         assertNotNull(resultado);
-        assertEquals(id, resultado.id());
+        assertEquals(id, resultado.getId());
+        assertEquals("Filtro de óleo", resultado.getNomeItem());
         verify(estoqueRepository, times(1)).findById(id);
     }
 
@@ -120,20 +92,16 @@ class EstoqueServiceTest {
         // Arrange
         UUID id = UUID.randomUUID();
         Estoque estoque = new Estoque(id, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO);
-        EstoqueResponse response = new EstoqueResponse(
-                id, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO
-        );
 
         when(estoqueRepository.findAll()).thenReturn(List.of(estoque));
-        when(estoqueMapper.toResponse(estoque)).thenReturn(response);
 
         // Act
-        List<EstoqueResponse> resultado = estoqueService.listarTodos();
+        List<Estoque> resultado = estoqueService.listarTodos();
 
         // Assert
         assertNotNull(resultado);
         assertEquals(1, resultado.size());
-        assertEquals("Filtro de óleo", resultado.get(0).nomeItem());
+        assertEquals("Filtro de óleo", resultado.get(0).getNomeItem());
         verify(estoqueRepository, times(1)).findAll();
     }
 
@@ -144,22 +112,15 @@ class EstoqueServiceTest {
         UUID id = UUID.randomUUID();
         Estoque estoque = new Estoque(id, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO);
 
-        AtualizarValorEstoqueRequest request = new AtualizarValorEstoqueRequest(BigDecimal.valueOf(70));
-
-        EstoqueResponse response = new EstoqueResponse(
-                id, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(70), 35, 5, TipoItemEstoque.INSUMO
-        );
-
         when(estoqueRepository.findById(id)).thenReturn(Optional.of(estoque));
         when(estoqueRepository.save(any(Estoque.class))).thenReturn(estoque);
-        when(estoqueMapper.toResponse(estoque)).thenReturn(response);
 
         // Act
-        EstoqueResponse resultado = estoqueService.atualizarValorUnitario(id, request);
+        Estoque resultado = estoqueService.atualizarValorUnitario(id, BigDecimal.valueOf(70));
 
         // Assert
         assertNotNull(resultado);
-        assertEquals(BigDecimal.valueOf(70), resultado.valorUnitario());
+        assertEquals(BigDecimal.valueOf(70), resultado.getValorUnitario());
         verify(estoqueRepository, times(1)).findById(id);
         verify(estoqueRepository, times(1)).save(estoque);
     }
@@ -169,28 +130,20 @@ class EstoqueServiceTest {
     void deveAtualizarItemComSucesso() {
         // Arrange
         UUID id = UUID.randomUUID();
-        Estoque estoque = new Estoque(id, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO);
+        Estoque estoqueExistente = new Estoque(id, "Filtro de óleo", "Tecfil", BigDecimal.valueOf(55), 35, 5, TipoItemEstoque.INSUMO);
+        Estoque estoqueParam = new Estoque(null, "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PECA);
 
-        EstoqueRequest request = new EstoqueRequest(
-                "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PECA
-        );
-
-        EstoqueResponse response = new EstoqueResponse(
-                id, "Filtro de Ar", "Bosch", BigDecimal.valueOf(60), 40, 10, TipoItemEstoque.PECA
-        );
-
-        when(estoqueRepository.findById(id)).thenReturn(Optional.of(estoque));
-        when(estoqueRepository.save(any(Estoque.class))).thenReturn(estoque);
-        when(estoqueMapper.toResponse(estoque)).thenReturn(response);
+        when(estoqueRepository.findById(id)).thenReturn(Optional.of(estoqueExistente));
+        when(estoqueRepository.save(any(Estoque.class))).thenReturn(estoqueExistente);
 
         // Act
-        EstoqueResponse resultado = estoqueService.atualizar(id, request);
+        Estoque resultado = estoqueService.atualizar(id, estoqueParam);
 
         // Assert
         assertNotNull(resultado);
-        assertEquals("Filtro de Ar", resultado.nomeItem());
-        assertEquals("Bosch", resultado.nomeMarca());
+        assertEquals("Filtro de Ar", resultado.getNomeItem());
+        assertEquals("Bosch", resultado.getNomeMarca());
         verify(estoqueRepository, times(1)).findById(id);
-        verify(estoqueRepository, times(1)).save(estoque);
+        verify(estoqueRepository, times(1)).save(estoqueExistente);
     }
 }
