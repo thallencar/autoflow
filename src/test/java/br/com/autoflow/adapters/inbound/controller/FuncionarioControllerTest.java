@@ -4,7 +4,7 @@ import br.com.autoflow.adapters.inbound.controller.dto.EnderecoResponse;
 import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioResponse;
 import br.com.autoflow.adapters.inbound.mapper.FuncionarioMapper;
-import br.com.autoflow.application.usecase.FuncionarioUseCase;
+import br.com.autoflow.application.usecase.FuncionarioUseCaseImpl;
 import br.com.autoflow.domain.enums.Cargo;
 import br.com.autoflow.domain.enums.Genero;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
@@ -43,7 +43,7 @@ class FuncionarioControllerTest {
     private MockMvc mockMvc;
 
     @Mock
-    private FuncionarioUseCase service;
+    private FuncionarioUseCaseImpl service;
 
     @Mock
     private FuncionarioMapper funcionarioMapper;
@@ -171,7 +171,7 @@ class FuncionarioControllerTest {
             Funcionario funcionarioDomain = new Funcionario();
             FuncionarioResponse response = criarResponseExemplo(id);
 
-            when(service.buscar(id)).thenReturn(funcionarioDomain);
+            when(service.buscarPorId(id)).thenReturn(funcionarioDomain);
             when(funcionarioMapper.toResponse(funcionarioDomain)).thenReturn(response);
 
             mockMvc.perform(get("/funcionarios/{id}", id)
@@ -180,7 +180,7 @@ class FuncionarioControllerTest {
                     .andExpect(jsonPath("$.id").value(id.toString()))
                     .andExpect(jsonPath("$.nome").value("Carlos Silva"));
 
-            verify(service).buscar(id);
+            verify(service).buscarPorId(id);
             verify(funcionarioMapper).toResponse(funcionarioDomain);
         }
 
@@ -188,7 +188,7 @@ class FuncionarioControllerTest {
         @DisplayName("Deve propagar exceção quando funcionário não for encontrado")
         void deveLancarExcecaoQuandoNaoEncontrado() {
             UUID id = UUID.randomUUID();
-            when(service.buscar(id)).thenThrow(new EntidadeNaoEncontradaException("Funcionário", id));
+            when(service.buscarPorId(id)).thenThrow(new EntidadeNaoEncontradaException("Funcionário", id));
 
             ServletException exception = assertThrows(ServletException.class, () ->
                     mockMvc.perform(get("/funcionarios/{id}", id)
@@ -197,7 +197,7 @@ class FuncionarioControllerTest {
 
             assertTrue(exception.getCause() instanceof EntidadeNaoEncontradaException);
             assertEquals("Funcionário com ID " + id + " nao encontrado.", exception.getCause().getMessage());
-            verify(service).buscar(id);
+            verify(service).buscarPorId(id);
         }
     }
 

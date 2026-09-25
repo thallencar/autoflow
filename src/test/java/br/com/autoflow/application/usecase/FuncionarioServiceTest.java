@@ -61,7 +61,7 @@ class FuncionarioServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private FuncionarioUseCase service;
+    private FuncionarioUseCaseImpl service;
 
     private Funcionario criarFuncionarioExemplo(Cargo cargo) {
         Endereco endereco = new Endereco(UUID.randomUUID(), "Rua A", "RS", "casa", "Bairro C", "Cidade C", 123, "93500000");
@@ -177,7 +177,7 @@ class FuncionarioServiceTest {
             when(repository.findById(id)).thenReturn(Optional.of(funcionario));
 
             // Act
-            Funcionario resultado = service.buscar(id);
+            Funcionario resultado = service.buscarPorId(id);
 
             // Assert
             assertNotNull(resultado);
@@ -193,7 +193,7 @@ class FuncionarioServiceTest {
             when(repository.findById(id)).thenReturn(Optional.empty());
 
             // Act & Assert
-            assertThrows(EntidadeNaoEncontradaException.class, () -> service.buscar(id));
+            assertThrows(EntidadeNaoEncontradaException.class, () -> service.buscarPorId(id));
             verify(repository).findById(id);
         }
     }

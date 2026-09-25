@@ -3,10 +3,12 @@ package br.com.autoflow.application.usecase;
 import br.com.autoflow.application.validator.FuncionarioValidator;
 import br.com.autoflow.domain.enums.Cargo;
 import br.com.autoflow.domain.enums.Perfil;
+import br.com.autoflow.domain.exception.RegraNegocioException;
 import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Usuario;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
+import br.com.autoflow.ports.inbound.funcionario.*;
 import br.com.autoflow.ports.outbound.EnderecoRepositoryPort;
 import br.com.autoflow.ports.outbound.FuncionarioRepositoryPort;
 import br.com.autoflow.ports.outbound.UsuarioRepositoryPort;
@@ -22,7 +24,14 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class FuncionarioUseCase {
+public class FuncionarioUseCaseImpl implements
+        CriarFuncionarioUseCase,
+        ListarFuncionariosUseCase,
+        BuscarFuncionarioPorIdUseCase,
+        BuscarFuncionarioPorCpfUseCase,
+        AtualizarFuncionarioUseCase,
+        DeletarFuncionarioUseCase,
+        RegistrarAdvertenciaFuncionarioUseCase {
 
     private final FuncionarioRepositoryPort repositoryPort;
     private final EnderecoRepositoryPort enderecoRepository;
@@ -31,6 +40,7 @@ public class FuncionarioUseCase {
     private final PasswordEncoder passwordEncoder;
     private static final String NOME_ENTIDADE = "Funcionário";
 
+    @Override
     @Transactional
     public Funcionario criar(Funcionario funcionario) {
         funcionarioValidator.validarParaCriar(funcionario);
@@ -46,15 +56,24 @@ public class FuncionarioUseCase {
         return funcionarioSalvo;
     }
 
+    @Override
     public List<Funcionario> listar() {
         return repositoryPort.findAll();
     }
 
-    public Funcionario buscar(UUID id) {
+    @Override
+    public Funcionario buscarPorId(UUID id) {
         return repositoryPort.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
     }
 
+    @Override
+    public Funcionario buscarPorCpf(String cpf) {
+        return repositoryPort.findByCpf(cpf)
+                .orElseThrow(() -> new RegraNegocioException(NOME_ENTIDADE + " não encontrado com o CPF: " + cpf));
+    }
+
+    @Override
     @Transactional
     public Funcionario atualizar(UUID id, Funcionario funcionarioParam) {
         funcionarioValidator.validarParaAtualizar(id, funcionarioParam);
@@ -85,6 +104,7 @@ public class FuncionarioUseCase {
         return funcionario;
     }
 
+    @Override
     @Transactional
     public void deletar(UUID id) {
         Funcionario funcionario = repositoryPort.findById(id)
@@ -96,6 +116,7 @@ public class FuncionarioUseCase {
         repositoryPort.delete(funcionario);
     }
 
+    @Override
     @Transactional
     public String registrarAdvertencia(UUID id) {
         Funcionario funcionario = repositoryPort.findById(id)
