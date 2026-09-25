@@ -1,6 +1,5 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.VeiculoRequest;
 import br.com.autoflow.application.validator.VeiculoValidator;
 import br.com.autoflow.domain.exception.DadosJaCadastradosException;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
@@ -44,14 +43,14 @@ class VeiculoValidatorTest {
         @DisplayName("Deve validar criação com sucesso quando dados forem válidos")
         void deveValidarParaCriarComSucesso() {
             UUID clienteId = UUID.randomUUID();
-            VeiculoRequest request = new VeiculoRequest(
-                    "abc-1d23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId
+            Veiculo veiculo = new Veiculo(
+                    null, "abc-1d23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId
             );
 
             when(veiculoRepository.existsByPlaca("ABC1D23")).thenReturn(false);
             when(clienteRepository.existsById(clienteId)).thenReturn(true);
 
-            assertDoesNotThrow(() -> veiculoValidator.validarParaCriar(request));
+            assertDoesNotThrow(() -> veiculoValidator.validarParaCriar(veiculo));
             verify(veiculoRepository, times(1)).existsByPlaca("ABC1D23");
             verify(clienteRepository, times(1)).existsById(clienteId);
         }
@@ -60,15 +59,15 @@ class VeiculoValidatorTest {
         @DisplayName("Deve lançar exceção quando placa já estiver cadastrada na criação")
         void deveLancarExcecaoQuandoPlacaJaExisteNaCriacao() {
             UUID clienteId = UUID.randomUUID();
-            VeiculoRequest request = new VeiculoRequest(
-                    "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId
+            Veiculo veiculo = new Veiculo(
+                    null, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId
             );
 
             when(veiculoRepository.existsByPlaca("ABC1D23")).thenReturn(true);
 
             DadosJaCadastradosException ex = assertThrows(
                     DadosJaCadastradosException.class,
-                    () -> veiculoValidator.validarParaCriar(request)
+                    () -> veiculoValidator.validarParaCriar(veiculo)
             );
             assertTrue(ex.getMessage().contains("Placa já cadastrada: ABC1D23"));
             verify(clienteRepository, never()).existsById(any());
@@ -78,8 +77,8 @@ class VeiculoValidatorTest {
         @DisplayName("Deve lançar exceção quando cliente não existir na criação")
         void deveLancarExcecaoQuandoClienteNaoExisteNaCriacao() {
             UUID clienteId = UUID.randomUUID();
-            VeiculoRequest request = new VeiculoRequest(
-                    "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId
+            Veiculo veiculo = new Veiculo(
+                    null, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId
             );
 
             when(veiculoRepository.existsByPlaca("ABC1D23")).thenReturn(false);
@@ -87,7 +86,7 @@ class VeiculoValidatorTest {
 
             assertThrows(
                     EntidadeNaoEncontradaException.class,
-                    () -> veiculoValidator.validarParaCriar(request)
+                    () -> veiculoValidator.validarParaCriar(veiculo)
             );
         }
 
@@ -96,8 +95,8 @@ class VeiculoValidatorTest {
         void deveLancarExcecaoQuandoAnoFabricacaoInvalido() {
             UUID clienteId = UUID.randomUUID();
             int anoInvalido = Year.now().getValue() + 2;
-            VeiculoRequest request = new VeiculoRequest(
-                    "ABC1D23", "Toyota", "Corolla", 12000, (short) anoInvalido, "Prata", clienteId
+            Veiculo veiculo = new Veiculo(
+                    null, "ABC1D23", "Toyota", "Corolla", 12000, (short) anoInvalido, "Prata", clienteId
             );
 
             when(veiculoRepository.existsByPlaca("ABC1D23")).thenReturn(false);
@@ -105,7 +104,7 @@ class VeiculoValidatorTest {
 
             RegraNegocioException ex = assertThrows(
                     RegraNegocioException.class,
-                    () -> veiculoValidator.validarParaCriar(request)
+                    () -> veiculoValidator.validarParaCriar(veiculo)
             );
             assertTrue(ex.getMessage().contains("O ano de fabricação não pode ser maior que"));
         }
@@ -120,18 +119,16 @@ class VeiculoValidatorTest {
         void deveValidarAtualizacaoMesmoVeiculoComSucesso() {
             UUID veiculoId = UUID.randomUUID();
             UUID clienteId = UUID.randomUUID();
-            VeiculoRequest request = new VeiculoRequest(
-                    "ABC-1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Preto", clienteId
+            Veiculo veiculoParam = new Veiculo(
+                    veiculoId, "ABC-1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Preto", clienteId
             );
 
-            // Construtor completo do Cliente (id, nome, documento, email, dataNascimento, telefone, genero, endereco)
-            Cliente cliente = new Cliente(clienteId, "João da Silva", "12345678901", "joao@email.com", null, "11988887777", null, null);
-            Veiculo veiculoExistente = new Veiculo(veiculoId, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", cliente.getId());
+            Veiculo veiculoExistente = new Veiculo(veiculoId, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Prata", clienteId);
 
-            when(veiculoRepository.findByPlaca("ABC1D23")).thenReturn(Optional.of(veiculoExistente));
+            when(veiculoRepository.findByPlaca("ABC-1D23")).thenReturn(Optional.of(veiculoExistente));
             when(clienteRepository.existsById(clienteId)).thenReturn(true);
 
-            assertDoesNotThrow(() -> veiculoValidator.validarParaAtualizar(veiculoId, request));
+            assertDoesNotThrow(() -> veiculoValidator.validarParaAtualizar(veiculoId, veiculoParam));
         }
 
         @Test
@@ -140,18 +137,17 @@ class VeiculoValidatorTest {
             UUID veiculoId = UUID.randomUUID();
             UUID outroVeiculoId = UUID.randomUUID();
             UUID clienteId = UUID.randomUUID();
-            VeiculoRequest request = new VeiculoRequest(
-                    "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Preto", clienteId
+            Veiculo veiculoParam = new Veiculo(
+                    veiculoId, "ABC1D23", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Preto", clienteId
             );
 
-            Cliente cliente = new Cliente(clienteId, "Maria Souza", "98765432101", "maria@email.com", null, "11977778888", null, null);
-            Veiculo outroVeiculo = new Veiculo(outroVeiculoId, "ABC1D23", "Honda", "Civic", 15000, Short.valueOf("2022"), "Branco", cliente.getId());
+            Veiculo outroVeiculo = new Veiculo(outroVeiculoId, "ABC1D23", "Honda", "Civic", 15000, Short.valueOf("2022"), "Branco", clienteId);
 
             when(veiculoRepository.findByPlaca("ABC1D23")).thenReturn(Optional.of(outroVeiculo));
 
             assertThrows(
                     DadosJaCadastradosException.class,
-                    () -> veiculoValidator.validarParaAtualizar(veiculoId, request)
+                    () -> veiculoValidator.validarParaAtualizar(veiculoId, veiculoParam)
             );
         }
 
@@ -160,14 +156,14 @@ class VeiculoValidatorTest {
         void deveValidarAtualizacaoComPlacaInexistenteComSucesso() {
             UUID veiculoId = UUID.randomUUID();
             UUID clienteId = UUID.randomUUID();
-            VeiculoRequest request = new VeiculoRequest(
-                    "XYZ9876", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Preto", clienteId
+            Veiculo veiculoParam = new Veiculo(
+                    veiculoId, "XYZ9876", "Toyota", "Corolla", 12000, Short.valueOf("2023"), "Preto", clienteId
             );
 
             when(veiculoRepository.findByPlaca("XYZ9876")).thenReturn(Optional.empty());
             when(clienteRepository.existsById(clienteId)).thenReturn(true);
 
-            assertDoesNotThrow(() -> veiculoValidator.validarParaAtualizar(veiculoId, request));
+            assertDoesNotThrow(() -> veiculoValidator.validarParaAtualizar(veiculoId, veiculoParam));
         }
     }
 
@@ -188,8 +184,7 @@ class VeiculoValidatorTest {
         void deveBuscarVeiculoPorIdComSucesso() {
             UUID id = UUID.randomUUID();
             UUID clienteId = UUID.randomUUID();
-            Cliente cliente = new Cliente(clienteId, "Carlos", "11122233344", "carlos@email.com", null, "11966665555", null, null);
-            Veiculo veiculo = new Veiculo(id, "ABC1D23", "Fiat", "Uno", 50000, Short.valueOf("2015"), "Vermelho", cliente.getId());
+            Veiculo veiculo = new Veiculo(id, "ABC1D23", "Fiat", "Uno", 50000, Short.valueOf("2015"), "Vermelho", clienteId);
 
             when(veiculoRepository.findById(id)).thenReturn(Optional.of(veiculo));
 
@@ -206,29 +201,6 @@ class VeiculoValidatorTest {
             when(veiculoRepository.findById(id)).thenReturn(Optional.empty());
 
             assertThrows(EntidadeNaoEncontradaException.class, () -> veiculoValidator.buscarVeiculo(id));
-        }
-
-        @Test
-        @DisplayName("Deve retornar cliente ao buscar por ID existente")
-        void deveBuscarClientePorIdComSucesso() {
-            UUID clienteId = UUID.randomUUID();
-            Cliente cliente = new Cliente(clienteId, "Ana", "55566677788", "ana@email.com", null, "11955554444", null, null);
-
-            when(clienteRepository.findById(clienteId)).thenReturn(Optional.of(cliente));
-
-            Cliente resultado = veiculoValidator.buscarCliente(clienteId);
-
-            assertNotNull(resultado);
-            assertEquals(clienteId, resultado.getId());
-        }
-
-        @Test
-        @DisplayName("Deve lançar exceção ao buscar cliente por ID inexistente")
-        void deveLancarExcecaoAoBuscarClienteInexistente() {
-            UUID clienteId = UUID.randomUUID();
-            when(clienteRepository.findById(clienteId)).thenReturn(Optional.empty());
-
-            assertThrows(EntidadeNaoEncontradaException.class, () -> veiculoValidator.buscarCliente(clienteId));
         }
     }
 }

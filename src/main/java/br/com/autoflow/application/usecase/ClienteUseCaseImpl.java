@@ -1,21 +1,17 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteResponse;
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteUpdateRequest;
-import br.com.autoflow.adapters.inbound.mapper.ClienteMapper;
 import br.com.autoflow.application.validator.ClienteValidator;
+import br.com.autoflow.domain.enums.Perfil;
+import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
+import br.com.autoflow.domain.exception.RegraNegocioException;
 import br.com.autoflow.domain.model.Cliente;
 import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.model.Usuario;
-import br.com.autoflow.domain.enums.Perfil;
 import br.com.autoflow.ports.inbound.cliente.*;
 import br.com.autoflow.ports.outbound.ClienteRepositoryPort;
 import br.com.autoflow.ports.outbound.EnderecoRepositoryPort;
 import br.com.autoflow.ports.outbound.UsuarioRepositoryPort;
 import br.com.autoflow.ports.outbound.VeiculoRepositoryPort;
-import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
-import br.com.autoflow.domain.exception.RegraNegocioException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,67 +37,66 @@ public class ClienteUseCaseImpl implements
     private final EnderecoRepositoryPort enderecoRepository;
     private final UsuarioRepositoryPort usuarioRepository;
     private final VeiculoRepositoryPort veiculoRepository;
-    private final ClienteMapper clienteMapper;
     private final ClienteValidator clienteValidator;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
-    public ClienteResponse criar(ClienteRequest request) {
-        clienteValidator.validarParaCriar(request);
+    public Cliente criar(Cliente cliente) {
+        clienteValidator.validarParaCriar(cliente);
 
-        Endereco endereco = clienteMapper.toEnderecoDomain(request.endereco());
-        endereco = enderecoRepository.save(endereco);
+        if (cliente.getEndereco() != null) {
+            Endereco enderecoSalvo = enderecoRepository.save(cliente.getEndereco());
+            cliente.setEndereco(enderecoSalvo);
+        }
 
-        Cliente cliente = clienteMapper.toDomain(request, endereco);
-        cliente = clienteRepository.save(cliente);
+        Cliente clienteSalvo = clienteRepository.save(cliente);
 
         Perfil perfil = Perfil.CLIENTE;
-        String senhaCriptografada = passwordEncoder.encode(cliente.getDocumento());
-        Usuario usuario = Usuario.criarUsuarioParaCliente(cliente, perfil, senhaCriptografada);
+        String senhaCriptografada = passwordEncoder.encode(clienteSalvo.getDocumento());
+        Usuario usuario = Usuario.criarUsuarioParaCliente(clienteSalvo, perfil, senhaCriptografada);
         usuarioRepository.save(usuario);
 
-        return clienteMapper.toResponse(cliente);
+        return clienteSalvo;
     }
 
     @Override
-    public List<ClienteResponse> listar() {
-        return clienteRepository.findAll()
-                .stream()
-                .map(clienteMapper::toResponse)
-                .toList();
+    public List<Cliente> listar() {
+        return clienteRepository.findAll();
     }
 
     @Override
-    public ClienteResponse buscarPorId(UUID id) {
-        Cliente cliente = clienteRepository.findById(id)
+    public Cliente buscarPorId(UUID id) {
+        return clienteRepository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
-        return clienteMapper.toResponse(cliente);
     }
 
     @Override
-    public ClienteResponse buscarPorDocumento(String documento) {
-        Cliente cliente = clienteRepository.findByDocumento(documento)
+    public Cliente buscarPorDocumento(String documento) {
+        return clienteRepository.findByDocumento(documento)
                 .orElseThrow(() -> new RegraNegocioException(NOME_ENTIDADE + " não encontrado: " + documento));
-        return clienteMapper.toResponse(cliente);
     }
 
     @Override
     @Transactional
-    public ClienteResponse atualizar(UUID id, ClienteUpdateRequest request) {
-        Cliente cliente = clienteRepository.findById(id)
+    public Cliente atualizar(UUID id, Cliente clienteAtualizadoParam) {
+        Cliente clienteExistente = clienteRepository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
 
-        // Atualização via domínio
-        cliente.atualizarDados(
-                request.nome(),
-                request.telefone(),
-                request.email(),
-                request.genero(),
-                request.endereco() != null ? clienteMapper.toEnderecoDomain(request.endereco()) : null
+        Endereco novoEndereco = clienteAtualizadoParam.getEndereco();
+        if (novoEndereco != null) {
+            novoEndereco = enderecoRepository.save(novoEndereco);
+        }
+
+        clienteExistente.atualizarDados(
+                clienteAtualizadoParam.getNome(),
+                clienteAtualizadoParam.getTelefone(),
+                clienteAtualizadoParam.getEmail(),
+                clienteAtualizadoParam.getGenero(),
+                novoEndereco
         );
 
-        Cliente clienteAtualizado = clienteRepository.save(cliente);
+        Cliente clienteAtualizado = clienteRepository.save(clienteExistente);
 
         usuarioRepository.findByCliente(clienteAtualizado)
                 .ifPresent(usuario -> {
@@ -109,7 +104,7 @@ public class ClienteUseCaseImpl implements
                     usuarioRepository.save(usuario);
                 });
 
-        return clienteMapper.toResponse(clienteAtualizado);
+        return clienteAtualizado;
     }
 
     @Override

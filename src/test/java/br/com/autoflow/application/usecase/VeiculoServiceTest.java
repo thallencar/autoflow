@@ -1,11 +1,7 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.VeiculoRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.VeiculoResponse;
-import br.com.autoflow.adapters.inbound.mapper.VeiculoMapper;
 import br.com.autoflow.application.validator.VeiculoValidator;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
-import br.com.autoflow.domain.model.Cliente;
 import br.com.autoflow.domain.model.Veiculo;
 import br.com.autoflow.ports.outbound.OrdemServicoRepositoryPort;
 import br.com.autoflow.ports.outbound.VeiculoRepositoryPort;
@@ -35,9 +31,6 @@ class VeiculoServiceTest {
     private OrdemServicoRepositoryPort ordemServicoRepository;
 
     @Mock
-    private VeiculoMapper veiculoMapper;
-
-    @Mock
     private VeiculoValidator veiculoValidator;
 
     @InjectMocks
@@ -52,62 +45,34 @@ class VeiculoServiceTest {
         void deveCriarVeiculoComSucesso() {
             // Arrange (Given)
             UUID clienteId = UUID.randomUUID();
-            VeiculoRequest request = criarVeiculoRequest(clienteId);
-            Cliente cliente = new Cliente();
-            cliente.setId(clienteId);
+            Veiculo veiculoParam = criarVeiculoExemplo(clienteId);
+            Veiculo veiculoSalvo = criarVeiculoExemplo(clienteId);
+            veiculoSalvo.setId(UUID.randomUUID());
 
-            Veiculo veiculoSemId = new Veiculo(
-                    UUID.randomUUID(),          // id
-                    "ABC1A23",                  // placa
-                    "Fiat",                     // marca
-                    "Argo",                     // modelo
-                    12000,                      // kmAtual
-                    (short) 2022,               // anoFabricacao
-                    "Prata",                    // cor
-                    clienteId                   // clienteId reutilizando a variável
-            );
-
-            Veiculo veiculoSalvo = new Veiculo(
-                    UUID.randomUUID(),          // id
-                    "ABC1A23",                  // placa
-                    "Fiat",                     // marca
-                    "Argo",                     // modelo
-                    12000,                      // kmAtual
-                    (short) 2022,               // anoFabricacao
-                    "Prata",                    // cor
-                    clienteId                   // clienteId reutilizando a variável
-            );
-
-            VeiculoResponse responseEsperada = criarVeiculoResponse();
-
-            doNothing().when(veiculoValidator).validarParaCriar(request);
-            when(veiculoValidator.buscarCliente(clienteId)).thenReturn(cliente);
-            when(veiculoMapper.toDomain(request)).thenReturn(veiculoSemId);
-            when(veiculoRepository.save(veiculoSemId)).thenReturn(veiculoSalvo);
-            when(veiculoMapper.toResponse(veiculoSalvo)).thenReturn(responseEsperada);
+            doNothing().when(veiculoValidator).validarParaCriar(veiculoParam);
+            when(veiculoValidator.formatarPlaca(veiculoParam.getPlaca())).thenReturn("ABC1A23");
+            when(veiculoRepository.save(veiculoParam)).thenReturn(veiculoSalvo);
 
             // Act (When)
-            VeiculoResponse resultado = veiculoService.criar(request);
+            Veiculo resultado = veiculoService.criar(veiculoParam);
 
             // Assert (Then)
-            assertThat(resultado).isNotNull().isEqualTo(responseEsperada);
-            verify(veiculoValidator).validarParaCriar(request);
-            verify(veiculoValidator).buscarCliente(clienteId);
-            verify(veiculoMapper).toDomain(request);
-            verify(veiculoRepository).save(veiculoSemId);
-            verify(veiculoMapper).toResponse(veiculoSalvo);
+            assertThat(resultado).isNotNull().isEqualTo(veiculoSalvo);
+            verify(veiculoValidator).validarParaCriar(veiculoParam);
+            verify(veiculoValidator).formatarPlaca(veiculoParam.getPlaca());
+            verify(veiculoRepository).save(veiculoParam);
         }
 
         @Test
         @DisplayName("Deve lançar exceção quando a validação de criação falhar")
         void deveLancarExcecaoQuandoValidacaoFalhar() {
             // Arrange
-            VeiculoRequest request = criarVeiculoRequest(UUID.randomUUID());
+            Veiculo veiculo = criarVeiculoExemplo(UUID.randomUUID());
             doThrow(new IllegalArgumentException("Placa já cadastrada"))
-                    .when(veiculoValidator).validarParaCriar(request);
+                    .when(veiculoValidator).validarParaCriar(veiculo);
 
             // Act & Assert
-            assertThatThrownBy(() -> veiculoService.criar(request))
+            assertThatThrownBy(() -> veiculoService.criar(veiculo))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("Placa já cadastrada");
 
@@ -123,40 +88,17 @@ class VeiculoServiceTest {
         @DisplayName("Deve listar todos os veículos com sucesso")
         void deveListarTodosOsVeiculos() {
             // Arrange
-            Veiculo v1 = new Veiculo(
-                    UUID.randomUUID(),          // id
-                    "ABC1A23",                  // placa
-                    "Fiat",                     // marca
-                    "Argo",                     // modelo
-                    12000,                      // kmAtual
-                    (short) 2022,               // anoFabricacao
-                    "Prata",                    // cor
-                    UUID.randomUUID()           // clienteId
-            );
-            Veiculo v2 = new Veiculo(
-                    UUID.randomUUID(),          // id
-                    "XYZ7B89",                  // placa
-                    "Toyota",                   // marca
-                    "Corolla",                  // modelo
-                    15000,                      // kmAtual
-                    (short) 2021,               // anoFabricacao
-                    "Preto",                    // cor
-                    UUID.randomUUID()           // clienteId
-            );
-            VeiculoResponse r1 = criarVeiculoResponse();
-            VeiculoResponse r2 = criarVeiculoResponse();
+            Veiculo v1 = criarVeiculoExemplo(UUID.randomUUID());
+            Veiculo v2 = criarVeiculoExemplo(UUID.randomUUID());
 
             when(veiculoRepository.findAll()).thenReturn(List.of(v1, v2));
-            when(veiculoMapper.toResponse(v1)).thenReturn(r1);
-            when(veiculoMapper.toResponse(v2)).thenReturn(r2);
 
             // Act
-            List<VeiculoResponse> resultado = veiculoService.listar();
+            List<Veiculo> resultado = veiculoService.listar();
 
             // Assert
-            assertThat(resultado).hasSize(2).containsExactly(r1, r2);
+            assertThat(resultado).hasSize(2).containsExactly(v1, v2);
             verify(veiculoRepository).findAll();
-            verify(veiculoMapper, times(2)).toResponse(any());
         }
 
         @Test
@@ -166,12 +108,11 @@ class VeiculoServiceTest {
             when(veiculoRepository.findAll()).thenReturn(List.of());
 
             // Act
-            List<VeiculoResponse> resultado = veiculoService.listar();
+            List<Veiculo> resultado = veiculoService.listar();
 
             // Assert
             assertThat(resultado).isEmpty();
             verify(veiculoRepository).findAll();
-            verify(veiculoMapper, never()).toResponse(any());
         }
     }
 
@@ -184,28 +125,16 @@ class VeiculoServiceTest {
         void deveBuscarPorIdComSucesso() {
             // Arrange
             UUID id = UUID.randomUUID();
-            Veiculo veiculo = new Veiculo(
-                    UUID.randomUUID(),          // id
-                    "ABC1A23",                  // placa
-                    "Fiat",                     // marca
-                    "Argo",                     // modelo
-                    12000,                      // kmAtual
-                    (short) 2022,               // anoFabricacao
-                    "Prata",                    // cor
-                    UUID.randomUUID()           // clienteId
-            );
-            VeiculoResponse responseEsperada = criarVeiculoResponse();
+            Veiculo veiculo = criarVeiculoExemplo(UUID.randomUUID());
 
             when(veiculoValidator.buscarVeiculo(id)).thenReturn(veiculo);
-            when(veiculoMapper.toResponse(veiculo)).thenReturn(responseEsperada);
 
             // Act
-            VeiculoResponse resultado = veiculoService.buscarPorId(id);
+            Veiculo resultado = veiculoService.buscarPorId(id);
 
             // Assert
-            assertThat(resultado).isNotNull().isEqualTo(responseEsperada);
+            assertThat(resultado).isNotNull().isEqualTo(veiculo);
             verify(veiculoValidator).buscarVeiculo(id);
-            verify(veiculoMapper).toResponse(veiculo);
         }
 
         @Test
@@ -219,8 +148,6 @@ class VeiculoServiceTest {
             // Act & Assert
             assertThatThrownBy(() -> veiculoService.buscarPorId(id))
                     .isInstanceOf(EntidadeNaoEncontradaException.class);
-
-            verify(veiculoMapper, never()).toResponse(any());
         }
     }
 
@@ -234,39 +161,23 @@ class VeiculoServiceTest {
             // Arrange
             UUID id = UUID.randomUUID();
             UUID clienteId = UUID.randomUUID();
-            VeiculoRequest request = criarVeiculoRequest(clienteId);
-
-            Veiculo veiculoExistente = new Veiculo(
-                    UUID.randomUUID(),          // id
-                    "ABC1A23",                  // placa
-                    "Fiat",                     // marca
-                    "Argo",                     // modelo
-                    12000,                      // kmAtual
-                    (short) 2022,               // anoFabricacao
-                    "Prata",                    // cor
-                    UUID.randomUUID()           // clienteId
-            );
-            Cliente novoCliente = new Cliente();
-            VeiculoResponse responseEsperada = criarVeiculoResponse();
+            Veiculo veiculoParam = criarVeiculoExemplo(clienteId);
+            Veiculo veiculoExistente = criarVeiculoExemplo(clienteId);
+            veiculoExistente.setId(id);
 
             when(veiculoValidator.buscarVeiculo(id)).thenReturn(veiculoExistente);
-            doNothing().when(veiculoValidator).validarParaAtualizar(id, request);
-            when(veiculoValidator.buscarCliente(clienteId)).thenReturn(novoCliente);
-
+            when(veiculoValidator.formatarPlaca(veiculoParam.getPlaca())).thenReturn("ABC1A23");
+            doNothing().when(veiculoValidator).validarParaAtualizar(id, veiculoParam);
             when(veiculoRepository.save(veiculoExistente)).thenReturn(veiculoExistente);
-            when(veiculoMapper.toResponse(veiculoExistente)).thenReturn(responseEsperada);
 
             // Act
-            VeiculoResponse resultado = veiculoService.atualizar(id, request);
+            Veiculo resultado = veiculoService.atualizar(id, veiculoParam);
 
             // Assert
-            assertThat(resultado).isNotNull().isEqualTo(responseEsperada);
+            assertThat(resultado).isNotNull();
             verify(veiculoValidator).buscarVeiculo(id);
-            verify(veiculoValidator).validarParaAtualizar(id, request);
-            verify(veiculoValidator).buscarCliente(clienteId);
-            verify(veiculoMapper).updateEntityFromDto(request, veiculoExistente);
+            verify(veiculoValidator).validarParaAtualizar(id, veiculoParam);
             verify(veiculoRepository).save(veiculoExistente);
-            verify(veiculoMapper).toResponse(veiculoExistente);
         }
     }
 
@@ -278,16 +189,7 @@ class VeiculoServiceTest {
         @DisplayName("Deve deletar veículo com sucesso quando não houver OS vinculada")
         void deveDeletarVeiculoComSucesso() {
             UUID id = UUID.randomUUID();
-            Veiculo veiculo = new Veiculo(
-                    UUID.randomUUID(),          // id
-                    "ABC1A23",                  // placa
-                    "Fiat",                     // marca
-                    "Argo",                     // modelo
-                    12000,                      // kmAtual
-                    (short) 2022,               // anoFabricacao
-                    "Prata",                    // cor
-                    UUID.randomUUID()           // clienteId
-            );
+            Veiculo veiculo = criarVeiculoExemplo(UUID.randomUUID());
 
             when(veiculoValidator.validarParaDeletar(id)).thenReturn(veiculo);
 
@@ -298,29 +200,17 @@ class VeiculoServiceTest {
         }
     }
 
-    // Métodos auxiliares movidos corretamente para a raiz da classe
-    private VeiculoRequest criarVeiculoRequest(UUID clienteId) {
-        return new VeiculoRequest(
-                "ABC1D23",
-                "Toyota",
-                "Corolla",
-                55000,
-                Short.valueOf("2022"),
+    // Método auxiliar para instanciar o Domínio Veiculo
+    private Veiculo criarVeiculoExemplo(UUID clienteId) {
+        return new Veiculo(
+                UUID.randomUUID(),
+                "ABC1A23",
+                "Fiat",
+                "Argo",
+                12000,
+                (short) 2022,
                 "Prata",
                 clienteId
-        );
-    }
-
-    private VeiculoResponse criarVeiculoResponse() {
-        return new VeiculoResponse(
-                UUID.randomUUID(),
-                "ABC1D23",
-                "Toyota",
-                "Corolla",
-                10000,
-                Short.valueOf("2022"),
-                "Prata",
-                UUID.randomUUID()
         );
     }
 }

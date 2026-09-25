@@ -5,7 +5,7 @@ import java.time.temporal.ChronoUnit;
 
 import org.springframework.stereotype.Component;
 
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteRequest;
+import br.com.autoflow.domain.model.Cliente;
 import br.com.autoflow.ports.outbound.ClienteRepositoryPort;
 import br.com.autoflow.domain.exception.DadosJaCadastradosException;
 import br.com.autoflow.domain.exception.RegraNegocioException;
@@ -17,10 +17,10 @@ public class ClienteValidator {
 
     private final ClienteRepositoryPort repository;
 
-    public void validarParaCriar(ClienteRequest request) {
-        validarIdadeMinima(request.dataNascimento());
-        validarDocumento(request.documento());
-        validarEmailUnico(request.email());
+    public void validarParaCriar(Cliente cliente) {
+        validarIdadeMinima(cliente.getDataNascimento());
+        validarDocumento(cliente.getDocumento());
+        validarEmailUnico(cliente.getEmail());
     }
 
     private void validarIdadeMinima(LocalDate dataNascimento) {

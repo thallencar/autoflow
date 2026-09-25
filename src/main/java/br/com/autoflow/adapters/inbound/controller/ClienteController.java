@@ -3,6 +3,7 @@ package br.com.autoflow.adapters.inbound.controller;
 import br.com.autoflow.adapters.inbound.controller.dto.ClienteRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.ClienteResponse;
 import br.com.autoflow.adapters.inbound.controller.dto.ClienteUpdateRequest;
+import br.com.autoflow.adapters.inbound.mapper.ClienteMapper;
 import br.com.autoflow.ports.inbound.cliente.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,35 +24,48 @@ public class ClienteController {
     private final BuscarClientePorDocumentoUseCase buscarClientePorDocumentoUseCase;
     private final AtualizarClienteUseCase atualizarClienteUseCase;
     private final DeletarClienteUseCase deletarClienteUseCase;
+    private final ClienteMapper clienteMapper;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ClienteResponse criar(@RequestBody @Valid ClienteRequest request) {
-        return criarClienteUseCase.criar(request);
+        var enderecoDomain = clienteMapper.toEnderecoDomain(request.endereco());
+        var clienteDomain = clienteMapper.toDomain(request, enderecoDomain);
+
+        var clienteSalvo = criarClienteUseCase.criar(clienteDomain);
+        return clienteMapper.toResponse(clienteSalvo);
     }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<ClienteResponse> listar() {
-        return listarClientesUseCase.listar();
+        return listarClientesUseCase.listar().stream()
+                .map(clienteMapper::toResponse)
+                .toList();
     }
 
     @GetMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ClienteResponse buscarPorId(@PathVariable UUID id) {
-        return buscarClientePorIdUseCase.buscarPorId(id);
+        var cliente = buscarClientePorIdUseCase.buscarPorId(id);
+        return clienteMapper.toResponse(cliente);
     }
 
     @GetMapping("/documento/{documento}")
     @ResponseStatus(HttpStatus.OK)
     public ClienteResponse buscarPorDocumento(@PathVariable String documento) {
-        return buscarClientePorDocumentoUseCase.buscarPorDocumento(documento);
+        var cliente = buscarClientePorDocumentoUseCase.buscarPorDocumento(documento);
+        return clienteMapper.toResponse(cliente);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public ClienteResponse atualizar(@PathVariable UUID id, @RequestBody @Valid ClienteUpdateRequest request) {
-        return atualizarClienteUseCase.atualizar(id, request);
+        var enderecoDomain = request.endereco() != null ? clienteMapper.toEnderecoDomain(request.endereco()) : null;
+        var clienteDomain = clienteMapper.toDomain(request, enderecoDomain);
+
+        var clienteAtualizado = atualizarClienteUseCase.atualizar(id, clienteDomain);
+        return clienteMapper.toResponse(clienteAtualizado);
     }
 
     @DeleteMapping("/{id}")

@@ -14,9 +14,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteUpdateRequest;
-import br.com.autoflow.adapters.inbound.mapper.ClienteMapper;
-import br.com.autoflow.adapters.inbound.mapper.EnderecoMapper;
 import br.com.autoflow.application.validator.ClienteValidator;
 import br.com.autoflow.domain.model.Cliente;
 import br.com.autoflow.domain.model.Endereco;
@@ -33,9 +30,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteResponse;
-import br.com.autoflow.adapters.inbound.controller.dto.EnderecoRequest;
 import br.com.autoflow.domain.enums.Genero;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.domain.exception.RegraNegocioException;
@@ -48,12 +42,6 @@ class ClienteServiceTest {
 
     @Mock
     private EnderecoRepositoryPort enderecoRepository;
-
-    @Mock
-    private ClienteMapper clienteMapper;
-
-    @Mock
-    private EnderecoMapper enderecoMapper;
 
     @Mock
     private ClienteValidator clienteValidator;
@@ -74,40 +62,38 @@ class ClienteServiceTest {
     @DisplayName("Deve criar um cliente com sucesso e gerar usuário associado")
     void criarComSucesso() {
         // Arrange
-        EnderecoRequest enderecoRequest = new EnderecoRequest(
-                "93520-000", "RS", "Novo Hamburgo", "Centro", "Rua Principal", 100, "Apto 101"
-        );
-
-        ClienteRequest request = new ClienteRequest(
-                "Teste da Silva",  "12345678901", "teste@email.com",LocalDate.of(1995, 5, 15), "51999999999", Genero.OUTROS, enderecoRequest
-        );
-
         Endereco endereco = new Endereco(
-                UUID.randomUUID(),          // id
-                "93500-000",                // cep
-                "RS",                       // uf
-                "Caxias do Sul",            // cidade
-                "Centro",                   // bairro
-                "Rua Velha",                // logradouro
-                100,                        // numero
-                "Apto 201"                  // complemento
+                UUID.randomUUID(),
+                "93500-000",
+                "RS",
+                "Caxias do Sul",
+                "Centro",
+                "Rua Velha",
+                100,
+                "Apto 201"
         );
-        Cliente cliente = new Cliente();
-        ClienteResponse responseDto = new ClienteResponse(UUID.randomUUID(), "Teste da Silva","12345678901","teste@email.com", LocalDate.of(1995, 5, 15), "51999999999", Genero.OUTROS, null);
 
-        when(enderecoMapper.toDomain(request.endereco())).thenReturn(endereco);
+        Cliente cliente = new Cliente(
+                UUID.randomUUID(),
+                "Teste da Silva",
+                "12345678901",
+                "teste@email.com",
+                LocalDate.of(1995, 5, 15),
+                "51999999999",
+                Genero.OUTROS,
+                endereco
+        );
+
         when(enderecoRepository.save(endereco)).thenReturn(endereco);
-        when(clienteMapper.toDomain(request, endereco)).thenReturn(cliente);
         when(clienteRepository.save(cliente)).thenReturn(cliente);
         when(passwordEncoder.encode(any())).thenReturn("encodedPassword");
-        when(clienteMapper.toResponse(cliente)).thenReturn(responseDto);
 
         // Act
-        ClienteResponse response = clienteService.criar(request);
+        Cliente clienteSalvo = clienteService.criar(cliente);
 
         // Assert
-        assertNotNull(response);
-        verify(clienteValidator, times(1)).validarParaCriar(request);
+        assertNotNull(clienteSalvo);
+        verify(clienteValidator, times(1)).validarParaCriar(cliente);
         verify(enderecoRepository, times(1)).save(endereco);
         verify(clienteRepository, times(1)).save(cliente);
         verify(usuarioRepository, times(1)).save(any(Usuario.class));
@@ -118,13 +104,10 @@ class ClienteServiceTest {
     void listarComSucesso() {
         // Arrange
         Cliente cliente = new Cliente();
-        ClienteResponse responseDto = new ClienteResponse(UUID.randomUUID(), "Teste da Silva","12345678901","teste@email.com", LocalDate.of(1995, 5, 15), "51999999999", Genero.OUTROS, null);
-
         when(clienteRepository.findAll()).thenReturn(List.of(cliente));
-        when(clienteMapper.toResponse(cliente)).thenReturn(responseDto);
 
         // Act
-        List<ClienteResponse> response = clienteService.listar();
+        List<Cliente> response = clienteService.listar();
 
         // Assert
         assertNotNull(response);
@@ -138,17 +121,16 @@ class ClienteServiceTest {
         // Arrange
         UUID id = UUID.randomUUID();
         Cliente cliente = new Cliente();
-        ClienteResponse responseDto = new ClienteResponse(id, "Teste da Silva","12345678901","teste@email.com", LocalDate.of(1995, 5, 15), "51999999999", Genero.OUTROS, null);
+        cliente.setId(id);
 
         when(clienteRepository.findById(id)).thenReturn(Optional.of(cliente));
-        when(clienteMapper.toResponse(cliente)).thenReturn(responseDto);
 
         // Act
-        ClienteResponse response = clienteService.buscarPorId(id);
+        Cliente response = clienteService.buscarPorId(id);
 
         // Assert
         assertNotNull(response);
-        assertEquals(id, response.id());
+        assertEquals(id, response.getId());
     }
 
     @Test
@@ -167,27 +149,24 @@ class ClienteServiceTest {
     void atualizarComSucesso() {
         // Arrange
         UUID id = UUID.randomUUID();
-        EnderecoRequest enderecoRequest = new EnderecoRequest(
-                "93520-000", "RS", "Novo Hamburgo", "Centro", "Rua Principal", 100, null
-        );
-        ClienteUpdateRequest request = new ClienteUpdateRequest(
-                "Novo Nome", "novo@email.com", "51988888888", Genero.OUTROS, enderecoRequest
-        );
+        Cliente clienteExistente = new Cliente();
+        clienteExistente.setId(id);
 
-        Cliente cliente = new Cliente();
-        ClienteResponse responseDto = new ClienteResponse(id, "Novo Nome", "12345678901", "novo@email.com", LocalDate.of(1995, 5, 15), "51988888888", Genero.OUTROS, null);
+        Cliente clienteAtualizadoInput = new Cliente();
+        clienteAtualizadoInput.setNome("Novo Nome");
+        clienteAtualizadoInput.setEmail("novo@email.com");
+        clienteAtualizadoInput.setTelefone("51988888888");
 
-        when(clienteRepository.findById(id)).thenReturn(Optional.of(cliente));
-        when(clienteRepository.save(cliente)).thenReturn(cliente);
-        when(usuarioRepository.findByCliente(cliente)).thenReturn(Optional.empty());
-        when(clienteMapper.toResponse(cliente)).thenReturn(responseDto);
+        when(clienteRepository.findById(id)).thenReturn(Optional.of(clienteExistente));
+        when(clienteRepository.save(any(Cliente.class))).thenReturn(clienteExistente);
+        when(usuarioRepository.findByCliente(clienteExistente)).thenReturn(Optional.empty());
 
         // Act
-        ClienteResponse response = clienteService.atualizar(id, request);
+        Cliente response = clienteService.atualizar(id, clienteAtualizadoInput);
 
         // Assert
         assertNotNull(response);
-        verify(clienteRepository, times(1)).save(cliente);
+        verify(clienteRepository, times(1)).save(clienteExistente);
     }
 
     @Test
@@ -210,7 +189,7 @@ class ClienteServiceTest {
 
     @Test
     @DisplayName("Não deve deletar cliente e lançar exceção se houver veículos vinculados")
-    void naoDeveDeletarClienteComVeiculosVinculados() {
+    void naoDeveDeletarClienteWithVeiculosVinculados() {
         // Arrange
         UUID id = UUID.randomUUID();
         Cliente cliente = new Cliente();

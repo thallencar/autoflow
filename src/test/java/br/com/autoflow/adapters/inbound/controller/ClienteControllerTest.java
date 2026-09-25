@@ -1,11 +1,14 @@
 package br.com.autoflow.adapters.inbound.controller;
 
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteResponse;
 import br.com.autoflow.adapters.inbound.controller.dto.ClienteRequest;
+import br.com.autoflow.adapters.inbound.controller.dto.ClienteResponse;
 import br.com.autoflow.adapters.inbound.controller.dto.ClienteUpdateRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.EnderecoResponse;
+import br.com.autoflow.adapters.inbound.mapper.ClienteMapper;
 import br.com.autoflow.application.usecase.ClienteUseCaseImpl;
 import br.com.autoflow.domain.enums.Genero;
+import br.com.autoflow.domain.model.Cliente;
+import br.com.autoflow.domain.model.Endereco;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,6 +42,9 @@ class ClienteControllerTest {
 
     @Mock
     private ClienteUseCaseImpl clienteService;
+
+    @Mock
+    private ClienteMapper clienteMapper;
 
     @InjectMocks
     private ClienteController clienteController;
@@ -90,6 +96,34 @@ class ClienteControllerTest {
                 """;
     }
 
+    private Cliente criarClienteDomainExemplo(UUID id) {
+        Endereco endereco = new Endereco(null, "Rua A", "RS", "Casa", "Centro", "Porto Alegre", 123, "93500000");
+        return new Cliente(
+                id,
+                "Ana Silva",
+                "12345678909",
+                "ana@email.com",
+                LocalDate.of(1995, 5, 15),
+                "51999998888",
+                Genero.FEMININO,
+                endereco
+        );
+    }
+
+    private Cliente criarClienteDomainAtualizadoExemplo(UUID id) {
+        Endereco endereco = new Endereco(null, "Rua B", "RS", "apto", "Centro", "Porto Alegre", 456, "93500000");
+        return new Cliente(
+                id,
+                "Ana Silva Atualizada",
+                "12345678909",
+                "ana.nova@email.com",
+                LocalDate.of(1995, 5, 15),
+                "51988887777",
+                Genero.FEMININO,
+                endereco
+        );
+    }
+
     private ClienteResponse criarResponseExemplo(UUID id) {
         EnderecoResponse enderecoResponse = new EnderecoResponse(
                 UUID.randomUUID(), "Rua A", 123, "Casa", "Centro", "Porto Alegre", "RS", "93500000"
@@ -130,9 +164,13 @@ class ClienteControllerTest {
         @DisplayName("Deve retornar HTTP 201 Created e o cliente criado")
         void deveCriarClienteComSucesso() throws Exception {
             UUID id = UUID.randomUUID();
+            Cliente clienteDomain = criarClienteDomainExemplo(id);
             ClienteResponse response = criarResponseExemplo(id);
 
-            when(clienteService.criar(any(ClienteRequest.class))).thenReturn(response);
+            when(clienteMapper.toEnderecoDomain(any())).thenReturn(clienteDomain.getEndereco());
+            when(clienteMapper.toDomain(any(ClienteRequest.class), any())).thenReturn(clienteDomain);
+            when(clienteService.criar(any(Cliente.class))).thenReturn(clienteDomain);
+            when(clienteMapper.toResponse(clienteDomain)).thenReturn(response);
 
             mockMvc.perform(post("/clientes")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -144,7 +182,7 @@ class ClienteControllerTest {
                     .andExpect(jsonPath("$.documento").value("12345678909"))
                     .andExpect(jsonPath("$.email").value("ana@email.com"));
 
-            verify(clienteService).criar(any(ClienteRequest.class));
+            verify(clienteService).criar(any(Cliente.class));
         }
     }
 
@@ -156,9 +194,11 @@ class ClienteControllerTest {
         @DisplayName("Deve retornar HTTP 200 OK com lista de clientes")
         void deveListarClientesComSucesso() throws Exception {
             UUID id = UUID.randomUUID();
+            Cliente clienteDomain = criarClienteDomainExemplo(id);
             ClienteResponse response = criarResponseExemplo(id);
 
-            when(clienteService.listar()).thenReturn(List.of(response));
+            when(clienteService.listar()).thenReturn(List.of(clienteDomain));
+            when(clienteMapper.toResponse(clienteDomain)).thenReturn(response);
 
             mockMvc.perform(get("/clientes")
                             .contentType(MediaType.APPLICATION_JSON))
@@ -192,9 +232,11 @@ class ClienteControllerTest {
         @DisplayName("Deve retornar HTTP 200 OK quando encontrar o cliente por ID")
         void deveBuscarPorIdComSucesso() throws Exception {
             UUID id = UUID.randomUUID();
+            Cliente clienteDomain = criarClienteDomainExemplo(id);
             ClienteResponse response = criarResponseExemplo(id);
 
-            when(clienteService.buscarPorId(id)).thenReturn(response);
+            when(clienteService.buscarPorId(id)).thenReturn(clienteDomain);
+            when(clienteMapper.toResponse(clienteDomain)).thenReturn(response);
 
             mockMvc.perform(get("/clientes/{id}", id)
                             .contentType(MediaType.APPLICATION_JSON))
@@ -215,9 +257,11 @@ class ClienteControllerTest {
         void deveBuscarPorDocumentoComSucesso() throws Exception {
             String documento = "12345678909";
             UUID id = UUID.randomUUID();
+            Cliente clienteDomain = criarClienteDomainExemplo(id);
             ClienteResponse response = criarResponseExemplo(id);
 
-            when(clienteService.buscarPorDocumento(documento)).thenReturn(response);
+            when(clienteService.buscarPorDocumento(documento)).thenReturn(clienteDomain);
+            when(clienteMapper.toResponse(clienteDomain)).thenReturn(response);
 
             mockMvc.perform(get("/clientes/documento/{documento}", documento)
                             .contentType(MediaType.APPLICATION_JSON))
@@ -237,9 +281,13 @@ class ClienteControllerTest {
         @DisplayName("Deve retornar HTTP 200 OK e o cliente atualizado")
         void deveAtualizarComSucesso() throws Exception {
             UUID id = UUID.randomUUID();
+            Cliente clienteDomainAtualizado = criarClienteDomainAtualizadoExemplo(id);
             ClienteResponse responseAtualizado = criarResponseAtualizadoExemplo(id);
 
-            when(clienteService.atualizar(eq(id), any(ClienteUpdateRequest.class))).thenReturn(responseAtualizado);
+            when(clienteMapper.toEnderecoDomain(any())).thenReturn(clienteDomainAtualizado.getEndereco());
+            when(clienteMapper.toDomain(any(ClienteUpdateRequest.class), any())).thenReturn(clienteDomainAtualizado);
+            when(clienteService.atualizar(eq(id), any(Cliente.class))).thenReturn(clienteDomainAtualizado);
+            when(clienteMapper.toResponse(clienteDomainAtualizado)).thenReturn(responseAtualizado);
 
             mockMvc.perform(put("/clientes/{id}", id)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -249,7 +297,7 @@ class ClienteControllerTest {
                     .andExpect(jsonPath("$.nome").value("Ana Silva Atualizada"))
                     .andExpect(jsonPath("$.email").value("ana.nova@email.com"));
 
-            verify(clienteService).atualizar(eq(id), any(ClienteUpdateRequest.class));
+            verify(clienteService).atualizar(eq(id), any(Cliente.class));
         }
     }
 

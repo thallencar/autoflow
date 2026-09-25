@@ -1,8 +1,7 @@
 package br.com.autoflow.ports.inbound.cliente;
 
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteRequest;
-import br.com.autoflow.adapters.inbound.controller.dto.ClienteResponse;
+import br.com.autoflow.domain.model.Cliente;
 
 public interface CriarClienteUseCase {
-    ClienteResponse criar(ClienteRequest request);
+    Cliente criar(Cliente request);
 }
