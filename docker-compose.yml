@@ -1,13 +1,28 @@
 services:
   autoflow-app:
-    build: .
+    build:
+      context: .
+    container_name: autoflow-app
     ports:
       - "8080:8080"
+    env_file:
+      - .env
+    restart: unless-stopped
 
   sonarqube:
-    image: sonarqube:latest
+    image: sonarqube:9.9.8-community
     container_name: sonarqube
     ports:
       - "9000:9000"
     environment:
-      - SONAR_SEARCH_JAVAADDITIONALOPTS=-Dnode.store.allow_mmap=false
+      SONAR_SEARCH_JAVAADDITIONALOPTS: "-Dnode.store.allow_mmap=false"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    restart: unless-stopped
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
