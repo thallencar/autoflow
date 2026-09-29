@@ -2,6 +2,7 @@ package br.com.autoflow.adapters.outbound.persistence.entity;
 
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.TipoOrcamento;
+import br.com.autoflow.domain.model.OrcamentoServico;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -52,13 +53,13 @@ public class OrcamentoEntity {
     @Column(name = "vl_total", precision = 10, scale = 2, nullable = false)
     private BigDecimal total;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_os", nullable = false)
-    private OrdemServicoEntity ordemServico;
-
     @Builder.Default
     @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrcamentoServicoEntity> servicos = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_os", nullable = false, foreignKey = @ForeignKey(name = "FK_ORCAMENTO_ORDEM_SERVICO"))
+    private OrdemServicoEntity ordemServico;
 
     @Builder.Default
     @OneToMany(mappedBy = "orcamento", cascade = CascadeType.ALL, orphanRemoval = true)

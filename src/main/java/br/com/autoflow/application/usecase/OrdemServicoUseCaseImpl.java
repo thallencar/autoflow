@@ -1,7 +1,6 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.*;
-import br.com.autoflow.adapters.inbound.mapper.OrdemServicoMapper;
+import br.com.autoflow.adapters.outbound.persistence.entity.OrdemServicoEntity;
 import br.com.autoflow.adapters.outbound.persistence.mapper.OrdemServicoEntityMapper;
 import br.com.autoflow.application.validator.OrdemServicoValidator;
 import br.com.autoflow.domain.enums.StatusOS;
@@ -9,7 +8,9 @@ import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusPagamento;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Orcamento;
+import br.com.autoflow.domain.model.OrdemHistoricoDomain;
 import br.com.autoflow.domain.model.OrdemServico;
+import br.com.autoflow.ports.inbound.ordemservico.*;
 import br.com.autoflow.ports.outbound.FuncionarioRepositoryPort;
 import br.com.autoflow.ports.outbound.OrdemServicoRepositoryPort;
 import br.com.autoflow.domain.exception.RegraNegocioException;
@@ -31,68 +32,80 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class OrdemServicoUseCase {
+public class OrdemServicoUseCaseImpl implements AtualizarOrdemServicoUseCase,
+        AtualizarStatusOrdemServicoUseCase,
+        BuscarOrdemServicoPorIdUseCase,
+        CriarOrdemServicoUseCase,
+        DeletarOrdemServicoUseCase,
+        ListarOrdemServicoUseCase {
 
-    private static final Logger log = LoggerFactory.getLogger(OrdemServicoUseCase.class);
+    private static final Logger log = LoggerFactory.getLogger(OrdemServicoUseCaseImpl.class);
     private static final String NOME_ENTIDADE = "Ordem de Serviço";
 
     private final OrdemServicoRepositoryPort repository;
-    private final OrdemServicoMapper mapper;
     private final OrdemServicoEntityMapper entityMapper;
     private final OrdemServicoValidator validator;
     private final FuncionarioRepositoryPort funcionarioRepository;
-    private final OrcamentoUseCaseImpl orcamentoUseCaseImpl;
 
+    @Override
     @Transactional(readOnly = true)
-    public Page<OrdemServicoResponse> listarTodas(Pageable pageable) {
-        Page<OrdemServico> lista = repository.findAll(pageable);
-        return lista.map(mapper::toResponse);
+    public Page<OrdemServico> listarTodas(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
+    @Override
     @Transactional(readOnly = true)
-    public Page<OrdemServicoResponse> listarPorStatus(StatusOS status, Pageable pageable) {
-        Page<OrdemServico> ordens = repository.findByStatusOS(status, pageable);
-        return ordens.map(mapper::toResponse);
+    public Page<OrdemServico> listarPorStatus(StatusOS status, Pageable pageable) {
+        return repository.findByStatusOS(status, pageable);
     }
 
+    @Override
     @Transactional(readOnly = true)
-    public OrdemServicoResponse buscarPorId(UUID id) {
-        OrdemServico os = repository.findById(id)
+    public OrdemServico buscarPorId(UUID id) {
+        return repository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
-        return mapper.toResponse(os);
     }
 
+    @Override
     @Transactional
-    public OrdemServicoResponse criar(OrdemServicoRequest request, boolean possuiAgendamento) {
+    public OrdemServico criar(OrdemServico ordemServico, boolean possuiAgendamento) {
         List<StatusOS> statusIgnoradosNoPatio = List.of(StatusOS.ENTREGUE, StatusOS.CANCELADA);
         Long carrosNoPatio = repository.countByStatusOSNotIn(statusIgnoradosNoPatio);
-        validator.validarCriacao(request, possuiAgendamento, carrosNoPatio);
 
-        // Mapeia Request para Domínio
-        OrdemServico os = mapper.toDomain(request);
-        ocuparMecanicoSeNecessario(request.idFuncionario());
+        // Ajustado para chamar o método correto existente no validador
+        validator.validarCriacao(ordemServico, possuiAgendamento, carrosNoPatio);
+        ocuparMecanicoSeNecessario(ordemServico.getIdFuncionario());
 
-        // Salva utilizando a porta e o domínio
-        OrdemServico osSalva = repository.save(os);
-        return mapper.toResponse(osSalva);
+        return repository.save(ordemServico);
     }
 
+    @Override
     @Transactional
-    public OrdemServicoResponse atualizar(UUID id, OrdemServicoRequest request) {
+    public OrdemServico atualizar(UUID id, OrdemServico ordemServicoAtualizada) {
         OrdemServico os = repository.findById(id)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, id));
 
-        validator.validarCliente(request.idCliente());
-        validator.validarOrcamentosParaOS(request.idsOrcamento());
-        validator.validarAlteracaoMecanico(request.idFuncionario(), id);
+        validator.validarCliente(ordemServicoAtualizada.getIdCliente());
 
-        gerenciarTrocaMecanico(os, request.idFuncionario());
-        mapper.updateDomainFromRequest(os, request);
+        List<UUID> idsOrcamento = ordemServicoAtualizada.getIdsOrcamento() != null
+                ? ordemServicoAtualizada.getIdsOrcamento().stream().map(Orcamento::getId).toList()
+                : List.of();
 
-        OrdemServico osAtualizada = repository.save(os);
-        return mapper.toResponse(osAtualizada);
+        validator.validarOrcamentosParaOS(idsOrcamento);
+        validator.validarAlteracaoMecanico(ordemServicoAtualizada.getIdFuncionario(), id);
+
+        gerenciarTrocaMecanico(os, ordemServicoAtualizada.getIdFuncionario());
+
+        os.setIdFuncionario(ordemServicoAtualizada.getIdFuncionario());
+        os.setIdsOrcamento(ordemServicoAtualizada.getIdsOrcamento());
+        if (ordemServicoAtualizada.getDsRelatoCliente() != null) {
+            os.setDsRelatoCliente(ordemServicoAtualizada.getDsRelatoCliente());
+        }
+
+        return repository.save(os);
     }
 
+    @Override
     @Transactional
     public void atualizarStatusPagamento(UUID id, StatusPagamento novoStatus) {
         OrdemServico ordemServico = repository.findById(id)
@@ -102,6 +115,7 @@ public class OrdemServicoUseCase {
         repository.save(ordemServico);
     }
 
+    @Override
     @Transactional
     public void deletar(UUID id) {
         OrdemServico os = repository.findById(id)
@@ -112,48 +126,49 @@ public class OrdemServicoUseCase {
         repository.deleteById(id);
     }
 
+    @Override
     @Transactional
-    public OrdemServicoResponse atualizarStatus(UUID idOS, AtualizarStatusOSRequest request) {
-        OrdemServico os = buscarOrdemServicoPorId(idOS);
-        StatusOS novoStatus = request.status();
+    public OrdemServico atualizarStatus(UUID idOS, StatusOS novoStatus, String observacao) {
+        OrdemServico os = buscarPorId(idOS);
 
-        validarRequisitosStatus(novoStatus, request.observacao(), os);
+        validarRequisitosStatus(novoStatus, observacao, os);
         processarEstoqueSeNecessario(os, novoStatus);
-        os.atualizarStatus(novoStatus, request.observacao());
+        os.atualizarStatus(novoStatus, observacao); // Executa as regras no domínio[cite: 2]
 
         liberarMecanicoSeFinalizada(os, novoStatus);
 
-        OrdemServico osAtualizada = repository.save(os);
-        return mapper.toResponse(osAtualizada);
+        return repository.save(os);
     }
 
+    @Override
     @Transactional(readOnly = true)
-    public MetricaOsResponse obterMetricasPorOS(UUID idOs) {
-        OrdemServico ordemServico = repository.findById(idOs)
+    public OrdemServico obterMetricasPorOS(UUID idOs) {
+        return repository.findById(idOs)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, idOs));
-        return mapper.toMetricaResponse(ordemServico);
     }
 
+    @Override
     @Transactional(readOnly = true)
-    public Page<MetricaOsResponse> buscarMetricasComFiltro(
+    public Page<OrdemServico> buscarMetricasComFiltro(
             LocalDateTime dataInicio,
             LocalDateTime dataFim,
             StatusOS status,
             Pageable pageable) {
-        Page<OrdemServico> ordens = repository.findMetricasComFiltro(dataInicio, dataFim, status, pageable);
-        return ordens.map(mapper::toMetricaResponse);
+        return repository.findMetricasComFiltro(dataInicio, dataFim, status, pageable);
     }
 
+    @Override
     @Transactional(readOnly = true)
-    public Page<HistoricoVeiculoResponse> obterHistoricoPorVeiculo(UUID idVeiculo, Pageable pageable) {
+    public Page<OrdemServico> obterHistoricoPorVeiculo(UUID idVeiculo, Pageable pageable) {
         validator.validarVeiculoExiste(idVeiculo);
         Page<OrdemServico> ordens = repository.findByIdVeiculoOrderByDtAberturaOsDesc(idVeiculo, pageable);
         if (ordens.isEmpty()) {
             throw new EntidadeNaoEncontradaException(NOME_ENTIDADE, idVeiculo);
         }
-        return ordens.map(mapper::toHistoricoResponse);
+        return ordens;
     }
 
+    @Override
     @Scheduled(cron = "0 0 8 * * *")
     @Transactional
     public void processarCancelamentosAutomaticos() {
@@ -191,11 +206,6 @@ public class OrdemServicoUseCase {
         }
     }
 
-    private OrdemServico buscarOrdemServicoPorId(UUID idOS) {
-        return repository.findById(idOS)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException(NOME_ENTIDADE, idOS));
-    }
-
     private void processarEstoqueSeNecessario(OrdemServico os, StatusOS novoStatus) {
         if (novoStatus != StatusOS.ORCAMENTO_APROVADO && novoStatus != StatusOS.EM_EXECUCAO) {
             return;
@@ -204,7 +214,7 @@ public class OrdemServicoUseCase {
 
         for (Orcamento orcamento : os.getIdsOrcamento()) {
             if (orcamento.getStatus() == StatusOrcamento.PENDENTE) {
-                // orcamentoUseCase.deduzirItensDoEstoque(orcamento);
+                // lógica de estoque se necessário
             }
         }
     }

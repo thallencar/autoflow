@@ -3,6 +3,8 @@ package br.com.autoflow.adapters.outbound.persistence.entity;
 import br.com.autoflow.domain.enums.StatusReservaEstoque;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.domain.Persistable; // 1. Importa o Persistable
+
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -13,10 +15,10 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrcamentoItemEntity {
+public class OrcamentoItemEntity implements Persistable<UUID> {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    // 3. REMOVE o @GeneratedValue para evitar que o Hibernate controle mal o UUID
     @Column(name = "id_orcamento_item", updatable = false, nullable = false)
     private UUID id;
 
@@ -38,16 +40,36 @@ public class OrcamentoItemEntity {
     private UUID idEstoque;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "id_orcamento_servicos", nullable = false)
-    private OrcamentoServicoEntity orcamentoServico;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_orcamento", nullable = false)
     private OrcamentoEntity orcamento;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_orcamento_servico", nullable = false)
+    private OrcamentoServicoEntity orcamentoServico;
+
+    @Transient
+    @Builder.Default
+    private boolean novo = true;
+
+    @Override
+    @Transient
+    public boolean isNew() {
+        return this.novo || this.id == null;
+    }
+
+    @PostPersist
+    @PostLoad
+    public void marcarComoNaoNovo() {
+        this.novo = false;
+    }
 
     @PrePersist
     @PreUpdate
     public void calcularTotal() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+
         if (this.valorUnitario != null && this.quantidade != null) {
             this.valorTotal = this.valorUnitario.multiply(BigDecimal.valueOf(this.quantidade));
         }

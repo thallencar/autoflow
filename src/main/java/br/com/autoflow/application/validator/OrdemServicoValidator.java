@@ -1,6 +1,5 @@
 package br.com.autoflow.application.validator;
 
-import br.com.autoflow.adapters.inbound.controller.dto.OrdemServicoRequest;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusPagamento;
@@ -13,7 +12,6 @@ import br.com.autoflow.domain.exception.RegraNegocioException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -31,27 +29,47 @@ public class OrdemServicoValidator {
     private final OrdemServicoRepositoryPort ordemServicoRepository;
     private final FuncionarioRepositoryPort funcionarioRepository;
 
-    public void validarCriacao(OrdemServicoRequest request, boolean possuiAgendamento, Long carrosNoPatioAtual) {
-        validarCliente(request.idCliente());
-        validarVeiculoPorID(request.idVeiculo());
-        validarFuncionarioID(request.idFuncionario());
+    /**
+     * Valida a criação de uma Ordem de Serviço usando o Model de Domínio.
+     */
+    public void validarCriacao(OrdemServico ordemServico, boolean possuiAgendamento, Long carrosNoPatioAtual) {
+        validarCliente(ordemServico.getIdCliente());
+        validarVeiculoPorID(ordemServico.getIdVeiculo());
+        validarFuncionarioID(ordemServico.getIdFuncionario());
 
-        validarPropriedadeVeiculo(request.idCliente(), request.idVeiculo());
-        validarKmEntrada(request.idVeiculo(), request.nrKmEntrada());
-        validarTermoDeAceite(request.stTermoAceito());
-        validarDataAceiteTermo(request.stTermoAceito(), request.dtAceiteTermo());
+        validarPropriedadeVeiculo(ordemServico.getIdCliente(), ordemServico.getIdVeiculo());
+        validarKmEntrada(ordemServico.getIdVeiculo(), ordemServico.getNrKmEntrada());
 
-        validarOrcamentosParaOS(request.idsOrcamento());
+        validarTermoDeAceite(ordemServico.getStTermoAceito() != null && ordemServico.getStTermoAceito());
+
+        validarDataAceiteTermo(
+                ordemServico.getStTermoAceito(),
+                ordemServico.getDtAceiteTermo(),
+                ordemServico.getDtAberturaOs()
+        );
+
+        List<UUID> idsOrcamentos = extrairIdsOrcamentos(ordemServico.getIdsOrcamento());
+        validarOrcamentosParaOS(idsOrcamentos);
+
         validarCapacidadePatioEAgendamento(possuiAgendamento, carrosNoPatioAtual);
 
         boolean existeOsAberta = ordemServicoRepository
                 .existsByIdVeiculoAndStatusOSNotIn(
-                        request.idVeiculo(),
+                        ordemServico.getIdVeiculo(),
                         List.of(StatusOS.ENTREGUE, StatusOS.FINALIZADA, StatusOS.CANCELADA)
                 );
         if (existeOsAberta) {
             throw new RegraNegocioException("Já existe uma Ordem de Serviço em andamento para este veículo.");
         }
+    }
+
+    private List<UUID> extrairIdsOrcamentos(List<Orcamento> orcamentos) {
+        if (orcamentos == null || orcamentos.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return orcamentos.stream()
+                .map(Orcamento::getId)
+                .toList();
     }
 
     public void validarCliente(UUID idCliente) {
@@ -157,18 +175,18 @@ public class OrdemServicoValidator {
         }
     }
 
-    public void validarDataAceiteTermo(Boolean termoAceito, LocalDateTime dtAceite) {
+    public void validarDataAceiteTermo(Boolean termoAceito, LocalDateTime dtAceite, LocalDateTime dtAberturaOs) {
         if (Boolean.TRUE.equals(termoAceito)) {
             if (dtAceite == null) {
                 throw new RegraNegocioException("A data do aceite do termo deve ser informada quando o termo for assinado.");
             }
-            LocalDate dataHoje = LocalDate.now(java.time.ZoneId.systemDefault());
-            LocalDate dataAceite = dtAceite.toLocalDate();
-            if (dataAceite.isAfter(dataHoje)) {
-                throw new RegraNegocioException("A data do aceite do termo não pode estar no futuro.");
+            LocalDateTime agora = LocalDateTime.now(java.time.ZoneId.systemDefault());
+
+            if (dtAceite.isAfter(agora)) {
+                throw new RegraNegocioException("A data e hora do aceite do termo não podem estar no futuro.");
             }
-            if (dtAceite.isAfter(LocalDateTime.now(java.time.ZoneId.systemDefault()))) {
-                throw new RegraNegocioException("A hora do aceite do termo não pode estar no futuro.");
+            if (dtAberturaOs != null && dtAceite.isBefore(dtAberturaOs)) {
+                throw new RegraNegocioException("A data do aceite do termo não pode ser anterior à data de abertura da Ordem de Serviço.");
             }
         }
     }

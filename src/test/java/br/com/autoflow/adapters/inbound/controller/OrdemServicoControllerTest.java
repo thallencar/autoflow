@@ -6,9 +6,11 @@ import br.com.autoflow.adapters.inbound.controller.dto.HistoricoVeiculoResponse;
 import br.com.autoflow.adapters.inbound.controller.dto.MetricaOsResponse;
 import br.com.autoflow.adapters.inbound.controller.dto.OrdemServicoRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.OrdemServicoResponse;
-import br.com.autoflow.application.usecase.OrdemServicoUseCase;
+import br.com.autoflow.adapters.inbound.mapper.OrdemServicoMapper;
+import br.com.autoflow.application.usecase.OrdemServicoUseCaseImpl;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusPagamento;
+import br.com.autoflow.domain.model.OrdemServico;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,6 +25,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,73 +36,96 @@ import static org.mockito.Mockito.when;
 class OrdemServicoControllerTest {
 
     @Mock
-    private OrdemServicoUseCase service;
+    private OrdemServicoUseCaseImpl service;
+
+    @Mock
+    private OrdemServicoMapper mapper; // Adicionado o mock do mapper que faltava
 
     @InjectMocks
-    private br.com.autoflow.adapter.inbound.controller.OrdemServicoController controller;
+    private OrdemServicoController controller;
 
     @Test
     void deveListarTodas() {
         Pageable pageable = PageRequest.of(0, 2);
-        OrdemServicoResponse response = new OrdemServicoResponse(UUID.randomUUID(), StatusOS.AGUARDANDO_APROVACAO, "relato", "diag", true, LocalDateTime.now(), 1000, LocalDateTime.now(), null, null, null, null, null, null, null, "PENDENTE", "motivo", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), List.of());
-        Page<OrdemServicoResponse> page = new PageImpl<>(List.of(response), pageable, 1);
+        OrdemServico dominio = new OrdemServico();
+        dominio.setIdOs(UUID.randomUUID());
+        dominio.setStatusOS(StatusOS.AGUARDANDO_APROVACAO);
 
-        when(service.listarTodas(pageable)).thenReturn(page);
+        Page<OrdemServico> pageDomain = new PageImpl<>(List.of(dominio), pageable, 1);
+
+        when(service.listarTodas(pageable)).thenReturn(pageDomain);
 
         Page<OrdemServicoResponse> result = controller.listarTodas(pageable);
 
-        assertEquals(page, result);
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
         verify(service).listarTodas(pageable);
     }
 
     @Test
     void deveBuscarPorId() {
         UUID id = UUID.randomUUID();
-        OrdemServicoResponse response = new OrdemServicoResponse(id, StatusOS.AGUARDANDO_APROVACAO, "relato", "diag", true, LocalDateTime.now(), 1000, LocalDateTime.now(), null, null, null, null, null, null, null, "PENDENTE", "motivo", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), List.of());
-        when(service.buscarPorId(id)).thenReturn(response);
+        OrdemServico dominio = new OrdemServico();
+        dominio.setIdOs(id);
+        dominio.setStatusOS(StatusOS.AGUARDANDO_APROVACAO);
+
+        when(service.buscarPorId(id)).thenReturn(dominio);
 
         OrdemServicoResponse result = controller.buscarPorId(id);
 
-        assertEquals(response, result);
+        assertNotNull(result);
+        assertEquals(id, result.idOs());
         verify(service).buscarPorId(id);
     }
 
     @Test
     void deveCriar() {
         OrdemServicoRequest request = new OrdemServicoRequest("relato", "diag", true, LocalDateTime.now(), LocalDateTime.now(), 1000, StatusOS.AGUARDANDO_APROVACAO, "PENDENTE", "motivo", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), List.of());
-        OrdemServicoResponse response = new OrdemServicoResponse(UUID.randomUUID(), StatusOS.AGUARDANDO_APROVACAO, "relato", "diag", true, LocalDateTime.now(), 1000, LocalDateTime.now(), null, null, null, null, null, null, null, "PENDENTE", "motivo", request.idCliente(), request.idVeiculo(), request.idFuncionario(), request.idsOrcamento());
-        when(service.criar(request, true)).thenReturn(response);
+
+        OrdemServico dominio = new OrdemServico();
+        dominio.setIdOs(UUID.randomUUID());
+        dominio.setStatusOS(StatusOS.AGUARDANDO_APROVACAO);
+
+        when(service.criar(any(OrdemServico.class), eq(true))).thenReturn(dominio);
 
         OrdemServicoResponse result = controller.criar(request, true);
 
-        assertEquals(response, result);
-        verify(service).criar(request, true);
+        assertNotNull(result);
+        verify(service).criar(any(OrdemServico.class), eq(true));
     }
 
     @Test
     void deveAtualizar() {
         UUID id = UUID.randomUUID();
         OrdemServicoRequest request = new OrdemServicoRequest("relato", "diag", true, LocalDateTime.now(), LocalDateTime.now(), 1000, StatusOS.AGUARDANDO_APROVACAO, "PENDENTE", "motivo", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), List.of());
-        OrdemServicoResponse response = new OrdemServicoResponse(id, StatusOS.AGUARDANDO_APROVACAO, "relato", "diag", true, LocalDateTime.now(), 1000, LocalDateTime.now(), null, null, null, null, null, null, null, "PENDENTE", "motivo", request.idCliente(), request.idVeiculo(), request.idFuncionario(), request.idsOrcamento());
-        when(service.atualizar(id, request)).thenReturn(response);
+
+        OrdemServico dominio = new OrdemServico();
+        dominio.setIdOs(id);
+        dominio.setStatusOS(StatusOS.AGUARDANDO_APROVACAO);
+
+        when(service.atualizar(eq(id), any(OrdemServico.class))).thenReturn(dominio);
 
         OrdemServicoResponse result = controller.atualizar(id, request);
 
-        assertEquals(response, result);
-        verify(service).atualizar(id, request);
+        assertNotNull(result);
+        verify(service).atualizar(eq(id), any(OrdemServico.class));
     }
 
     @Test
     void deveAtualizarStatus() {
         UUID id = UUID.randomUUID();
         AtualizarStatusOSRequest request = new AtualizarStatusOSRequest(StatusOS.EM_DIAGNOSTICO, "analise");
-        OrdemServicoResponse response = new OrdemServicoResponse(id, StatusOS.EM_DIAGNOSTICO, "relato", "diag", true, LocalDateTime.now(), 1000, LocalDateTime.now(), null, null, null, null, null, null, null, "PENDENTE", "motivo", UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), List.of());
-        when(service.atualizarStatus(id, request)).thenReturn(response);
+
+        OrdemServico dominio = new OrdemServico();
+        dominio.setIdOs(id);
+        dominio.setStatusOS(StatusOS.EM_DIAGNOSTICO);
+
+        when(service.atualizarStatus(eq(id), eq(request.status()), eq(request.observacao()))).thenReturn(dominio);
 
         OrdemServicoResponse result = controller.atualizarStatus(id, request);
 
-        assertEquals(response, result);
-        verify(service).atualizarStatus(id, request);
+        assertNotNull(result);
+        verify(service).atualizarStatus(eq(id), eq(request.status()), eq(request.observacao()));
     }
 
     @Test
@@ -105,7 +133,14 @@ class OrdemServicoControllerTest {
         UUID idOs = UUID.randomUUID();
         LocalDateTime agora = LocalDateTime.now();
 
-        // Ajustado para os 5 campos do record atual
+        // 1. O Use Case retorna o domínio
+        OrdemServico dominio = new OrdemServico();
+        dominio.setIdOs(idOs);
+        dominio.setDataInicioExecucao(agora);
+        dominio.setDataFimExecucao(agora);
+        dominio.setStatusOS(StatusOS.ENTREGUE);
+
+        // 2. O DTO esperado no final
         MetricaOsResponse response = new MetricaOsResponse(
                 idOs,
                 "ENTREGUE",
@@ -114,7 +149,8 @@ class OrdemServicoControllerTest {
                 15L
         );
 
-        when(service.obterMetricasPorOS(idOs)).thenReturn(response);
+        when(service.obterMetricasPorOS(idOs)).thenReturn(dominio);
+        when(mapper.toMetricaResponse(dominio)).thenReturn(response); // Mock do mapper no controller
 
         MetricaOsResponse result = controller.obterMetricasPorOS(idOs);
 
@@ -128,22 +164,67 @@ class OrdemServicoControllerTest {
         LocalDateTime fim = LocalDateTime.now();
         Pageable pageable = PageRequest.of(0, 2);
 
-        // Ajustado para os 5 campos do record atual
+        // 1. O Use Case retorna uma página de Domínio
+        OrdemServico dominio = new OrdemServico();
+        dominio.setIdOs(UUID.randomUUID());
+        Page<OrdemServico> pageDomain = new PageImpl<>(List.of(dominio), pageable, 1);
+
+        // 2. O DTO correspondente
         MetricaOsResponse response = new MetricaOsResponse(
-                UUID.randomUUID(),
+                dominio.getIdOs(),
                 "EM_EXECUCAO",
                 inicio,
                 fim,
                 15L
         );
 
-        Page<MetricaOsResponse> page = new PageImpl<>(List.of(response), pageable, 1);
-        when(service.buscarMetricasComFiltro(inicio, fim, StatusOS.EM_EXECUCAO, pageable)).thenReturn(page);
+        when(service.buscarMetricasComFiltro(inicio, fim, StatusOS.EM_EXECUCAO, pageable)).thenReturn(pageDomain);
+        when(mapper.toMetricaResponse(dominio)).thenReturn(response);
 
         Page<MetricaOsResponse> result = controller.listarMetricas(inicio, fim, StatusOS.EM_EXECUCAO, pageable);
 
-        assertEquals(page, result);
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
         verify(service).buscarMetricasComFiltro(inicio, fim, StatusOS.EM_EXECUCAO, pageable);
+    }
+
+    @Test
+    void deveListarHistoricoPorVeiculo() {
+        UUID idVeiculo = UUID.randomUUID();
+        Pageable pageable = PageRequest.of(0, 2);
+
+        // 1. Criamos um objeto de domínio OrdemServico (que é o que o service agora retorna)
+        OrdemServico ordemServico = new OrdemServico();
+        ordemServico.setIdOs(UUID.randomUUID());
+        ordemServico.setStatusOS(StatusOS.ENTREGUE);
+        ordemServico.setDsRelatoCliente("relato");
+        // (preencha outros campos se necessário para o seu teste)
+
+        Page<OrdemServico> pageDomain = new PageImpl<>(List.of(ordemServico), pageable, 1);
+
+        // 2. Criamos o DTO esperado que o mapper vai retornar
+        HistoricoVeiculoResponse responseDto = new HistoricoVeiculoResponse(
+                ordemServico.getIdOs(), ordemServico.getStatusOS(), "relato", "diag", 1000,
+                LocalDateTime.now(), LocalDateTime.now(), List.of()
+        );
+
+        // 3. O service agora retorna Page<OrdemServico>
+        when(service.obterHistoricoPorVeiculo(idVeiculo, pageable)).thenReturn(pageDomain);
+
+        // 4. Mockamos o mapper para traduzir o Domínio para o DTO de histórico
+        when(mapper.toHistoricoResponse(ordemServico)).thenReturn(responseDto);
+
+        // Executa o método do controller
+        Page<HistoricoVeiculoResponse> result = controller.listarHistoricoPorVeiculo(idVeiculo, pageable);
+
+        // Validações
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(responseDto, result.getContent().get(0));
+
+        // Verifica se ambos foram chamados corretamente
+        verify(service).obterHistoricoPorVeiculo(idVeiculo, pageable);
+        verify(mapper).toHistoricoResponse(ordemServico);
     }
 
     @Test
@@ -154,21 +235,6 @@ class OrdemServicoControllerTest {
         controller.atualizarStatusPagamento(id, request);
 
         verify(service).atualizarStatusPagamento(id, request.stPagamento());
-    }
-
-    @Test
-    void deveListarHistoricoPorVeiculo() {
-        UUID idVeiculo = UUID.randomUUID();
-        Pageable pageable = PageRequest.of(0, 2);
-        HistoricoVeiculoResponse response = new HistoricoVeiculoResponse(UUID.randomUUID(), StatusOS.ENTREGUE, "relato", "diag", 1000, LocalDateTime.now(), LocalDateTime.now(), List.of());
-        Page<HistoricoVeiculoResponse> page = new PageImpl<>(List.of(response), pageable, 1);
-
-        when(service.obterHistoricoPorVeiculo(idVeiculo, pageable)).thenReturn(page);
-
-        Page<HistoricoVeiculoResponse> result = controller.listarHistoricoPorVeiculo(idVeiculo, pageable);
-
-        assertEquals(page, result);
-        verify(service).obterHistoricoPorVeiculo(idVeiculo, pageable);
     }
 
     @Test

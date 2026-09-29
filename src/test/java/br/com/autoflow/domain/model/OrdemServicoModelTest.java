@@ -17,7 +17,7 @@ class OrdemServicoModelTest {
     @Test
     void prePersist_deveInicializarCamposPadrao() {
         OrdemServico os = new OrdemServico();
-        os.prePersist();
+        os.inicializarDadosPadrao();
         assertNotNull(os.getDtAberturaOs());
         assertNotNull(os.getStPagamento());
         assertNotNull(os.getTaxaPermanencia());

@@ -1,11 +1,14 @@
 package br.com.autoflow.adapters.outbound.persistence;
 
+import br.com.autoflow.adapters.outbound.persistence.entity.OrdemServicoEntity;
 import br.com.autoflow.adapters.outbound.persistence.mapper.OrcamentoEntityMapper;
 
 import br.com.autoflow.adapters.outbound.persistence.repository.SpringDataOrcamentoRepository;
+import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.model.Orcamento;
 
 import br.com.autoflow.ports.outbound.OrcamentoRepositoryPort;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,11 +22,24 @@ public class OrcamentoRepositoryAdapter implements OrcamentoRepositoryPort {
 
     private final SpringDataOrcamentoRepository repository;
     private final OrcamentoEntityMapper mapper;
+    private final EntityManager entityManager;
 
     @Override
     public Orcamento save(Orcamento orcamento) {
         var entity = mapper.toEntity(orcamento);
-        return mapper.toDomain(repository.save(entity));
+        if (orcamento.getId() == null) {
+            entity.setId(null);
+
+            if (entity.getItens() != null) {
+                entity.getItens().forEach(item -> item.setId(null));
+            }
+        }
+        if (entity.getOrdemServico() != null && entity.getOrdemServico().getIdOs() != null) {
+            var managedOs = entityManager.getReference(OrdemServicoEntity.class, entity.getOrdemServico().getIdOs());
+            entity.setOrdemServico(managedOs);
+        }
+        var savedEntity = repository.save(entity);
+        return mapper.toDomain(savedEntity);
     }
 
     @Override
@@ -70,5 +86,10 @@ public class OrcamentoRepositoryAdapter implements OrcamentoRepositoryPort {
     @Override
     public void deletarServicosPorOrcamento(UUID id) {
         repository.deletarServicosPorOrcamento(id);
+    }
+
+    @Override
+    public void atualizarStatusOrcamento(UUID id, StatusOrcamento status) {
+        repository.atualizarStatusOrcamento(id, status);
     }
 }

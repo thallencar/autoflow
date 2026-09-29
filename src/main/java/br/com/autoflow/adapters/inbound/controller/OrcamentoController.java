@@ -31,7 +31,7 @@ public class OrcamentoController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrcamentoResponse criar(@RequestBody @Valid OrcamentoRequest request) {
-        Orcamento domain = orcamentoMapper.toEntity(request);
+        Orcamento domain = orcamentoMapper.toDomain(request);
         Orcamento salvo = criarOrcamentoUseCase.criar(request.idOs(), domain);
         return mapToResponseComAvisos(salvo);
     }

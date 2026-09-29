@@ -1,5 +1,6 @@
 package br.com.autoflow.ports.outbound;
 
+import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.model.Orcamento;
 import java.util.List;
 import java.util.Optional;
@@ -16,4 +17,5 @@ public interface OrcamentoRepositoryPort {
     void deletarItensDiretosPorOrcamento(UUID id);
     void deletarItensPorServicosDoOrcamento(UUID id);
     void deletarServicosPorOrcamento(UUID id);
+    void atualizarStatusOrcamento(UUID id, StatusOrcamento status);
 }

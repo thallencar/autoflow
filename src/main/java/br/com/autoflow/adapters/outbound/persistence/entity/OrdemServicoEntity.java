@@ -8,6 +8,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -85,6 +87,10 @@ public class OrdemServicoEntity {
 
     @Column(name = "id_funcionario", nullable = true)
     private UUID idFuncionario;
+
+    @OneToMany(mappedBy = "ordemServico", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<OrcamentoEntity> orcamentos = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {

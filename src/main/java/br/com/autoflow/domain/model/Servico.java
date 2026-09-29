@@ -9,6 +9,9 @@ public class Servico {
     private BigDecimal vlServico;
     private Integer qtTempoEstimadoMin;
 
+    public Servico() {
+    }
+
     public Servico(UUID idServico, String dsServico, BigDecimal vlServico, Integer qtTempoEstimadoMin) {
         this.idServico = idServico;
         this.dsServico = dsServico;

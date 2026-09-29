@@ -1,6 +1,7 @@
 package br.com.autoflow.adapters.outbound.persistence.repository;
 
 import br.com.autoflow.adapters.outbound.persistence.entity.OrcamentoEntity;
+import br.com.autoflow.domain.enums.StatusOrcamento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -24,4 +25,8 @@ public interface SpringDataOrcamentoRepository extends JpaRepository<OrcamentoEn
     @Modifying
     @Query(value = "DELETE FROM tb_orcamento_servicos WHERE id_orcamento = :id", nativeQuery = true)
     void deletarServicosPorOrcamento(@Param("id") UUID id);
+
+    @Modifying
+    @Query("UPDATE OrcamentoEntity o SET o.status = :status WHERE o.id = :id")
+    void atualizarStatusOrcamento(@Param("id") UUID id, @Param("status") StatusOrcamento status);
 }

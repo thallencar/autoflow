@@ -2,6 +2,7 @@ package br.com.autoflow.adapters.outbound.persistence;
 
 import br.com.autoflow.adapters.outbound.persistence.mapper.OrcamentoServicoEntityMapper;
 import br.com.autoflow.adapters.outbound.persistence.repository.SpringDataOrcamentoServicoRepository;
+import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.model.OrcamentoServico;
 import br.com.autoflow.ports.outbound.OrcamentoServicoRepositoryPort;
 import lombok.RequiredArgsConstructor;

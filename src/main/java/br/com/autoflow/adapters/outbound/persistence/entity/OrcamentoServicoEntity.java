@@ -1,7 +1,7 @@
 package br.com.autoflow.adapters.outbound.persistence.entity;
-
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,7 @@ public class OrcamentoServicoEntity {
     @Column(name = "vl_mao_de_obra", precision = 10, scale = 2, nullable = false)
     private BigDecimal maoDeObra;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_servico", nullable = false)
     private ServicoEntity servico;
 
@@ -35,11 +35,4 @@ public class OrcamentoServicoEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_orcamento")
     private OrcamentoEntity orcamento;
-
-    public void setOrcamento(OrcamentoEntity orcamento) {
-        this.orcamento = orcamento;
-        if (this.itens != null) {
-            this.itens.forEach(item -> item.setOrcamento(orcamento));
-        }
-    }
 }

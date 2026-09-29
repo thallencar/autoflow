@@ -5,6 +5,7 @@ import br.com.autoflow.domain.enums.StatusOS;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -22,4 +23,15 @@ public interface SpringDataOrdemServicoRepository extends JpaRepository<OrdemSer
     boolean existsByIdVeiculo(UUID idVeiculo);
     @Query("SELECT o FROM OrdemServicoEntity o WHERE (:status IS NULL OR o.statusOS = :status) AND (:dataInicio IS NULL OR o.dtAberturaOs >= :dataInicio) AND (:dataFim IS NULL OR o.dtAberturaOs <= :dataFim)")
     Page<OrdemServicoEntity> findMetricasComFiltro(@Param("dataInicio") LocalDateTime dataInicio, @Param("dataFim") LocalDateTime dataFim, @Param("status") StatusOS status, Pageable pageable);
+    @Modifying
+    @Query("UPDATE OrdemServicoEntity o SET o.statusOS = :status WHERE o.idOs = :id")
+    void atualizarStatusDireto(@Param("id") UUID id, @Param("status") StatusOS status);
+    @Modifying
+    @Query("UPDATE OrdemServicoEntity o SET o.statusOS = :status, o.dtEncerramentoOs = :dataEncerramento, o.dsMotivoCancelamento = :motivo WHERE o.idOs = :id")
+    void atualizarStatusECancelamento(
+            @Param("id") UUID id,
+            @Param("status") StatusOS status,
+            @Param("dataEncerramento") LocalDateTime dataEncerramento,
+            @Param("motivo") String motivo
+    );
 }

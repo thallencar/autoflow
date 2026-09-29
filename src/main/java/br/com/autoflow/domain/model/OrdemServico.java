@@ -81,7 +81,7 @@ public class OrdemServico {
         this.servicosExecucao = servicosExecucao != null ? servicosExecucao : new ArrayList<>();
     }
 
-    public void prePersist() {
+    public void inicializarDadosPadrao() {
         if (this.dtAberturaOs == null) {
             this.dtAberturaOs = LocalDateTime.now(ZoneId.systemDefault());
         }
@@ -319,72 +319,51 @@ public class OrdemServico {
         }
     }
 
+    // Getters and Setters
     public UUID getIdOs() { return idOs; }
     public void setIdOs(UUID idOs) { this.idOs = idOs; }
-
     public StatusOS getStatusOS() { return statusOS; }
     public void setStatusOS(StatusOS statusOS) { this.statusOS = statusOS; }
-
     public String getDsRelatoCliente() { return dsRelatoCliente; }
     public void setDsRelatoCliente(String dsRelatoCliente) { this.dsRelatoCliente = dsRelatoCliente; }
-
     public String getDsDiagnostico() { return dsDiagnostico; }
     public void setDsDiagnostico(String dsDiagnostico) { this.dsDiagnostico = dsDiagnostico; }
-
     public Boolean getStTermoAceito() { return stTermoAceito; }
     public void setStTermoAceito(Boolean stTermoAceito) { this.stTermoAceito = stTermoAceito; }
-
     public LocalDateTime getDtAceiteTermo() { return dtAceiteTermo; }
     public void setDtAceiteTermo(LocalDateTime dtAceiteTermo) { this.dtAceiteTermo = dtAceiteTermo; }
-
     public Integer getNrKmEntrada() { return nrKmEntrada; }
     public void setNrKmEntrada(Integer nrKmEntrada) { this.nrKmEntrada = nrKmEntrada; }
-
     public LocalDateTime getDtAberturaOs() { return dtAberturaOs; }
     public void setDtAberturaOs(LocalDateTime dtAberturaOs) { this.dtAberturaOs = dtAberturaOs; }
-
     public LocalDateTime getDtInicioDiagnostico() { return dtInicioDiagnostico; }
     public void setDtInicioDiagnostico(LocalDateTime dtInicioDiagnostico) { this.dtInicioDiagnostico = dtInicioDiagnostico; }
-
     public LocalDateTime getDtFimDiagnostico() { return dtFimDiagnostico; }
     public void setDtFimDiagnostico(LocalDateTime dtFimDiagnostico) { this.dtFimDiagnostico = dtFimDiagnostico; }
-
     public LocalDateTime getDtAprovacaoOrcamento() { return dtAprovacaoOrcamento; }
     public void setDtAprovacaoOrcamento(LocalDateTime dtAprovacaoOrcamento) { this.dtAprovacaoOrcamento = dtAprovacaoOrcamento; }
-
     public LocalDateTime getDataInicioExecucao() { return dataInicioExecucao; }
     public void setDataInicioExecucao(LocalDateTime dataInicioExecucao) { this.dataInicioExecucao = dataInicioExecucao; }
-
     public LocalDateTime getDataFimExecucao() { return dataFimExecucao; }
     public void setDataFimExecucao(LocalDateTime dataFimExecucao) { this.dataFimExecucao = dataFimExecucao; }
-
     public LocalDateTime getDtEncerramentoOs() { return dtEncerramentoOs; }
     public void setDtEncerramentoOs(LocalDateTime dtEncerramentoOs) { this.dtEncerramentoOs = dtEncerramentoOs; }
-
     public LocalDateTime getDtReagendamentoOs() { return dtReagendamentoOs; }
     public void setDtReagendamentoOs(LocalDateTime dtReagendamentoOs) { this.dtReagendamentoOs = dtReagendamentoOs; }
-
     public StatusPagamento getStPagamento() { return stPagamento; }
     public void setStPagamento(StatusPagamento stPagamento) { this.stPagamento = stPagamento; }
-
     public String getDsMotivoCancelamento() { return dsMotivoCancelamento; }
     public void setDsMotivoCancelamento(String dsMotivoCancelamento) { this.dsMotivoCancelamento = dsMotivoCancelamento; }
-
     public BigDecimal getTaxaPermanencia() { return taxaPermanencia; }
     public void setTaxaPermanencia(BigDecimal taxaPermanencia) { this.taxaPermanencia = taxaPermanencia; }
-
     public UUID getIdCliente() { return idCliente; }
     public void setIdCliente(UUID idCliente) { this.idCliente = idCliente; }
-
     public UUID getIdVeiculo() { return idVeiculo; }
     public void setIdVeiculo(UUID idVeiculo) { this.idVeiculo = idVeiculo; }
-
     public UUID getIdFuncionario() { return idFuncionario; }
     public void setIdFuncionario(UUID idFuncionario) { this.idFuncionario = idFuncionario; }
-
     public List<Orcamento> getIdsOrcamento() { return idsOrcamento; }
     public void setIdsOrcamento(List<Orcamento> idsOrcamento) { this.idsOrcamento = idsOrcamento; }
-
     public List<OsServico> getServicosExecucao() { return servicosExecucao; }
     public void setServicosExecucao(List<OsServico> servicosExecucao) { this.servicosExecucao = servicosExecucao; }
 }

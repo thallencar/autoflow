@@ -6,9 +6,7 @@ import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusReservaEstoque;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
 import br.com.autoflow.domain.exception.RegraNegocioException;
-import br.com.autoflow.domain.model.Estoque;
-import br.com.autoflow.domain.model.Orcamento;
-import br.com.autoflow.domain.model.OrdemServico;
+import br.com.autoflow.domain.model.*;
 import br.com.autoflow.ports.inbound.orcamento.*;
 import br.com.autoflow.ports.outbound.EstoqueRepositoryPort;
 import br.com.autoflow.ports.outbound.OrcamentoRepositoryPort;
@@ -44,8 +42,26 @@ public class OrcamentoUseCaseImpl implements
         OrdemServico ordemServico = ordemServicoRepositoryPort.findById(idOs)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", idOs));
 
+        // Força o ID do orçamento como null para garantir INSERT
+        orcamento.setId(null);
         orcamento.setOrdemServico(ordemServico);
-        vincularServicosEItens(orcamento);
+
+        if (orcamento.getServicos() != null) {
+            for (OrcamentoServico servico : orcamento.getServicos()) {
+                // Força o ID do serviço como null (evita que arraste IDs antigos do front)
+             //   servico.setId(null);
+                servico.associarOrcamento(orcamento);
+
+                if (servico.getItens() != null) {
+                    for (OrcamentoItem item : servico.getItens()) {
+                        // FORÇA O ID DO ITEM COMO NULL AQUI!
+                        // É isto que está a causar o erro com o ID 'a5fd2b5a-...'
+                        item.setId(null);
+                        item.alterarStatusReserva(StatusReservaEstoque.RESERVADO);
+                    }
+                }
+            }
+        }
 
         orcamentoValidator.validarCriacao(idOs, orcamento);
 
@@ -54,7 +70,16 @@ public class OrcamentoUseCaseImpl implements
 
         processarRegraTipoOrcamento(orcamento, ordemServico);
 
-        return orcamentoRepositoryPort.save(orcamento);
+        Orcamento orcamentoSalvo = orcamentoRepositoryPort.save(orcamento);
+
+        if (ordemServico.getIdsOrcamento() == null) {
+            ordemServico.setIdsOrcamento(new ArrayList<>());
+        }
+        ordemServico.getIdsOrcamento().add(orcamentoSalvo);
+
+        ordemServicoRepositoryPort.save(ordemServico);
+
+        return orcamentoSalvo;
     }
 
     @Override
@@ -62,16 +87,19 @@ public class OrcamentoUseCaseImpl implements
     public Orcamento atualizarStatus(UUID id, StatusOrcamento novoStatus) {
         Orcamento orcamento = buscarPorId(id);
 
+        if (orcamento.getDataExpiracao() != null && LocalDateTime.now(ZoneId.systemDefault()).isAfter(orcamento.getDataExpiracao())) {
+            if (orcamento.getStatus() == StatusOrcamento.PENDENTE) {
+                orcamento.expirar();
+                orcamentoExpiradoUseCase.salvarOrcamentoExpirado(orcamento);
+            }
+            throw new RegraNegocioException("Não foi possível alterar o status: Este orçamento está expirado.");
+        }
+
         if (orcamento.getStatus() != StatusOrcamento.PENDENTE) {
             throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
         }
-        orcamentoValidator.validarAtualizacaoStatus(novoStatus);
 
-        if (orcamento.getDataExpiracao() != null && LocalDateTime.now(ZoneId.systemDefault()).isAfter(orcamento.getDataExpiracao())) {
-            orcamento.expirar();
-            orcamentoExpiradoUseCase.salvarOrcamentoExpirado(orcamento);
-            throw new RegraNegocioException("Não foi possível alterar o status: Este orçamento está expirado.");
-        }
+        orcamentoValidator.validarAtualizacaoStatus(novoStatus);
 
         if (novoStatus == StatusOrcamento.APROVADO) {
             orcamentoValidator.validarEstoqueDisponivel(orcamento);
@@ -160,13 +188,14 @@ public class OrcamentoUseCaseImpl implements
     }
 
     private void vincularServicosEItens(Orcamento orcamento) {
+        // Substituído setOrcamento por associarOrcamento e setOrcamentoServico/setStatusReserva pelos métodos puros do domínio
         if (orcamento.getServicos() != null) {
             orcamento.getServicos().forEach(servico -> {
-                servico.setOrcamento(orcamento);
+                servico.associarOrcamento(orcamento);
                 if (servico.getItens() != null) {
                     servico.getItens().forEach(item -> {
-                        item.setOrcamentoServico(servico);
-                        item.setStatusReserva(StatusReservaEstoque.RESERVADO);
+                        item.associarOrcamentoServico(servico);
+                        item.alterarStatusReserva(StatusReservaEstoque.RESERVADO);
                     });
                 }
             });

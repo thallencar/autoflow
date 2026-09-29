@@ -271,7 +271,7 @@ class BusinessRulesModelTest {
                 new ArrayList<>()              // servicosExecucao
         );
 
-        os.prePersist();
+        os.inicializarDadosPadrao();
         assertEquals(BigDecimal.ZERO, os.getTaxaPermanencia());
 
         os.setDataInicioExecucao(LocalDateTime.now().minusMinutes(40));

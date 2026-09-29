@@ -1,7 +1,6 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.*;
-import br.com.autoflow.adapters.inbound.mapper.OrdemServicoMapper;
+import br.com.autoflow.adapters.outbound.persistence.mapper.OrdemServicoEntityMapper;
 import br.com.autoflow.application.validator.OrdemServicoValidator;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
@@ -40,7 +39,7 @@ class OrdemServicoUseCaseImplTest {
     private OrdemServicoRepositoryPort repository;
 
     @Mock
-    private OrdemServicoMapper mapper;
+    private OrdemServicoEntityMapper entityMapper;
 
     @Mock
     private OrdemServicoValidator validator;
@@ -48,11 +47,8 @@ class OrdemServicoUseCaseImplTest {
     @Mock
     private FuncionarioRepositoryPort funcionarioRepository;
 
-    @Mock
-    private OrcamentoUseCaseImpl orcamentoUseCaseImpl;
-
     @InjectMocks
-    private OrdemServicoUseCase service;
+    private OrdemServicoUseCaseImpl service;
 
     @Test
     @DisplayName("Deve listar todas as ordens de serviço de forma paginada")
@@ -60,17 +56,14 @@ class OrdemServicoUseCaseImplTest {
         Pageable pageable = Pageable.unpaged();
         OrdemServico os = new OrdemServico();
         Page<OrdemServico> pageOs = new PageImpl<>(List.of(os));
-        OrdemServicoResponse responseMock = mock(OrdemServicoResponse.class);
 
         when(repository.findAll(pageable)).thenReturn(pageOs);
-        when(mapper.toResponse(os)).thenReturn(responseMock);
 
-        Page<OrdemServicoResponse> resultado = service.listarTodas(pageable);
+        Page<OrdemServico> resultado = service.listarTodas(pageable);
 
         assertNotNull(resultado);
         assertEquals(1, resultado.getTotalElements());
         verify(repository).findAll(pageable);
-        verify(mapper).toResponse(os);
     }
 
     @Test
@@ -78,15 +71,13 @@ class OrdemServicoUseCaseImplTest {
     void deveBuscarPorIdComSucesso() {
         UUID id = UUID.randomUUID();
         OrdemServico os = new OrdemServico();
-        OrdemServicoResponse responseEsperado = mock(OrdemServicoResponse.class);
 
         when(repository.findById(id)).thenReturn(Optional.of(os));
-        when(mapper.toResponse(os)).thenReturn(responseEsperado);
 
-        OrdemServicoResponse resultado = service.buscarPorId(id);
+        OrdemServico resultado = service.buscarPorId(id);
 
         assertNotNull(resultado);
-        assertEquals(responseEsperado, resultado);
+        assertEquals(os, resultado);
     }
 
     @Test
@@ -101,21 +92,17 @@ class OrdemServicoUseCaseImplTest {
     @Test
     @DisplayName("Deve criar Ordem de Serviço com sucesso")
     void deveCriarOrdemServico() {
-        OrdemServicoRequest request = mock(OrdemServicoRequest.class);
         OrdemServico os = new OrdemServico();
-        OrdemServicoResponse responseEsperado = mock(OrdemServicoResponse.class);
 
         List<StatusOS> statusIgnorados = List.of(StatusOS.ENTREGUE, StatusOS.CANCELADA);
         when(repository.countByStatusOSNotIn(statusIgnorados)).thenReturn(1L);
-        doNothing().when(validator).validarCriacao(request, true, 1L);
-        when(mapper.toDomain(request)).thenReturn(os);
+        doNothing().when(validator).validarCriacao(os, true, 1L);
         when(repository.save(os)).thenReturn(os);
-        when(mapper.toResponse(os)).thenReturn(responseEsperado);
 
-        OrdemServicoResponse resultado = service.criar(request, true);
+        OrdemServico resultado = service.criar(os, true);
 
         assertNotNull(resultado);
-        verify(validator).validarCriacao(request, true, 1L);
+        verify(validator).validarCriacao(os, true, 1L);
     }
 
     @Test
@@ -123,38 +110,35 @@ class OrdemServicoUseCaseImplTest {
     void deveAtualizarOrdemServico() {
         UUID id = UUID.randomUUID();
         UUID clienteId = UUID.randomUUID();
-        List<UUID> idsOrcamentoList = List.of(UUID.randomUUID());
 
-        OrdemServicoRequest request = mock(OrdemServicoRequest.class);
+        OrdemServico osExistente = new OrdemServico();
+        osExistente.setIdOs(id);
 
-        when(request.idCliente()).thenReturn(clienteId);
-        when(request.idsOrcamento()).thenReturn(idsOrcamentoList);
+        OrdemServico osAtualizada = new OrdemServico();
+        osAtualizada.setIdCliente(clienteId);
+        osAtualizada.setIdsOrcamento(List.of());
 
-        OrdemServico os = new OrdemServico();
-        OrdemServicoResponse responseEsperado = mock(OrdemServicoResponse.class);
-
-        when(repository.findById(id)).thenReturn(Optional.of(os));
+        when(repository.findById(id)).thenReturn(Optional.of(osExistente));
         doNothing().when(validator).validarCliente(clienteId);
-        doNothing().when(validator).validarOrcamentosParaOS(idsOrcamentoList);
-        doNothing().when(mapper).updateDomainFromRequest(os, request);
-        when(repository.save(os)).thenReturn(os);
-        when(mapper.toResponse(os)).thenReturn(responseEsperado);
+        doNothing().when(validator).validarOrcamentosParaOS(anyList());
+        doNothing().when(validator).validarAlteracaoMecanico(any(), eq(id));
+        when(repository.save(osExistente)).thenReturn(osExistente);
 
-        OrdemServicoResponse resultado = service.atualizar(id, request);
+        OrdemServico resultado = service.atualizar(id, osAtualizada);
 
         assertNotNull(resultado);
         verify(validator).validarCliente(clienteId);
-        verify(validator).validarOrcamentosParaOS(idsOrcamentoList);
+        verify(validator).validarOrcamentosParaOS(anyList());
     }
 
     @Test
     @DisplayName("Deve lançar exceção ao atualizar OS inexistente")
     void deveLancarExcecaoAtualizarOsInexistente() {
         UUID id = UUID.randomUUID();
-        OrdemServicoRequest request = mock(OrdemServicoRequest.class);
+        OrdemServico os = new OrdemServico();
         when(repository.findById(id)).thenReturn(Optional.empty());
 
-        assertThrows(EntidadeNaoEncontradaException.class, () -> service.atualizar(id, request));
+        assertThrows(EntidadeNaoEncontradaException.class, () -> service.atualizar(id, os));
     }
 
     @Test
@@ -208,14 +192,11 @@ class OrdemServicoUseCaseImplTest {
     @DisplayName("Deve atualizar status para EM_EXECUCAO deduzindo itens de orçamentos pendentes")
     void deveAtualizarStatusParaEmExecucaoComOrcamentoPendente() {
         UUID idOs = UUID.randomUUID();
-        AtualizarStatusOSRequest request = new AtualizarStatusOSRequest(StatusOS.EM_EXECUCAO, "Executando");
 
-        // Instanciando o OrdemServico
         OrdemServico os = new OrdemServico();
         os.setIdOs(idOs);
         os.setStatusOS(StatusOS.AGUARDANDO_APROVACAO);
 
-        // Instanciando o Orcamento usando o construtor cheio (passando null nos campos opcionais para o teste)
         Orcamento orcamentoPendente = new Orcamento(
                 UUID.randomUUID(),
                 null,
@@ -233,13 +214,10 @@ class OrdemServicoUseCaseImplTest {
 
         os.setIdsOrcamento(List.of(orcamentoPendente));
 
-        OrdemServicoResponse responseMock = mock(OrdemServicoResponse.class);
-
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
         when(repository.save(os)).thenReturn(os);
-        when(mapper.toResponse(os)).thenReturn(responseMock);
 
-        service.atualizarStatus(idOs, request);
+        service.atualizarStatus(idOs, StatusOS.EM_EXECUCAO, "Executando");
 
         verify(repository).save(os);
     }
@@ -249,20 +227,16 @@ class OrdemServicoUseCaseImplTest {
     void deveAtualizarStatusParaEmDiagnosticoComMecanico() {
         UUID idOs = UUID.randomUUID();
         UUID idFuncionario = UUID.randomUUID();
-        AtualizarStatusOSRequest request = new AtualizarStatusOSRequest(StatusOS.EM_DIAGNOSTICO, "Diagnóstico feito");
 
         OrdemServico os = new OrdemServico();
         os.setIdOs(idOs);
         os.setStatusOS(StatusOS.RECEBIDA);
         os.setIdFuncionario(idFuncionario);
 
-        OrdemServicoResponse responseMock = mock(OrdemServicoResponse.class);
-
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
         when(repository.save(os)).thenReturn(os);
-        when(mapper.toResponse(os)).thenReturn(responseMock);
 
-        assertDoesNotThrow(() -> service.atualizarStatus(idOs, request));
+        assertDoesNotThrow(() -> service.atualizarStatus(idOs, StatusOS.EM_DIAGNOSTICO, "Diagnóstico feito"));
         verify(repository).save(os);
     }
 
@@ -270,7 +244,6 @@ class OrdemServicoUseCaseImplTest {
     @DisplayName("Deve lançar exceção se status exigir requisitos não preenchidos (ex: diagnóstico vazio)")
     void deveLancarExcecaoRequisitosStatus() {
         UUID idOs = UUID.randomUUID();
-        AtualizarStatusOSRequest request = new AtualizarStatusOSRequest(StatusOS.AGUARDANDO_APROVACAO, "");
 
         OrdemServico os = new OrdemServico();
         os.setIdOs(idOs);
@@ -278,10 +251,10 @@ class OrdemServicoUseCaseImplTest {
 
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
 
-        lenient().doThrow(new RegraNegocioException("Diagnóstico obrigatório"))
+        doThrow(new RegraNegocioException("Diagnóstico obrigatório"))
                 .when(validator).validarDiagnosticoPreenchido(anyString());
 
-        assertThrows(RegraNegocioException.class, () -> service.atualizarStatus(idOs, request));
+        assertThrows(RegraNegocioException.class, () -> service.atualizarStatus(idOs, StatusOS.AGUARDANDO_APROVACAO, ""));
     }
 
     @Test
@@ -289,7 +262,6 @@ class OrdemServicoUseCaseImplTest {
     void deveAtualizarStatusParaFinalizadaLiberandoMecanico() {
         UUID idOs = UUID.randomUUID();
         UUID idMec = UUID.randomUUID();
-        AtualizarStatusOSRequest request = new AtualizarStatusOSRequest(StatusOS.FINALIZADA, "Concluído");
 
         OrdemServico os = new OrdemServico();
         os.setIdOs(idOs);
@@ -297,15 +269,13 @@ class OrdemServicoUseCaseImplTest {
         os.setIdFuncionario(idMec);
 
         Funcionario mecanico = mock(Funcionario.class);
-        OrdemServicoResponse responseMock = mock(OrdemServicoResponse.class);
 
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
         when(funcionarioRepository.findById(idMec)).thenReturn(Optional.of(mecanico));
         when(funcionarioRepository.save(any(Funcionario.class))).thenReturn(mecanico);
         when(repository.save(os)).thenReturn(os);
-        when(mapper.toResponse(os)).thenReturn(responseMock);
 
-        service.atualizarStatus(idOs, request);
+        service.atualizarStatus(idOs, StatusOS.FINALIZADA, "Concluído");
 
         verify(mecanico).liberar();
         verify(funcionarioRepository).save(mecanico);
@@ -316,15 +286,13 @@ class OrdemServicoUseCaseImplTest {
     void deveObterMetricasPorOs() {
         UUID id = UUID.randomUUID();
         OrdemServico os = new OrdemServico();
-        MetricaOsResponse metricas = mock(MetricaOsResponse.class);
 
         when(repository.findById(id)).thenReturn(Optional.of(os));
-        when(mapper.toMetricaResponse(os)).thenReturn(metricas);
 
-        MetricaOsResponse resultado = service.obterMetricasPorOS(id);
+        OrdemServico resultado = service.obterMetricasPorOS(id);
 
         assertNotNull(resultado);
-        assertEquals(metricas, resultado);
+        assertEquals(os, resultado);
     }
 
     @Test
@@ -336,12 +304,10 @@ class OrdemServicoUseCaseImplTest {
 
         OrdemServico os = new OrdemServico();
         Page<OrdemServico> pageOs = new PageImpl<>(List.of(os));
-        MetricaOsResponse metrica = mock(MetricaOsResponse.class);
 
         when(repository.findMetricasComFiltro(inicio, fim, StatusOS.EM_EXECUCAO, pageable)).thenReturn(pageOs);
-        when(mapper.toMetricaResponse(os)).thenReturn(metrica);
 
-        Page<MetricaOsResponse> resultado = service.buscarMetricasComFiltro(inicio, fim, StatusOS.EM_EXECUCAO, pageable);
+        Page<OrdemServico> resultado = service.buscarMetricasComFiltro(inicio, fim, StatusOS.EM_EXECUCAO, pageable);
 
         assertNotNull(resultado);
         assertEquals(1, resultado.getTotalElements());
@@ -354,13 +320,11 @@ class OrdemServicoUseCaseImplTest {
         Pageable pageable = Pageable.unpaged();
         OrdemServico os = new OrdemServico();
         Page<OrdemServico> pageOs = new PageImpl<>(List.of(os));
-        HistoricoVeiculoResponse historico = mock(HistoricoVeiculoResponse.class);
 
         doNothing().when(validator).validarVeiculoExiste(idVeiculo);
         when(repository.findByIdVeiculoOrderByDtAberturaOsDesc(idVeiculo, pageable)).thenReturn(pageOs);
-        when(mapper.toHistoricoResponse(os)).thenReturn(historico);
 
-        Page<HistoricoVeiculoResponse> resultado = service.obterHistoricoPorVeiculo(idVeiculo, pageable);
+        Page<OrdemServico> resultado = service.obterHistoricoPorVeiculo(idVeiculo, pageable);
 
         assertNotNull(resultado);
         assertFalse(resultado.isEmpty());

@@ -41,9 +41,9 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepositoryPort
 
     @Override
     public OrdemServico save(OrdemServico ordemServico) {
-        OrdemServicoEntity entity = mapper.toEntity(ordemServico);
-        OrdemServicoEntity saved = springDataRepository.save(entity);
-        return mapper.toDomain(saved);
+        OrdemServicoEntity entity = mapper.toEntityComVinculo(ordemServico);
+        OrdemServicoEntity entitySalva = springDataRepository.save(entity);
+        return mapper.toDomain(entitySalva);
     }
 
     @Override
@@ -79,5 +79,15 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepositoryPort
     @Override
     public boolean existsByIdVeiculo(UUID idVeiculo) {
         return springDataRepository.existsByIdVeiculo(idVeiculo);
+    }
+
+    @Override
+    public void atualizarStatusDireto(UUID id, StatusOS status) {
+        springDataRepository.atualizarStatusDireto(id, status);
+    }
+
+    @Override
+    public void atualizarStatusECancelamento(UUID id, StatusOS status, LocalDateTime dataEncerramento, String motivo) {
+        springDataRepository.atualizarStatusECancelamento(id, status, dataEncerramento, motivo);
     }
 }

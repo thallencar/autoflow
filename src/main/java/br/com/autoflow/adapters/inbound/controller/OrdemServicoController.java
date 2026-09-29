@@ -1,8 +1,10 @@
 package br.com.autoflow.adapters.inbound.controller;
 
 import br.com.autoflow.adapters.inbound.controller.dto.*;
-import br.com.autoflow.application.usecase.OrdemServicoUseCase;
+import br.com.autoflow.adapters.inbound.mapper.OrdemServicoMapper;
 import br.com.autoflow.domain.enums.StatusOS;
+import br.com.autoflow.domain.model.OrdemServico;
+import br.com.autoflow.ports.inbound.ordemservico.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,23 +21,33 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrdemServicoController {
 
-    private final OrdemServicoUseCase ordemServicoUseCase;
+    private final CriarOrdemServicoUseCase criarOrdemServicoUseCase;
+    private final AtualizarOrdemServicoUseCase atualizarOrdemServicoUseCase;
+    private final AtualizarStatusOrdemServicoUseCase atualizarStatusOrdemServicoUseCase;
+    private final BuscarOrdemServicoPorIdUseCase buscarOrdemServicoPorIdUseCase;
+    private final DeletarOrdemServicoUseCase deletarOrdemServicoUseCase;
+    private final ListarOrdemServicoUseCase listarOrdemServicoUseCase;
+    private final OrdemServicoMapper ordemServicoMapper;
 
     @GetMapping
     public Page<OrdemServicoResponse> listarTodas(Pageable pageable) {
-        return ordemServicoUseCase.listarTodas(pageable);
+        Page<OrdemServico> dominioPage = listarOrdemServicoUseCase.listarTodas(pageable);
+        return dominioPage.map(ordemServicoMapper::toResponse);
     }
 
     @GetMapping("/{id}")
     public OrdemServicoResponse buscarPorId(@PathVariable UUID id) {
-        return ordemServicoUseCase.buscarPorId(id);
+        OrdemServico dominio = buscarOrdemServicoPorIdUseCase.buscarPorId(id);
+        return ordemServicoMapper.toResponse(dominio);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrdemServicoResponse criar(@RequestBody @Valid OrdemServicoRequest request,
                                       @RequestParam(defaultValue = "false") boolean agendamento) {
-        return ordemServicoUseCase.criar(request, agendamento);
+        OrdemServico ordemServicoDomain = ordemServicoMapper.toDomain(request);
+        OrdemServico salvoDomain = criarOrdemServicoUseCase.criar(ordemServicoDomain, agendamento);
+        return ordemServicoMapper.toResponse(salvoDomain);
     }
 
     @PutMapping("/{id}")
@@ -43,7 +55,9 @@ public class OrdemServicoController {
             @PathVariable UUID id,
             @RequestBody @Valid OrdemServicoRequest request
     ) {
-        return ordemServicoUseCase.atualizar(id, request);
+        OrdemServico ordemServicoDomain = ordemServicoMapper.toDomain(request);
+        OrdemServico atualizadoDomain = atualizarOrdemServicoUseCase.atualizar(id, ordemServicoDomain);
+        return ordemServicoMapper.toResponse(atualizadoDomain);
     }
 
     @PatchMapping("/{id}/status")
@@ -52,13 +66,19 @@ public class OrdemServicoController {
             @PathVariable UUID id,
             @RequestBody @Valid AtualizarStatusOSRequest request
     ) {
-        return ordemServicoUseCase.atualizarStatus(id, request);
+        OrdemServico atualizadoDomain = atualizarStatusOrdemServicoUseCase.atualizarStatus(
+                id,
+                request.status(),
+                request.observacao()
+        );
+        return ordemServicoMapper.toResponse(atualizadoDomain);
     }
 
     @GetMapping("/{idOs}/metricas")
     @ResponseStatus(HttpStatus.OK)
     public MetricaOsResponse obterMetricasPorOS(@PathVariable UUID idOs) {
-        return ordemServicoUseCase.obterMetricasPorOS(idOs);
+        OrdemServico dominio = listarOrdemServicoUseCase.obterMetricasPorOS(idOs);
+        return ordemServicoMapper.toMetricaResponse(dominio);
     }
 
     @GetMapping("/metricas")
@@ -68,7 +88,8 @@ public class OrdemServicoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim,
             @RequestParam(required = false) StatusOS status,
             Pageable pageable) {
-        return ordemServicoUseCase.buscarMetricasComFiltro(dataInicio, dataFim, status, pageable);
+        Page<OrdemServico> dominioPage = listarOrdemServicoUseCase.buscarMetricasComFiltro(dataInicio, dataFim, status, pageable);
+        return dominioPage.map(ordemServicoMapper::toMetricaResponse);
     }
 
     @PatchMapping("/{id}/pagamento")
@@ -77,7 +98,7 @@ public class OrdemServicoController {
             @PathVariable UUID id,
             @Valid @RequestBody AtualizarStatusPagamentoRequest request) {
 
-        ordemServicoUseCase.atualizarStatusPagamento(id, request.stPagamento());
+        atualizarStatusOrdemServicoUseCase.atualizarStatusPagamento(id, request.stPagamento());
     }
 
     @GetMapping("/filtro-status")
@@ -85,24 +106,26 @@ public class OrdemServicoController {
     public Page<OrdemServicoResponse> listarPorStatus(
             @RequestParam StatusOS status,
             Pageable pageable) {
-        return ordemServicoUseCase.listarPorStatus(status, pageable);
+        Page<OrdemServico> dominioPage = listarOrdemServicoUseCase.listarPorStatus(status, pageable);
+        return dominioPage.map(ordemServicoMapper::toResponse);
     }
 
     @GetMapping("/veiculo/{idVeiculo}/historico")
     @ResponseStatus(HttpStatus.OK)
     public Page<HistoricoVeiculoResponse> listarHistoricoPorVeiculo(@PathVariable UUID idVeiculo, Pageable pageable) {
-        return ordemServicoUseCase.obterHistoricoPorVeiculo(idVeiculo, pageable);
+        Page<OrdemServico> dominioPage = listarOrdemServicoUseCase.obterHistoricoPorVeiculo(idVeiculo, pageable);
+        return dominioPage.map(ordemServicoMapper::toHistoricoResponse);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletar(@PathVariable UUID id) {
-        ordemServicoUseCase.deletar(id);
+        deletarOrdemServicoUseCase.deletar(id);
     }
 
     @PostMapping("/processar-cancelamentos")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void forcarCancelamentoAutomatico() {
-        ordemServicoUseCase.processarCancelamentosAutomaticos();
+        atualizarStatusOrdemServicoUseCase.processarCancelamentosAutomaticos();
     }
 }

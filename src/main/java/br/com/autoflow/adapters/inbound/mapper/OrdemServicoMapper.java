@@ -34,6 +34,7 @@ public interface OrdemServicoMapper {
     @Mapping(target = "dtReagendamentoOs", ignore = true)
     @Mapping(target = "dsMotivoCancelamento", ignore = true)
     @Mapping(target = "idsOrcamento", ignore = true)
+    @Mapping(target = "servicosExecucao", ignore = true)
     OrdemServico toDomain(OrdemServicoRequest request);
 
     OrdemServicoResponse toResponse(OrdemServico os);
@@ -64,7 +65,8 @@ public interface OrdemServicoMapper {
     @Mapping(target = "dtEncerramentoOs", ignore = true)
     @Mapping(target = "dtReagendamentoOs", ignore = true)
     @Mapping(target = "dsMotivoCancelamento", ignore = true)
-    @Mapping(target = "idsOrcamento", ignore = true)
+    @Mapping(target = "idsOrcamento", ignore = true) // Tratado no Use Case ao atualizar
+    @Mapping(target = "servicosExecucao", ignore = true)
     void updateDomainFromRequest(@MappingTarget OrdemServico domain, OrdemServicoRequest request);
 
     default UUID map(Orcamento orcamento) {
