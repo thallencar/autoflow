@@ -3,6 +3,7 @@ package br.com.autoflow.application.usecase;
 import br.com.autoflow.application.validator.OrcamentoValidator;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
+import br.com.autoflow.domain.enums.StatusReservaEstoque;
 import br.com.autoflow.domain.enums.TipoOrcamento;
 import br.com.autoflow.domain.model.Estoque;
 import br.com.autoflow.domain.model.Orcamento;
@@ -21,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -81,7 +83,6 @@ class OrcamentoUseCaseImplTest {
     void deveCriarOrcamentoComplementarComSucesso() {
         UUID idOs = UUID.randomUUID();
         Orcamento orcamento = criarOrcamentoMock();
-        orcamento.setTipoOrcamento(TipoOrcamento.COMPLEMENTAR);
         OrdemServico ordemServico = new OrdemServico();
         ordemServico.setStatusOS(StatusOS.EM_EXECUCAO);
 
@@ -101,20 +102,21 @@ class OrcamentoUseCaseImplTest {
         UUID idOrcamento = UUID.randomUUID();
         StatusOrcamento novoStatus = StatusOrcamento.APROVADO;
 
-        Orcamento orcamento = criarOrcamentoMock();
+        UUID idEstoque = UUID.randomUUID();
+
+        OrcamentoItem item = new OrcamentoItem(
+                UUID.randomUUID(), StatusReservaEstoque.VENDIDO, 5, BigDecimal.valueOf(3.00), idEstoque
+        );
+
+        OrcamentoServico orcamentoServico = new OrcamentoServico(
+                UUID.randomUUID(), BigDecimal.valueOf(50.00), null, List.of(item)
+        );
+
+        Orcamento orcamento = new Orcamento();
+        orcamento.setId(idOrcamento);
         orcamento.setStatus(StatusOrcamento.PENDENTE);
         orcamento.setDataExpiracao(LocalDateTime.now().plusDays(1));
-
-        UUID idEstoque = UUID.randomUUID();
-        OrcamentoItem item = new OrcamentoItem(
-                UUID.randomUUID(), null, 5, null, null, idEstoque, null, null
-        );
-
-        OrcamentoServico servico = new OrcamentoServico(
-                UUID.randomUUID(), null, null, List.of(item), null
-        );
-
-        orcamento.setServicos(List.of(servico));
+        orcamento.setServicos(List.of(orcamentoServico)); // <--- ISTO FAZ O USECASE/DOMÍNIO ACHAR OS ITENS
 
         Estoque estoque = new Estoque(
                 idEstoque, "Óleo", null, null, 10, null, null
@@ -123,13 +125,16 @@ class OrcamentoUseCaseImplTest {
         when(orcamentoRepository.findById(idOrcamento)).thenReturn(Optional.of(orcamento));
         doNothing().when(orcamentoValidator).validarAtualizacaoStatus(novoStatus);
         doNothing().when(orcamentoValidator).validarEstoqueDisponivel(orcamento);
-        when(estoqueRepository.findById(item.getIdEstoque())).thenReturn(Optional.of(estoque));
+        when(estoqueRepository.findById(idEstoque)).thenReturn(Optional.of(estoque));
         when(orcamentoRepository.save(any(Orcamento.class))).thenReturn(orcamento);
 
+        // Ação
         Orcamento resultado = orcamentoService.atualizarStatus(idOrcamento, novoStatus);
 
+        // Asserções
         assertNotNull(resultado);
         assertEquals(StatusOrcamento.APROVADO, orcamento.getStatus());
+
         verify(estoqueRepository, times(1)).save(estoque);
     }
 

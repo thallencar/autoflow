@@ -27,6 +27,8 @@ public class Orcamento {
     private List<OrcamentoServico> servicos;
     private List<OrcamentoItem> itens;
 
+    public Orcamento() {    }
+
     public Orcamento(UUID id, TipoOrcamento tipoOrcamento, StatusOrcamento status,
                      LocalDateTime dataCriacao, LocalDateTime dataExpiracao, LocalDateTime dataDecisao,
                      BigDecimal subtotalPecas, BigDecimal maoObra, BigDecimal total,
@@ -131,9 +133,36 @@ public class Orcamento {
 
     public void setOrdemServico(OrdemServico ordemServico) {this.ordemServico = ordemServico;}
 
+    public void setTipoOrcamento(TipoOrcamento tipoOrcamento) {
+        this.tipoOrcamento = tipoOrcamento;
+    }
+
     public void setId(UUID id) { this.id = id; }
     public void setDataExpiracao(LocalDateTime dataExpiracao) { this.dataExpiracao = dataExpiracao; }
     public void setStatus(StatusOrcamento status) { this.status = status; }
     public void setDataCriacao(LocalDateTime dataCriacao) { this.dataCriacao = dataCriacao; }
     public void setDataDecisao(LocalDateTime dataDecisao) { this.dataDecisao = dataDecisao; }
+
+    public void setServicos(List<OrcamentoServico> servicos) {
+        this.servicos = servicos != null ? servicos : new ArrayList<>();
+        vincularFilhos();
+        recalcularTotais();
+    }
+
+    public void setItens(List<OrcamentoItem> itens) {
+        this.itens = itens != null ? itens : new ArrayList<>();
+        recalcularTotais();
+    }
+
+    public void setTotal(BigDecimal total) {
+        this.total = total;
+    }
+
+    public void setMaoObra(BigDecimal maoObra) {
+        this.maoObra = maoObra;
+    }
+
+    public void setSubtotalPecas(BigDecimal subtotalPecas) {
+        this.subtotalPecas = subtotalPecas;
+    }
 }

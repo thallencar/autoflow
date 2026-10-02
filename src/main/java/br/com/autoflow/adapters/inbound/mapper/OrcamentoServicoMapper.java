@@ -3,6 +3,7 @@ package br.com.autoflow.adapters.inbound.mapper;
 import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoServicoRequest;
 import br.com.autoflow.adapters.inbound.controller.dto.OrcamentoServicoResponse;
 import br.com.autoflow.domain.model.OrcamentoServico;
+import br.com.autoflow.domain.model.Servico;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

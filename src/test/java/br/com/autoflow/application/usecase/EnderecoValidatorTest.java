@@ -1,8 +1,8 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.EnderecoRequest;
 import br.com.autoflow.application.validator.EnderecoValidator;
 import br.com.autoflow.domain.exception.RegraNegocioException;
+import br.com.autoflow.domain.model.Endereco;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,6 +11,8 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -21,9 +23,16 @@ class EnderecoValidatorTest {
     @InjectMocks
     private EnderecoValidator validator;
 
-    private EnderecoRequest criarRequestComUf(String uf) {
-        return new EnderecoRequest(
-                "Rua Principal", uf, "Novo Hamburgo", "Centro", "100", 93520000, "Apto 101"
+    private Endereco criarEnderecoComUf(String uf) {
+        return new Endereco(
+                UUID.randomUUID(),
+                "93520-000",
+                uf,
+                "Novo Hamburgo",
+                "Centro",
+                "Rua Principal",
+                100,
+                "Apto 101"
         );
     }
 
@@ -35,27 +44,27 @@ class EnderecoValidatorTest {
         @ValueSource(strings = {"RS", "SC", "PR", "SP", "RJ", "MG", "DF", "AC"})
         @DisplayName("Deve passar na validação quando a UF for válida")
         void deveValidarUfComSucesso(String ufValida) {
-            EnderecoRequest request = criarRequestComUf(ufValida);
+            Endereco endereco = criarEnderecoComUf(ufValida);
 
-            assertDoesNotThrow(() -> validator.validarUf(request));
+            assertDoesNotThrow(() -> validator.validarUf(endereco));
         }
 
         @ParameterizedTest
         @ValueSource(strings = {"XX", "INVALIDA", "RSA", "USA"})
         @DisplayName("Deve lançar exceção quando a UF for inválida")
         void deveFalharQuandoUfInvalida(String ufInvalida) {
-            EnderecoRequest request = criarRequestComUf(ufInvalida);
+            Endereco endereco = criarEnderecoComUf(ufInvalida);
 
-            assertThrows(RegraNegocioException.class, () -> validator.validarUf(request));
+            assertThrows(RegraNegocioException.class, () -> validator.validarUf(endereco));
         }
 
         @ParameterizedTest
         @NullAndEmptySource
         @DisplayName("Deve lançar exceção quando a UF for nula ou vazia")
         void deveFalharQuandoUfNulaOuVazia(String ufVazia) {
-            EnderecoRequest request = criarRequestComUf(ufVazia);
+            Endereco endereco = criarEnderecoComUf(ufVazia);
 
-            assertThrows(RegraNegocioException.class, () -> validator.validarUf(request));
+            assertThrows(RegraNegocioException.class, () -> validator.validarUf(endereco));
         }
     }
 }

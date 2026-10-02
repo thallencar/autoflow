@@ -58,4 +58,9 @@ public class OrcamentoServico {
     public void setServico(Servico servico) {
         this.servico = servico;
     }
+
+    public void setOrcamento(Orcamento orcamento) {
+        this.orcamento = orcamento;
+    }
+
 }

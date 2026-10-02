@@ -1,6 +1,5 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.outbound.persistence.entity.OrdemServicoEntity;
 import br.com.autoflow.adapters.outbound.persistence.mapper.OrdemServicoEntityMapper;
 import br.com.autoflow.application.validator.OrdemServicoValidator;
 import br.com.autoflow.domain.enums.StatusOS;
@@ -8,7 +7,6 @@ import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusPagamento;
 import br.com.autoflow.domain.model.Funcionario;
 import br.com.autoflow.domain.model.Orcamento;
-import br.com.autoflow.domain.model.OrdemHistoricoDomain;
 import br.com.autoflow.domain.model.OrdemServico;
 import br.com.autoflow.ports.inbound.ordemservico.*;
 import br.com.autoflow.ports.outbound.FuncionarioRepositoryPort;
@@ -43,9 +41,14 @@ public class OrdemServicoUseCaseImpl implements AtualizarOrdemServicoUseCase,
     private static final String NOME_ENTIDADE = "Ordem de Serviço";
 
     private final OrdemServicoRepositoryPort repository;
-    private final OrdemServicoEntityMapper entityMapper;
     private final OrdemServicoValidator validator;
     private final FuncionarioRepositoryPort funcionarioRepository;
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrdemServico> listarOsAtivas(Pageable pageable) {
+        return repository.findByStatusOSNotIn(pageable);
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -72,7 +75,6 @@ public class OrdemServicoUseCaseImpl implements AtualizarOrdemServicoUseCase,
         List<StatusOS> statusIgnoradosNoPatio = List.of(StatusOS.ENTREGUE, StatusOS.CANCELADA);
         Long carrosNoPatio = repository.countByStatusOSNotIn(statusIgnoradosNoPatio);
 
-        // Ajustado para chamar o método correto existente no validador
         validator.validarCriacao(ordemServico, possuiAgendamento, carrosNoPatio);
         ocuparMecanicoSeNecessario(ordemServico.getIdFuncionario());
 
@@ -133,7 +135,7 @@ public class OrdemServicoUseCaseImpl implements AtualizarOrdemServicoUseCase,
 
         validarRequisitosStatus(novoStatus, observacao, os);
         processarEstoqueSeNecessario(os, novoStatus);
-        os.atualizarStatus(novoStatus, observacao); // Executa as regras no domínio[cite: 2]
+        os.atualizarStatus(novoStatus, observacao);
 
         liberarMecanicoSeFinalizada(os, novoStatus);
 

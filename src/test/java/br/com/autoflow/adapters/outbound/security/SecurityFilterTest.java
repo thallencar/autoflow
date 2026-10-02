@@ -63,7 +63,6 @@ class SecurityFilterTest {
         String token = "jwt_token_valido";
         String login = "carlos@gmail.com";
 
-        // Se Usuario implementa UserDetails, podemos usar um mock de Usuario
         Usuario usuarioMock = mock(Usuario.class);
 
         when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
@@ -76,7 +75,9 @@ class SecurityFilterTest {
         // Assert
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         assertNotNull(authentication);
-        assertEquals(usuarioMock, authentication.getPrincipal());
+        assertInstanceOf(UserDetailsImpl.class, authentication.getPrincipal());
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
         verify(tokenService).validarToken(token);
         verify(usuarioRepository).findByLogin(login);

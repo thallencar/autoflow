@@ -25,7 +25,6 @@ public class OrcamentoValidator {
 
     private final OrdemServicoRepositoryPort ordemServicoRepositoryPort;
     private final EstoqueRepositoryPort estoqueRepositoryPort;
-    private final ServicoValidator servicoValidator;
     private final OrcamentoRepositoryPort orcamentoRepositoryPort;
 
     public void validarCriacao(UUID idOs, Orcamento orcamento) {

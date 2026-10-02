@@ -4,6 +4,7 @@ import br.com.autoflow.application.validator.OrcamentoValidator;
 import br.com.autoflow.application.validator.ServicoValidator;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
+import br.com.autoflow.domain.enums.StatusReservaEstoque;
 import br.com.autoflow.domain.enums.TipoItemEstoque;
 import br.com.autoflow.domain.enums.TipoOrcamento;
 import br.com.autoflow.domain.exception.EntidadeNaoEncontradaException;
@@ -47,7 +48,6 @@ class OrcamentoValidatorTest {
     @InjectMocks
     private OrcamentoValidator validator;
 
-    // --- TESTES DE CRIAÇÃO (Fluxo Principal e Tipos de Orçamento) ---
 
     @Test
     @DisplayName("Deve validar a criação de um orçamento INICIAL com sucesso")
@@ -57,13 +57,13 @@ class OrcamentoValidatorTest {
         UUID idEstoque = UUID.randomUUID();
 
         OrcamentoItem item = new OrcamentoItem(
-                UUID.randomUUID(), null, 2, BigDecimal.valueOf(50.00), BigDecimal.valueOf(100.00), idEstoque, null, null
+                UUID.randomUUID(), StatusReservaEstoque.RESERVADO, 2, BigDecimal.valueOf(50.00), idEstoque
         );
 
         Servico servicoModel = new Servico(idServico, "Servico Exemplo", BigDecimal.valueOf(150.00), 60);
 
         OrcamentoServico servico = new OrcamentoServico(
-                UUID.randomUUID(), BigDecimal.valueOf(150.00), servicoModel, List.of(item), null
+                UUID.randomUUID(), BigDecimal.valueOf(150.00), servicoModel, List.of(item)
         );
 
         Orcamento orcamento = new Orcamento(
@@ -76,13 +76,8 @@ class OrcamentoValidatorTest {
         OrdemServico os = new OrdemServico();
         os.setStatusOS(StatusOS.EM_EXECUCAO);
 
-        Estoque estoque = new Estoque(
-                idEstoque, "Filtro de Óleo", "Marca", BigDecimal.valueOf(50.00), 10, 2, TipoItemEstoque.PECA
-        );
-
         when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
         when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(Collections.emptyList());
-        when(estoqueRepository.findById(idEstoque)).thenReturn(Optional.of(estoque));
 
         assertDoesNotThrow(() -> validator.validarCriacao(idOs, orcamento));
     }
@@ -164,15 +159,20 @@ class OrcamentoValidatorTest {
     void deveValidarCriacaoOrcamentoComplementarComSucesso() {
         UUID idOs = UUID.randomUUID();
         UUID idServicoNovo = UUID.randomUUID();
+        UUID idEstoque = UUID.randomUUID();
+
+        OrcamentoItem item = new OrcamentoItem(
+                UUID.randomUUID(), StatusReservaEstoque.RESERVADO, 1, BigDecimal.valueOf(50.00), idEstoque
+        );
 
         Servico servicoModel = new Servico(idServicoNovo, "Servico Novo", BigDecimal.valueOf(100.00), 30);
-        OrcamentoServico servicoReq = new OrcamentoServico(UUID.randomUUID(), BigDecimal.valueOf(100.00), servicoModel, Collections.emptyList(), null);
+        OrcamentoServico servicoReq = new OrcamentoServico(UUID.randomUUID(), BigDecimal.valueOf(100.00), servicoModel, List.of(item));
 
         Orcamento orcamento = new Orcamento(
                 null, TipoOrcamento.COMPLEMENTAR, StatusOrcamento.PENDENTE,
                 LocalDateTime.now(), null, null,
-                BigDecimal.ZERO, BigDecimal.valueOf(100.00), BigDecimal.valueOf(100.00),
-                null, List.of(servicoReq), Collections.emptyList()
+                BigDecimal.valueOf(50.00), BigDecimal.valueOf(100.00), BigDecimal.valueOf(150.00),
+                null, List.of(servicoReq), List.of(item)
         );
 
         OrdemServico os = new OrdemServico();
@@ -234,11 +234,11 @@ class OrcamentoValidatorTest {
         UUID idEstoque = UUID.randomUUID();
 
         OrcamentoItem item = new OrcamentoItem(
-                UUID.randomUUID(), null, 15, BigDecimal.valueOf(10.00), BigDecimal.valueOf(150.00), idEstoque, null, null
+                UUID.randomUUID(), StatusReservaEstoque.RESERVADO, 15, BigDecimal.valueOf(10.00), idEstoque
         );
 
         OrcamentoServico servico = new OrcamentoServico(
-                UUID.randomUUID(), BigDecimal.valueOf(100.00), new Servico(UUID.randomUUID(), "Servico", BigDecimal.valueOf(100), 30), List.of(item), null
+                UUID.randomUUID(), BigDecimal.valueOf(100.00), new Servico(UUID.randomUUID(), "Servico", BigDecimal.valueOf(100), 30), List.of(item)
         );
 
         Orcamento orcamento = new Orcamento(
@@ -263,11 +263,11 @@ class OrcamentoValidatorTest {
         UUID idEstoque = UUID.randomUUID();
 
         OrcamentoItem item = new OrcamentoItem(
-                UUID.randomUUID(), null, 2, BigDecimal.valueOf(10.00), BigDecimal.valueOf(20.00), idEstoque, null, null
+                UUID.randomUUID(), StatusReservaEstoque.RESERVADO, 2, BigDecimal.valueOf(10.00), idEstoque
         );
 
         OrcamentoServico servico = new OrcamentoServico(
-                UUID.randomUUID(), BigDecimal.valueOf(50.00), null, List.of(item), null
+                UUID.randomUUID(), BigDecimal.valueOf(50.00), null, List.of(item)
         );
 
         Orcamento orcamento = new Orcamento(

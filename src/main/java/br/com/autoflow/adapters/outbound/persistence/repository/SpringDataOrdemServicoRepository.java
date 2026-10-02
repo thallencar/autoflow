@@ -5,7 +5,6 @@ import br.com.autoflow.domain.enums.StatusOS;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -16,22 +15,40 @@ import java.util.UUID;
 
 public interface SpringDataOrdemServicoRepository extends JpaRepository<OrdemServicoEntity, UUID> {
     Page<OrdemServicoEntity> findByStatusOS(StatusOS status, Pageable pageable);
+
     Long countByStatusOSNotIn(List<StatusOS> status);
+
     boolean existsByIdVeiculoAndStatusOSNotIn(UUID idVeiculo, List<StatusOS> status);
+
     Optional<OrdemServicoEntity> findTopByIdVeiculoOrderByDtAberturaOsDesc(UUID idVeiculo);
+
     Page<OrdemServicoEntity> findByIdVeiculoOrderByDtAberturaOsDesc(UUID idVeiculo, Pageable pageable);
+
     boolean existsByIdVeiculo(UUID idVeiculo);
-    @Query("SELECT o FROM OrdemServicoEntity o WHERE (:status IS NULL OR o.statusOS = :status) AND (:dataInicio IS NULL OR o.dtAberturaOs >= :dataInicio) AND (:dataFim IS NULL OR o.dtAberturaOs <= :dataFim)")
-    Page<OrdemServicoEntity> findMetricasComFiltro(@Param("dataInicio") LocalDateTime dataInicio, @Param("dataFim") LocalDateTime dataFim, @Param("status") StatusOS status, Pageable pageable);
-    @Modifying
-    @Query("UPDATE OrdemServicoEntity o SET o.statusOS = :status WHERE o.idOs = :id")
-    void atualizarStatusDireto(@Param("id") UUID id, @Param("status") StatusOS status);
-    @Modifying
-    @Query("UPDATE OrdemServicoEntity o SET o.statusOS = :status, o.dtEncerramentoOs = :dataEncerramento, o.dsMotivoCancelamento = :motivo WHERE o.idOs = :id")
-    void atualizarStatusECancelamento(
-            @Param("id") UUID id,
+
+    @Query("SELECT o FROM OrdemServicoEntity o WHERE " +
+            "(:status IS NULL OR o.statusOS = :status) AND " +
+            "(cast(:inicio as timestamp) IS NULL OR o.dtAberturaOs >= :inicio) AND " +
+            "(cast(:fim as timestamp) IS NULL OR o.dtAberturaOs <= :fim)")
+    Page<OrdemServicoEntity> findMetricasComFiltro(
+            @Param("inicio") LocalDateTime inicio,
+            @Param("fim") LocalDateTime fim,
             @Param("status") StatusOS status,
-            @Param("dataEncerramento") LocalDateTime dataEncerramento,
-            @Param("motivo") String motivo
+            Pageable pageable
+    );
+
+    @Query("SELECT o FROM OrdemServicoEntity o WHERE o.statusOS NOT IN :statusExcluidos " +
+            "ORDER BY " +
+            "CASE o.statusOS " +
+            "  WHEN 'EM_EXECUCAO' THEN 1 " +
+            "  WHEN 'AGUARDANDO_APROVACAO' THEN 2 " +
+            "  WHEN 'ORCAMENTO_APROVADO' THEN 3 " +
+            "  WHEN 'EM_DIAGNOSTICO' THEN 4 " +
+            "  WHEN 'RECEBIDA' THEN 5 " +
+            "  ELSE 6 END ASC, " +
+            "o.dtAberturaOs ASC")
+    Page<OrdemServicoEntity> findByStatusOSNotIn(
+            @Param("statusExcluidos") List<StatusOS> statusExcluidos,
+            Pageable pageable
     );
 }

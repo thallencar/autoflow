@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface OrdemServicoRepositoryPort {
+    Page<OrdemServico> findByStatusOSNotIn(Pageable pageable);
     Page<OrdemServico> findAll(Pageable pageable);
     Page<OrdemServico> findByStatusOS(StatusOS status, Pageable pageable);
     Optional<OrdemServico> findById(UUID id);
@@ -22,6 +23,4 @@ public interface OrdemServicoRepositoryPort {
     Page<OrdemServico> findByIdVeiculoOrderByDtAberturaOsDesc(UUID idVeiculo, Pageable pageable);
     Page<OrdemServico> findMetricasComFiltro(LocalDateTime dataInicio, LocalDateTime dataFim, StatusOS status, Pageable pageable);
     boolean existsByIdVeiculo(UUID idVeiculo);
-    void atualizarStatusDireto(UUID id, StatusOS status);
-    void atualizarStatusECancelamento(UUID id, StatusOS status, LocalDateTime dataEncerramento, String motivo);
 }

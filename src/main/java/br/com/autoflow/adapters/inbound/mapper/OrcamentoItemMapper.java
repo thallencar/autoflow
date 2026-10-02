@@ -12,7 +12,7 @@ public interface OrcamentoItemMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "valorTotal", ignore = true)
-    @Mapping(target = "statusReserva", ignore = true) // Definido por regra de negócio no domínio
+    @Mapping(target = "statusReserva", ignore = true)
     @Mapping(target = "orcamentoServico", ignore = true)
     @Mapping(target = "orcamento", ignore = true)
     OrcamentoItem toDomain(OrcamentoItemRequest request);

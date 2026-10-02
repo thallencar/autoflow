@@ -29,7 +29,13 @@ public class OrdemServicoController {
     private final ListarOrdemServicoUseCase listarOrdemServicoUseCase;
     private final OrdemServicoMapper ordemServicoMapper;
 
-    @GetMapping
+    @GetMapping("/ativas")
+    public Page<OrdemServicoResponse> listarOsAtivas(Pageable pageable) {
+        Page<OrdemServico> dominioPage = listarOrdemServicoUseCase.listarOsAtivas(pageable);
+        return dominioPage.map(ordemServicoMapper::toResponse);
+    }
+
+    @GetMapping("/todas")
     public Page<OrdemServicoResponse> listarTodas(Pageable pageable) {
         Page<OrdemServico> dominioPage = listarOrdemServicoUseCase.listarTodas(pageable);
         return dominioPage.map(ordemServicoMapper::toResponse);

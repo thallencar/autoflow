@@ -57,13 +57,13 @@ class OrdemServicoUseCaseImplTest {
         OrdemServico os = new OrdemServico();
         Page<OrdemServico> pageOs = new PageImpl<>(List.of(os));
 
-        when(repository.findAll(pageable)).thenReturn(pageOs);
+        when(repository.findByStatusOSNotIn(pageable)).thenReturn(pageOs);
 
         Page<OrdemServico> resultado = service.listarTodas(pageable);
 
         assertNotNull(resultado);
         assertEquals(1, resultado.getTotalElements());
-        verify(repository).findAll(pageable);
+        verify(repository).findByStatusOSNotIn(pageable);
     }
 
     @Test
@@ -251,7 +251,7 @@ class OrdemServicoUseCaseImplTest {
 
         when(repository.findById(idOs)).thenReturn(Optional.of(os));
 
-        doThrow(new RegraNegocioException("Diagnóstico obrigatório"))
+        lenient().doThrow(new RegraNegocioException("Diagnóstico obrigatório"))
                 .when(validator).validarDiagnosticoPreenchido(anyString());
 
         assertThrows(RegraNegocioException.class, () -> service.atualizarStatus(idOs, StatusOS.AGUARDANDO_APROVACAO, ""));

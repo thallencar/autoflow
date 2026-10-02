@@ -25,9 +25,21 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepositoryPort
     private final OrdemServicoEntityMapper mapper;
 
     @Override
+    public Page<OrdemServico> findByStatusOSNotIn(Pageable pageable) {
+        List<StatusOS> statusExcluidos = List.of(
+                StatusOS.FINALIZADA,
+                StatusOS.ENTREGUE,
+                StatusOS.CANCELADA
+        );
+        Page<OrdemServicoEntity> entityPage = springDataRepository.findByStatusOSNotIn(statusExcluidos, pageable);
+        return entityPage.map(mapper::toDomain);
+    }
+
+    @Override
     public Page<OrdemServico> findAll(Pageable pageable) {
         return springDataRepository.findAll(pageable).map(mapper::toDomain);
     }
+
 
     @Override
     public Page<OrdemServico> findByStatusOS(StatusOS status, Pageable pageable) {
@@ -79,15 +91,5 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepositoryPort
     @Override
     public boolean existsByIdVeiculo(UUID idVeiculo) {
         return springDataRepository.existsByIdVeiculo(idVeiculo);
-    }
-
-    @Override
-    public void atualizarStatusDireto(UUID id, StatusOS status) {
-        springDataRepository.atualizarStatusDireto(id, status);
-    }
-
-    @Override
-    public void atualizarStatusECancelamento(UUID id, StatusOS status, LocalDateTime dataEncerramento, String motivo) {
-        springDataRepository.atualizarStatusECancelamento(id, status, dataEncerramento, motivo);
     }
 }

@@ -1,6 +1,5 @@
 package br.com.autoflow.application.usecase;
 
-import br.com.autoflow.adapters.inbound.controller.dto.OrdemServicoRequest;
 import br.com.autoflow.application.validator.OrdemServicoValidator;
 import br.com.autoflow.domain.enums.StatusOS;
 import br.com.autoflow.domain.enums.StatusOrcamento;
@@ -58,14 +57,20 @@ class OrdemServicoValidatorTest {
         UUID funcionarioId = UUID.randomUUID();
         UUID orcamentoId = UUID.randomUUID();
 
-        OrdemServicoRequest request = mock(OrdemServicoRequest.class);
-        when(request.idCliente()).thenReturn(clienteId);
-        when(request.idVeiculo()).thenReturn(veiculoId);
-        when(request.idFuncionario()).thenReturn(funcionarioId);
-        when(request.nrKmEntrada()).thenReturn(10000);
-        when(request.stTermoAceito()).thenReturn(true);
-        when(request.dtAceiteTermo()).thenReturn(LocalDateTime.now().minusHours(1));
-        when(request.idsOrcamento()).thenReturn(List.of(orcamentoId));
+        Orcamento orcamento = mock(Orcamento.class);
+        when(orcamento.getId()).thenReturn(orcamentoId);
+        when(orcamento.getStatus()).thenReturn(StatusOrcamento.APROVADO);
+        when(orcamento.getDataExpiracao()).thenReturn(LocalDateTime.now().plusDays(1));
+
+        OrdemServico ordemServico = new OrdemServico();
+        ordemServico.setIdCliente(clienteId);
+        ordemServico.setIdVeiculo(veiculoId);
+        ordemServico.setIdFuncionario(funcionarioId);
+        ordemServico.setNrKmEntrada(10000);
+        ordemServico.setStTermoAceito(true);
+        ordemServico.setDtAceiteTermo(LocalDateTime.now().minusHours(1));
+        ordemServico.setDtAberturaOs(LocalDateTime.now().minusHours(2));
+        ordemServico.setIdsOrcamento(List.of(orcamento));
 
         when(clienteRepository.existsById(clienteId)).thenReturn(true);
         when(veiculoRepository.existsById(veiculoId)).thenReturn(true);
@@ -73,15 +78,12 @@ class OrdemServicoValidatorTest {
         when(veiculoRepository.existsByIdAndClienteId(veiculoId, clienteId)).thenReturn(true);
         when(ordemServicoRepository.findTopByIdVeiculoOrderByDtAberturaOsDesc(veiculoId)).thenReturn(Optional.empty());
 
-        Orcamento orcamento = mock(Orcamento.class);
-        when(orcamento.getStatus()).thenReturn(StatusOrcamento.APROVADO);
-        when(orcamento.getDataExpiracao()).thenReturn(LocalDateTime.now().plusDays(1));
         when(orcamentoRepository.findById(orcamentoId)).thenReturn(Optional.of(orcamento));
         when(orcamentoRepository.existsByIdAndOrdemServicoIsNotNull(orcamentoId)).thenReturn(false);
 
         when(ordemServicoRepository.existsByIdVeiculoAndStatusOSNotIn(eq(veiculoId), any())).thenReturn(false);
 
-        assertDoesNotThrow(() -> validator.validarCriacao(request, true, 5L));
+        assertDoesNotThrow(() -> validator.validarCriacao(ordemServico, true, 5L));
     }
 
     @Test
@@ -90,14 +92,14 @@ class OrdemServicoValidatorTest {
         UUID clienteId = UUID.randomUUID();
         UUID veiculoId = UUID.randomUUID();
 
-        OrdemServicoRequest request = mock(OrdemServicoRequest.class);
-        when(request.idCliente()).thenReturn(clienteId);
-        when(request.idVeiculo()).thenReturn(veiculoId);
-        when(request.idFuncionario()).thenReturn(null);
-        when(request.nrKmEntrada()).thenReturn(5000);
-        when(request.stTermoAceito()).thenReturn(true);
-        when(request.dtAceiteTermo()).thenReturn(LocalDateTime.now());
-        when(request.idsOrcamento()).thenReturn(null);
+        OrdemServico ordemServico = new OrdemServico();
+        ordemServico.setIdCliente(clienteId);
+        ordemServico.setIdVeiculo(veiculoId);
+        ordemServico.setIdFuncionario(null);
+        ordemServico.setNrKmEntrada(5000);
+        ordemServico.setStTermoAceito(true);
+        ordemServico.setDtAceiteTermo(LocalDateTime.now());
+        ordemServico.setIdsOrcamento(null);
 
         when(clienteRepository.existsById(clienteId)).thenReturn(true);
         when(veiculoRepository.existsById(veiculoId)).thenReturn(true);
@@ -105,7 +107,7 @@ class OrdemServicoValidatorTest {
         when(ordemServicoRepository.findTopByIdVeiculoOrderByDtAberturaOsDesc(veiculoId)).thenReturn(Optional.empty());
         when(ordemServicoRepository.existsByIdVeiculoAndStatusOSNotIn(eq(veiculoId), any())).thenReturn(true);
 
-        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(request, true, 2L));
+        assertThrows(RegraNegocioException.class, () -> validator.validarCriacao(ordemServico, true, 2L));
     }
 
     // --- TESTES DE CLIENTE, FUNCIONÁRIO E VEÍCULO ---
@@ -163,20 +165,20 @@ class OrdemServicoValidatorTest {
     @DisplayName("Deve validar data de aceite do termo com sucesso")
     void deveValidarDataAceiteTermoComSucesso() {
         LocalDateTime dataValida = LocalDateTime.now().minusMinutes(10);
-        assertDoesNotThrow(() -> validator.validarDataAceiteTermo(true, dataValida));
+        assertDoesNotThrow(() -> validator.validarDataAceiteTermo(true, dataValida, null));
     }
 
     @Test
     @DisplayName("Deve lançar exceção se data do aceite for nula com termo assinado")
     void deveLancarExcecaoDataAceiteNula() {
-        assertThrows(RegraNegocioException.class, () -> validator.validarDataAceiteTermo(true, null));
+        assertThrows(RegraNegocioException.class, () -> validator.validarDataAceiteTermo(true, null, null));
     }
 
     @Test
     @DisplayName("Deve lançar exceção se data do aceite estiver no futuro")
     void deveLancarExcecaoDataAceiteNoFuturo() {
         LocalDateTime dataFutura = LocalDateTime.now().plusDays(1);
-        assertThrows(RegraNegocioException.class, () -> validator.validarDataAceiteTermo(true, dataFutura));
+        assertThrows(RegraNegocioException.class, () -> validator.validarDataAceiteTermo(true, dataFutura, null));
     }
 
     // --- TESTES DE ORÇAMENTO ---
@@ -201,18 +203,18 @@ class OrdemServicoValidatorTest {
         UUID id = UUID.randomUUID();
 
         Orcamento orcamento = new Orcamento(
-                id,                               // id
-                TipoOrcamento.INICIAL,            // tipoOrcamento
-                StatusOrcamento.PENDENTE,         // status (Pendente para acionar a regra)
-                LocalDateTime.now(),              // dataCriacao
-                LocalDateTime.now().plusDays(7),  // dataExpiracao
-                null,                             // dataDecisao
-                BigDecimal.ZERO,                  // subtotalPecas
-                BigDecimal.ZERO,                  // maoObra
-                new BigDecimal("150.00"),         // total
-                null,                             // ordemServico
-                new ArrayList<>(),                // servicos
-                new ArrayList<>()                 // itens
+                id,
+                TipoOrcamento.INICIAL,
+                StatusOrcamento.PENDENTE,
+                LocalDateTime.now(),
+                LocalDateTime.now().plusDays(7),
+                null,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                new BigDecimal("150.00"),
+                null,
+                new ArrayList<>(),
+                new ArrayList<>()
         );
 
         when(orcamentoRepository.findById(id)).thenReturn(Optional.of(orcamento));
@@ -226,24 +228,25 @@ class OrdemServicoValidatorTest {
         UUID id = UUID.randomUUID();
 
         Orcamento orcamento = new Orcamento(
-                id,                               // id
-                TipoOrcamento.INICIAL,            // tipoOrcamento
-                StatusOrcamento.APROVADO,         // status aprovado
-                LocalDateTime.now().minusDays(5), // dataCriacao
-                LocalDateTime.now().minusDays(1), // dataExpiracao no passado (Expirado)
-                null,                             // dataDecisao
-                BigDecimal.ZERO,                  // subtotalPecas
-                BigDecimal.ZERO,                  // maoObra
-                new BigDecimal("150.00"),         // total
-                null,                             // ordemServico
-                new ArrayList<>(),                // servicos
-                new ArrayList<>()                 // itens
+                id,
+                TipoOrcamento.INICIAL,
+                StatusOrcamento.APROVADO,
+                LocalDateTime.now().minusDays(5),
+                LocalDateTime.now().minusDays(1),
+                null,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                new BigDecimal("150.00"),
+                null,
+                new ArrayList<>(),
+                new ArrayList<>()
         );
 
         when(orcamentoRepository.findById(id)).thenReturn(Optional.of(orcamento));
 
         assertThrows(RegraNegocioException.class, () -> validator.validarOrcamentoParaOS(id));
     }
+
     // --- TESTES DE QUILOMETRAGEM (KM) ---
 
     @Test

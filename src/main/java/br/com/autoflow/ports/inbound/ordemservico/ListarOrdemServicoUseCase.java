@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 public interface ListarOrdemServicoUseCase {
+    Page<OrdemServico> listarOsAtivas(Pageable pageable);
     Page<OrdemServico> listarTodas(Pageable pageable);
     Page<OrdemServico> listarPorStatus(StatusOS status, Pageable pageable);
     OrdemServico obterMetricasPorOS(UUID idOs);

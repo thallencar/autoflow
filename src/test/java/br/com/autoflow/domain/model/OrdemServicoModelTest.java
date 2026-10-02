@@ -42,10 +42,9 @@ class OrdemServicoModelTest {
 
         OrcamentoServico osServ = new OrcamentoServico(
                 UUID.randomUUID(),
-                BigDecimal.ZERO,
+                new BigDecimal("100.00"),
                 serv,
-                List.of(),
-                orc
+                List.of()
         );
 
         orc.setServicos(List.of(osServ));

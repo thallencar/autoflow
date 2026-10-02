@@ -2,6 +2,7 @@ package br.com.autoflow.adapters.inbound.mapper;
 
 import br.com.autoflow.adapters.inbound.controller.dto.*;
 import br.com.autoflow.domain.model.Orcamento;
+import br.com.autoflow.domain.model.OrcamentoItem;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -21,14 +22,16 @@ public interface OrcamentoMapper {
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataDecisao", ignore = true)
     @Mapping(target = "subtotalPecas", ignore = true)
-    @Mapping(target = "maoObra", ignore = true)
     @Mapping(target = "total", ignore = true)
-    @Mapping(target = "ordemServico", ignore = true) // Inserido via UseCase após buscar do banco
+    @Mapping(target = "ordemServico", ignore = true)
+    @Mapping(target = "tipoOrcamento", source = "tipoOrcamento")
     @Mapping(target = "servicos", source = "servicos")
     Orcamento toDomain(OrcamentoRequest request);
 
     @Mapping(source = "ordemServico.idOs", target = "idOs")
     OrcamentoResponse toResponse(Orcamento orcamento);
+
+    OrcamentoItemResponse toResponse(OrcamentoItem item);
 
     @AfterMapping
     default void vincularFilhos(@MappingTarget Orcamento orcamento) {

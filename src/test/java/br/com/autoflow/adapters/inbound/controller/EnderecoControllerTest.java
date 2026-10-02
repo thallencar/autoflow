@@ -54,7 +54,6 @@ class EnderecoControllerTest {
     @Mock
     private DeletarEnderecoUseCase deletarEnderecoUseCase;
 
-    // Usamos o Mapper real (ou um Spy) para que a conversão DTO <-> Domínio ocorra de verdade durante os testes do MockMvc
     @Spy
     private EnderecoMapper enderecoMapper = Mappers.getMapper(EnderecoMapper.class);
 
@@ -81,15 +80,15 @@ class EnderecoControllerTest {
     }
 
     private Endereco criarDominioExemplo(UUID id) {
-        return  new Endereco(
-                id,
-                "Rua Principal",
-                "RS",
-                "Apto 101",
-                "Centro",
-                "Novo Hamburgo",
-                123,
-                "93520000"
+        return new Endereco(
+                id,                 // id
+                "93520000",         // cep
+                "RS",               // uf
+                "Novo Hamburgo",    // cidade
+                "Centro",           // bairro
+                "Rua Principal",    // logradouro
+                100,                // numero
+                "Apto 101"          // complemento
         );
     }
 

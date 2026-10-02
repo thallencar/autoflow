@@ -39,45 +39,13 @@ public class OrcamentoUseCaseImpl implements
     @Override
     @Transactional
     public Orcamento criar(UUID idOs, Orcamento orcamento) {
-        OrdemServico ordemServico = ordemServicoRepositoryPort.findById(idOs)
-                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", idOs));
+        OrdemServico ordemServico = buscarOrdemServicoOuLancarExcecao(idOs);
 
-        // Força o ID do orçamento como null para garantir INSERT
-        orcamento.setId(null);
-        orcamento.setOrdemServico(ordemServico);
-
-        if (orcamento.getServicos() != null) {
-            for (OrcamentoServico servico : orcamento.getServicos()) {
-                // Força o ID do serviço como null (evita que arraste IDs antigos do front)
-             //   servico.setId(null);
-                servico.associarOrcamento(orcamento);
-
-                if (servico.getItens() != null) {
-                    for (OrcamentoItem item : servico.getItens()) {
-                        // FORÇA O ID DO ITEM COMO NULL AQUI!
-                        // É isto que está a causar o erro com o ID 'a5fd2b5a-...'
-                        item.setId(null);
-                        item.alterarStatusReserva(StatusReservaEstoque.RESERVADO);
-                    }
-                }
-            }
-        }
-
-        orcamentoValidator.validarCriacao(idOs, orcamento);
-
-        orcamento.setStatus(StatusOrcamento.PENDENTE);
-        orcamento.setDataCriacao(LocalDateTime.now(ZoneId.systemDefault()));
-
-        processarRegraTipoOrcamento(orcamento, ordemServico);
+        prepararNovoOrcamento(orcamento, ordemServico);
+        validarCriacaoOrcamento(idOs, orcamento);
 
         Orcamento orcamentoSalvo = orcamentoRepositoryPort.save(orcamento);
-
-        if (ordemServico.getIdsOrcamento() == null) {
-            ordemServico.setIdsOrcamento(new ArrayList<>());
-        }
-        ordemServico.getIdsOrcamento().add(orcamentoSalvo);
-
-        ordemServicoRepositoryPort.save(ordemServico);
+        vincularOrcamentoNaOrdemServico(ordemServico, orcamentoSalvo);
 
         return orcamentoSalvo;
     }
@@ -87,37 +55,13 @@ public class OrcamentoUseCaseImpl implements
     public Orcamento atualizarStatus(UUID id, StatusOrcamento novoStatus) {
         Orcamento orcamento = buscarPorId(id);
 
-        if (orcamento.getDataExpiracao() != null && LocalDateTime.now(ZoneId.systemDefault()).isAfter(orcamento.getDataExpiracao())) {
-            if (orcamento.getStatus() == StatusOrcamento.PENDENTE) {
-                orcamento.expirar();
-                orcamentoExpiradoUseCase.salvarOrcamentoExpirado(orcamento);
-            }
-            throw new RegraNegocioException("Não foi possível alterar o status: Este orçamento está expirado.");
-        }
+        validarEstadoEValidadeOrcamento(orcamento, novoStatus);
 
-        if (orcamento.getStatus() != StatusOrcamento.PENDENTE) {
-            throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
-        }
+        OrdemServico ordemServicoPersistida = buscarEAtualizarVinculoOrdemServico(orcamento);
 
-        orcamentoValidator.validarAtualizacaoStatus(novoStatus);
+        aplicarMudancaStatusOrcamento(orcamento, novoStatus, ordemServicoPersistida);
 
-        if (novoStatus == StatusOrcamento.APROVADO) {
-            orcamentoValidator.validarEstoqueDisponivel(orcamento);
-            deduzirItensDoEstoque(orcamento);
-            orcamento.aprovar();
-            orcamento = orcamentoRepositoryPort.save(orcamento);
-
-            if (orcamento.getTipoOrcamento() != null &&
-                    orcamento.getTipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR")) {
-                OrdemServico ordemServico = orcamento.getOrdemServico();
-                ordemServico.atualizarStatus(StatusOS.EM_EXECUCAO, "Orçamento complementar aprovado. Retomando execução.");
-                ordemServico.carregarServicosDosOrcamentosAprovados();
-                ordemServicoRepositoryPort.save(ordemServico);
-            }
-        } else {
-            orcamento.aplicarNovoStatus(novoStatus);
-            orcamento = orcamentoRepositoryPort.save(orcamento);
-        }
+        salvarAlteracoesFinais(orcamento, ordemServicoPersistida);
 
         return orcamento;
     }
@@ -156,6 +100,131 @@ public class OrcamentoUseCaseImpl implements
         orcamentoRepositoryPort.deletarServicosPorOrcamento(id);
     }
 
+    // =========================================================================
+    // MÉTODOS AUXILIARES - CRIAÇÃO
+    // =========================================================================
+
+    private OrdemServico buscarOrdemServicoOuLancarExcecao(UUID idOs) {
+        return ordemServicoRepositoryPort.findById(idOs)
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", idOs));
+    }
+
+    private void prepararNovoOrcamento(Orcamento orcamento, OrdemServico ordemServico) {
+        orcamento.setId(null);
+        orcamento.setOrdemServico(ordemServico);
+
+        vincularServicosEItens(orcamento);
+        orcamento.recalcularTotais();
+
+        orcamento.setStatus(StatusOrcamento.PENDENTE);
+        orcamento.setDataCriacao(LocalDateTime.now(ZoneId.systemDefault()));
+
+        processarRegraTipoOrcamento(orcamento, ordemServico);
+    }
+
+    private void validarCriacaoOrcamento(UUID idOs, Orcamento orcamento) {
+        if (orcamentoValidator != null) {
+            orcamentoValidator.validarCriacao(idOs, orcamento);
+        }
+    }
+
+    private void vincularOrcamentoNaOrdemServico(OrdemServico ordemServico, Orcamento orcamentoSalvo) {
+        if (ordemServico.getIdsOrcamento() == null) {
+            ordemServico.setIdsOrcamento(new ArrayList<>());
+        }
+        ordemServico.getIdsOrcamento().add(orcamentoSalvo);
+        ordemServicoRepositoryPort.save(ordemServico);
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES - ATUALIZAÇÃO DE STATUS
+    // =========================================================================
+
+    private void validarEstadoEValidadeOrcamento(Orcamento orcamento, StatusOrcamento novoStatus) {
+        if (orcamento.getStatus() != StatusOrcamento.PENDENTE) {
+            throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
+        }
+
+        if (orcamentoValidator != null) {
+            orcamentoValidator.validarAtualizacaoStatus(novoStatus);
+        }
+
+        if (orcamento.getDataExpiracao() != null && LocalDateTime.now(ZoneId.systemDefault()).isAfter(orcamento.getDataExpiracao())) {
+            orcamento.expirar();
+            orcamentoExpiradoUseCase.salvarOrcamentoExpirado(orcamento);
+            throw new RegraNegocioException("Não foi possível alterar o status: Este orçamento está expirado.");
+        }
+    }
+
+    private OrdemServico buscarEAtualizarVinculoOrdemServico(Orcamento orcamento) {
+        OrdemServico ordemServicoDominio = orcamento.getOrdemServico();
+        if (ordemServicoDominio == null || ordemServicoDominio.getIdOs() == null) {
+            return null;
+        }
+
+        OrdemServico ordemServicoPersistida = ordemServicoRepositoryPort.findById(ordemServicoDominio.getIdOs())
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", ordemServicoDominio.getIdOs()));
+
+        if (ordemServicoPersistida.getIdsOrcamento() == null) {
+            ordemServicoPersistida.setIdsOrcamento(new ArrayList<>());
+        }
+
+        boolean jaContem = ordemServicoPersistida.getIdsOrcamento().stream()
+                .anyMatch(o -> o.getId().equals(orcamento.getId()));
+
+        if (!jaContem) {
+            ordemServicoPersistida.getIdsOrcamento().add(orcamento);
+        }
+
+        return ordemServicoPersistida;
+    }
+
+    private void aplicarMudancaStatusOrcamento(Orcamento orcamento, StatusOrcamento novoStatus, OrdemServico ordemServicoPersistida) {
+        if (novoStatus == StatusOrcamento.APROVADO) {
+            aprovarOrcamentoEAtualizarOrdemServico(orcamento, ordemServicoPersistida);
+        } else {
+            rejeitarOuExpirarOrcamento(orcamento, novoStatus, ordemServicoPersistida);
+        }
+    }
+
+    private void aprovarOrcamentoEAtualizarOrdemServico(Orcamento orcamento, OrdemServico ordemServicoPersistida) {
+        orcamentoValidator.validarEstoqueDisponivel(orcamento);
+        deduzirItensDoEstoque(orcamento);
+        orcamento.aprovar();
+
+        if (ordemServicoPersistida != null) {
+            boolean ehComplementar = orcamento.getTipoOrcamento() != null &&
+                    orcamento.getTipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR");
+
+            if (ehComplementar) {
+                ordemServicoPersistida.atualizarStatus(StatusOS.EM_EXECUCAO, "Orçamento complementar aprovado. Retomando execução.");
+            } else {
+                ordemServicoPersistida.atualizarStatus(StatusOS.ORCAMENTO_APROVADO, "Orçamento aprovado pelo cliente via webhook/email. Iniciando execução.");
+            }
+            ordemServicoPersistida.carregarServicosDosOrcamentosAprovados();
+        }
+    }
+
+    private void rejeitarOuExpirarOrcamento(Orcamento orcamento, StatusOrcamento novoStatus, OrdemServico ordemServicoPersistida) {
+        orcamento.aplicarNovoStatus(novoStatus);
+
+        boolean deveCancelarOS = (novoStatus == StatusOrcamento.RECUSADO || novoStatus == StatusOrcamento.EXPIRADO);
+        if (deveCancelarOS && ordemServicoPersistida != null) {
+            ordemServicoPersistida.atualizarStatus(StatusOS.CANCELADA, "Orçamento recusado pelo cliente via email/webhook.");
+        }
+    }
+
+    private void salvarAlteracoesFinais(Orcamento orcamento, OrdemServico ordemServicoPersistida) {
+        if (ordemServicoPersistida != null) {
+            ordemServicoRepositoryPort.save(ordemServicoPersistida);
+        }
+        orcamentoRepositoryPort.save(orcamento);
+    }
+
+    // =========================================================================
+    // MÉTODOS AUXILIARES - ESTOQUE E REGRAS
+    // =========================================================================
+
     private void deduzirItensDoEstoque(Orcamento orcamento) {
         if (orcamento.getServicos() != null) {
             orcamento.getServicos().stream()
@@ -188,12 +257,12 @@ public class OrcamentoUseCaseImpl implements
     }
 
     private void vincularServicosEItens(Orcamento orcamento) {
-        // Substituído setOrcamento por associarOrcamento e setOrcamentoServico/setStatusReserva pelos métodos puros do domínio
         if (orcamento.getServicos() != null) {
             orcamento.getServicos().forEach(servico -> {
                 servico.associarOrcamento(orcamento);
                 if (servico.getItens() != null) {
                     servico.getItens().forEach(item -> {
+                        item.setId(null);
                         item.associarOrcamentoServico(servico);
                         item.alterarStatusReserva(StatusReservaEstoque.RESERVADO);
                     });

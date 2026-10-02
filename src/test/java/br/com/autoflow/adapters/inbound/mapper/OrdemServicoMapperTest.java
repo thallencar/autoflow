@@ -2,7 +2,6 @@ package br.com.autoflow.adapters.inbound.mapper;
 
 import br.com.autoflow.adapters.inbound.controller.dto.HistoricoVeiculoResponse;
 import br.com.autoflow.adapters.inbound.controller.dto.MetricaOsResponse;
-import br.com.autoflow.adapters.inbound.mapper.OrdemServicoMapper;
 import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.enums.StatusReservaEstoque;
 import br.com.autoflow.domain.enums.TipoOrcamento;
@@ -45,21 +44,18 @@ class OrdemServicoMapperTest {
                 StatusReservaEstoque.RESERVADO,
                 2,
                 new BigDecimal("5.00"),
-                new BigDecimal("10.00"),
-                UUID.randomUUID(),
-                null,
-                null
+                UUID.randomUUID()
         );
 
         OrcamentoServico osServ = new OrcamentoServico(
                 UUID.randomUUID(),          // id
                 new BigDecimal("90.00"),    // maoDeObra
-                serv,                    // servico (sua instância de Servico)
-                List.of(item),              // itens (sua lista ou item de OrcamentoItem)
-                null                        // orcamento (ou uma instância válida de Orcamento, se houver)
+                serv,                       // servico
+                List.of(item)               // itens
         );
-        osServ.setServico(serv);
-        osServ.setItens(List.of(item));
+
+        // Associa corretamente usando os métodos da entidade em vez de setters inexistentes
+        item.associarOrcamentoServico(osServ);
 
         Orcamento orc = new Orcamento(
                 UUID.randomUUID(),                          // id
@@ -70,14 +66,13 @@ class OrdemServicoMapperTest {
                 null,                                       // dataDecisao
                 new BigDecimal("10.00"),                    // subtotalPecas
                 new BigDecimal("90.00"),                    // maoObra
-                new BigDecimal("100.00"),                   // total (será recalculado pelo construtor)
-                null,                                       // ordemServico (ou uma instância de OrdemServico se necessário)
-                List.of(osServ),                  // servicos (sua lista de OrcamentoServico)
-                List.of(item)                               // itens (sua lista de OrcamentoItem)
+                new BigDecimal("100.00"),                   // total
+                null,                                       // ordemServico
+                List.of(osServ),                            // servicos
+                List.of(item)                               // itens
         );
 
-        item.setOrcamentoServico(osServ);
-        osServ.setOrcamento(orc);
+        osServ.associarOrcamento(orc);
 
         OsServico osSvc = new OsServico();
         osSvc.setServico(serv);

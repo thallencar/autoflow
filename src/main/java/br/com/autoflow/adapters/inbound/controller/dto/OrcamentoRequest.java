@@ -1,6 +1,7 @@
 package br.com.autoflow.adapters.inbound.controller.dto;
 
 import br.com.autoflow.domain.enums.TipoOrcamento;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -12,6 +13,7 @@ public record OrcamentoRequest(
         @NotNull(message = "O ID da Ordem de Serviço é obrigatório")
         UUID idOs,
 
+        @JsonProperty("tipoOrcamento")
         @NotNull(message = "O tipo do orçamento é obrigatório")
         TipoOrcamento tipoOrcamento,
 

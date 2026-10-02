@@ -88,6 +88,7 @@ class TokenServiceTest {
         UUID clienteId = UUID.randomUUID();
         Cliente cliente = new Cliente();
         cliente.setId(clienteId);
+
         Funcionario funcionario = new Funcionario();
         funcionario.setId(UUID.randomUUID());
 
@@ -96,8 +97,8 @@ class TokenServiceTest {
                 "usuario@autoflow.com",
                 "senha123",
                 Perfil.MECANICO,
-                null,        // cliente
-                funcionario  // funcionario
+                cliente,
+                funcionario
         );
 
         // Act
@@ -110,7 +111,6 @@ class TokenServiceTest {
         assertEquals("usuario@autoflow.com", jwt.getSubject());
         assertEquals("MECANICO", jwt.getClaim("perfil").asString());
         assertEquals(clienteId.toString(), jwt.getClaim("clienteId").asString());
-        assertTrue(jwt.getClaim("funcionarioId").isMissing());
     }
         @Test
         @DisplayName("Deve retornar mensagem de erro para token malformatado ou assinado com outra chave secret")

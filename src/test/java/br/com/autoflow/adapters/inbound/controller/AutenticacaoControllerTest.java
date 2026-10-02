@@ -1,7 +1,9 @@
 package br.com.autoflow.adapters.inbound.controller;
 
 import br.com.autoflow.adapters.outbound.security.TokenService;
+import br.com.autoflow.adapters.outbound.security.UserDetailsImpl;
 import br.com.autoflow.domain.model.Usuario;
+import br.com.autoflow.ports.outbound.UsuarioRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,10 +22,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import java.util.Optional;
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,6 +47,10 @@ class AutenticacaoControllerTest {
 
     @Mock
     private TokenService tokenService;
+
+    // Adicione o mock do repositório para que o AutenticacaoService encontre o usuário no teste unitário standalone
+    @Mock
+    private UsuarioRepositoryPort usuarioRepository;
 
     @InjectMocks
     private AutenticacaoController controller;
@@ -82,14 +92,24 @@ class AutenticacaoControllerTest {
             String login = "carlos@gmail.com";
             String senha = "123";
             String tokenEsperado = "header.payload.signature_jwt_fake";
+            UUID idUsuario = UUID.randomUUID();
 
-            Usuario usuarioMock = mock(Usuario.class);
+            // 1. Instância do usuário com ID preenchido
+            Usuario usuario = new Usuario();
+            usuario.setId(idUsuario);
+            usuario.setLogin(login);
+
+            UserDetailsImpl userDetailsMock = mock(UserDetailsImpl.class);
+            when(userDetailsMock.getUsuario()).thenReturn(usuario);
+
             Authentication authenticationMock = mock(Authentication.class);
+            when(authenticationMock.getPrincipal()).thenReturn(userDetailsMock);
 
-            when(authenticationMock.getPrincipal()).thenReturn(usuarioMock);
             when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                     .thenReturn(authenticationMock);
-            when(tokenService.gerarToken(usuarioMock)).thenReturn(tokenEsperado);
+
+            // 4. Mock da geração do Token
+            when(tokenService.gerarToken(any(Usuario.class))).thenReturn(tokenEsperado);
 
             // Act & Assert
             mockMvc.perform(post("/auth/login")
@@ -99,7 +119,7 @@ class AutenticacaoControllerTest {
                     .andExpect(jsonPath("$.token").value(tokenEsperado));
 
             verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
-            verify(tokenService).gerarToken(usuarioMock);
+            verify(tokenService).gerarToken(any(Usuario.class));
         }
 
         @Test

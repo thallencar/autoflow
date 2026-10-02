@@ -16,6 +16,8 @@ public class OrcamentoItem {
     private OrcamentoServico orcamentoServico;
     private Orcamento orcamento;
 
+    public OrcamentoItem() {  }
+
     public OrcamentoItem(UUID id, StatusReservaEstoque statusReserva, Integer quantidade, BigDecimal valorUnitario, UUID idEstoque) {
         this.id = id != null ? id : UUID.randomUUID();
         this.statusReserva = statusReserva != null ? statusReserva : StatusReservaEstoque.RESERVADO;
@@ -55,5 +57,33 @@ public class OrcamentoItem {
 
     public void setId(UUID id) {
         this.id = id;
+    }
+
+    public void setOrcamentoServico(OrcamentoServico orcamentoServico) {
+        this.orcamentoServico = orcamentoServico;
+    }
+
+    public void setStatusReserva(StatusReservaEstoque statusReserva) {
+        this.statusReserva = statusReserva;
+    }
+
+    public void setQuantidade(Integer quantidade) {
+        this.quantidade = quantidade;
+    }
+
+    public void setValorUnitario(BigDecimal valorUnitario) {
+        this.valorUnitario = valorUnitario;
+    }
+
+    public void setValorTotal(BigDecimal valorTotal) {
+        this.valorTotal = valorTotal;
+    }
+
+    public void setIdEstoque(UUID idEstoque) {
+        this.idEstoque = idEstoque;
+    }
+
+    public void setOrcamento(Orcamento orcamento) {
+        this.orcamento = orcamento;
     }
 }
