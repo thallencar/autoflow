@@ -24,12 +24,6 @@ class MapperFullCoverageTest {
     private OrcamentoMapper orcamentoMapper;
 
     @Autowired
-    private OrcamentoServicoMapper orcamentoServicoMapper;
-
-    @Autowired
-    private OrcamentoItemMapper orcamentoItemMapper; // Injetado para evitar NullPointerException nas listas aninhadas
-
-    @Autowired
     private OrdemServicoMapper ordemServicoMapper;
 
     @Test
