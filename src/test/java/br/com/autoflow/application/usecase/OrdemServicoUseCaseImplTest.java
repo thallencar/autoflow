@@ -57,13 +57,14 @@ class OrdemServicoUseCaseImplTest {
         OrdemServico os = new OrdemServico();
         Page<OrdemServico> pageOs = new PageImpl<>(List.of(os));
 
-        when(repository.findByStatusOSNotIn(pageable)).thenReturn(pageOs);
+        when(repository.findAll(pageable)).thenReturn(pageOs);
 
         Page<OrdemServico> resultado = service.listarTodas(pageable);
 
         assertNotNull(resultado);
         assertEquals(1, resultado.getTotalElements());
-        verify(repository).findByStatusOSNotIn(pageable);
+
+        verify(repository).findAll(pageable);
     }
 
     @Test
