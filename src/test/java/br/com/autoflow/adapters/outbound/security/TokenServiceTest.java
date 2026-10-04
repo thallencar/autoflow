@@ -1,6 +1,5 @@
 package br.com.autoflow.adapters.outbound.security;
 
-import br.com.autoflow.adapters.outbound.security.TokenService;
 import br.com.autoflow.domain.enums.Perfil;
 import br.com.autoflow.domain.model.Cliente;
 import br.com.autoflow.domain.model.Funcionario;
