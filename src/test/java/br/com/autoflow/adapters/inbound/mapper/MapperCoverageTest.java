@@ -6,13 +6,17 @@ import br.com.autoflow.domain.model.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
+@TestPropertySource(properties = {
+        "api.security.token.secret=minha-chave-secreta-super-segura-aqui",
+        "api.security.token.expiration-minutes=15"
+})
 class MapperCoverageTest {
 
     @Autowired
