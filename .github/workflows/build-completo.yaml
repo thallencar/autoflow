@@ -38,6 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
 
+    # Defina aqui se houver variáveis sensíveis vindas dos Secrets do repositório
+    env:
+      API_SECURITY_TOKEN_SECRET: ${{ secrets.API_SECURITY_TOKEN_SECRET }}
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -50,14 +54,9 @@ jobs:
           cache: 'maven'
 
       - name: 🧪 Executar Testes e Gerar Cobertura (JaCoCo)
-        run: mvn clean test
-
-      - name: 📊 Upload Relatório de Testes / Cobertura
-        uses: actions/upload-artifact@v4
-        with:
-          name: relatorios-testes-autoflow
-          path: target/site/
-          retention-days: 7
+        # Se você usa variáveis de ambiente mapeadas para application.properties,
+        # ou pode passar diretamente via parâmetro do Maven (-D):
+        run: mvn clean test -Dapi.security.token.secret="${{ secrets.API_SECURITY_TOKEN_SECRET }}"
 
   # Job 3: Build do Projeto (Empacotamento .jar)
   build:
