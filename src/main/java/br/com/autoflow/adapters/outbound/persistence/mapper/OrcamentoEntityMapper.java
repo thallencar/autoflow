@@ -5,6 +5,7 @@ import br.com.autoflow.adapters.outbound.persistence.entity.OrcamentoItemEntity;
 import br.com.autoflow.adapters.outbound.persistence.entity.OrcamentoServicoEntity;
 import br.com.autoflow.adapters.outbound.persistence.entity.OrdemServicoEntity;
 import br.com.autoflow.adapters.outbound.persistence.entity.ServicoEntity;
+import br.com.autoflow.domain.exception.RegraNegocioException;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.model.OrcamentoItem;
 import br.com.autoflow.domain.model.OrcamentoServico;
@@ -65,7 +66,7 @@ public interface OrcamentoEntityMapper {
                     servicoRef.setIdServico(idServicoExtraido);
                     servicoEntity.setServico(servicoRef);
                 } else {
-                    throw new IllegalStateException("O ID do serviço não pode ser nulo para o orçamento de serviços.");
+                    throw new RegraNegocioException("O ID do serviço não pode ser nulo para o orçamento de serviços.");
                 }
 
                 if (servicoDomain.getItens() != null) {
@@ -109,21 +110,19 @@ public interface OrcamentoEntityMapper {
             ordemServico.setIdOs(entity.getOrdemServico().getIdOs());
         }
 
-        // Mapeia os serviços da entidade de volta para o modelo de domínio
         List<OrcamentoServico> servicosDomain = new ArrayList<>();
         if (entity.getServicos() != null) {
             for (OrcamentoServicoEntity servicoEntity : entity.getServicos()) {
                 OrcamentoServico servicoDomain = new OrcamentoServico();
-                // NOTA: Não definimos o ID do OrcamentoServico aqui se ele não deve aparecer no JSON de serviços.
                 servicoDomain.setMaoDeObra(servicoEntity.getMaoDeObra());
 
                 if (servicoEntity.getServico() != null) {
                     Servico servicoRef = new Servico();
                     servicoRef.setIdServico(servicoEntity.getServico().getIdServico());
+                    servicoRef.setDsServico(servicoEntity.getServico().getDsServico());
                     servicoDomain.setServico(servicoRef);
                 }
 
-                // Mapeia os itens do serviço de volta para o domínio
                 List<OrcamentoItem> itensDomain = new ArrayList<>();
                 if (servicoEntity.getItens() != null) {
                     for (OrcamentoItemEntity itemEntity : servicoEntity.getItens()) {

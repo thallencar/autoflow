@@ -6,7 +6,6 @@ import java.util.UUID;
 
 public record OrcamentoServicoResponse(
 
-        UUID id,
         UUID idServico,
         String descricaoServico,
         BigDecimal maoDeObra,
