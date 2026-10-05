@@ -9,6 +9,7 @@ import br.com.autoflow.domain.exception.RegraNegocioException;
 import br.com.autoflow.domain.model.*;
 import br.com.autoflow.ports.inbound.orcamento.*;
 import br.com.autoflow.ports.outbound.EstoqueRepositoryPort;
+import br.com.autoflow.ports.outbound.FuncionarioRepositoryPort;
 import br.com.autoflow.ports.outbound.OrcamentoRepositoryPort;
 import br.com.autoflow.ports.outbound.OrdemServicoRepositoryPort;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class OrcamentoUseCaseImpl implements
     private final EstoqueRepositoryPort estoqueRepositoryPort;
     private final OrcamentoValidator orcamentoValidator;
     private final OrcamentoExpiradoUseCase orcamentoExpiradoUseCase;
+    private final FuncionarioRepositoryPort funcionarioRepository;
 
     @Override
     @Transactional
@@ -211,6 +213,12 @@ public class OrcamentoUseCaseImpl implements
         boolean deveCancelarOS = (novoStatus == StatusOrcamento.RECUSADO || novoStatus == StatusOrcamento.EXPIRADO);
         if (deveCancelarOS && ordemServicoPersistida != null) {
             ordemServicoPersistida.atualizarStatus(StatusOS.CANCELADA, "Orçamento recusado pelo cliente via email/webhook.");
+            if (ordemServicoPersistida.getIdFuncionario() != null) {
+                funcionarioRepository.findById(ordemServicoPersistida.getIdFuncionario()).ifPresent(mecanico -> {
+                    mecanico.liberar();
+                    funcionarioRepository.save(mecanico);
+                });
+            }
         }
     }
 
