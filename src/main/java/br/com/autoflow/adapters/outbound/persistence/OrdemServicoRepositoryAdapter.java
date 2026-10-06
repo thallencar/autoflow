@@ -37,7 +37,7 @@ public class OrdemServicoRepositoryAdapter implements OrdemServicoRepositoryPort
 
     @Override
     public Page<OrdemServico> findAll(Pageable pageable) {
-        return springDataRepository.findAll(pageable).map(mapper::toDomain);
+        return springDataRepository.findAllComOrdenacaoCustomizada(pageable).map(mapper::toDomain);
     }
 
 
