@@ -94,15 +94,24 @@ public class OrdemServico {
     }
 
     public void carregarServicosDosOrcamentosAprovados() {
+        if (this.idsOrcamento == null || this.idsOrcamento.isEmpty()) {
+            return;
+        }
+        if (this.servicosExecucao == null) {
+            this.servicosExecucao = new ArrayList<>();
+        }
         List<Servico> servicosAprovados = this.idsOrcamento.stream()
                 .filter(orcamento -> orcamento.getStatus() == StatusOrcamento.APROVADO)
+                .filter(orcamento -> orcamento.getServicos() != null)
                 .flatMap(orcamento -> orcamento.getServicos().stream())
                 .map(OrcamentoServico::getServico)
+                .filter(Objects::nonNull)
                 .distinct()
                 .toList();
 
         for (Servico servico : servicosAprovados) {
             boolean jaExiste = this.servicosExecucao.stream()
+                    .filter(osServico -> osServico.getServico() != null)
                     .anyMatch(osServico -> osServico.getServico().getIdServico().equals(servico.getIdServico()));
 
             if (!jaExiste) {

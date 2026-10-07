@@ -48,8 +48,9 @@ public class OrcamentoUseCaseImpl implements
 
         Orcamento orcamentoSalvo = orcamentoRepositoryPort.save(orcamento);
         vincularOrcamentoNaOrdemServico(ordemServico, orcamentoSalvo);
+        atualizarStatusOrdemServicoAposCriacao(ordemServico, orcamentoSalvo);
 
-        return orcamentoSalvo;
+        return buscarPorId(orcamentoSalvo.getId());
     }
 
     @Override
@@ -102,10 +103,6 @@ public class OrcamentoUseCaseImpl implements
         orcamentoRepositoryPort.deletarServicosPorOrcamento(id);
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES - CRIAÇÃO
-    // =========================================================================
-
     private OrdemServico buscarOrdemServicoOuLancarExcecao(UUID idOs) {
         return ordemServicoRepositoryPort.findById(idOs)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Ordem de Serviço", idOs));
@@ -138,9 +135,22 @@ public class OrcamentoUseCaseImpl implements
         ordemServicoRepositoryPort.save(ordemServico);
     }
 
-    // =========================================================================
-    // MÉTODOS AUXILIARES - ATUALIZAÇÃO DE STATUS
-    // =========================================================================
+    private void atualizarStatusOrdemServicoAposCriacao(OrdemServico ordemServico, Orcamento orcamento) {
+        boolean ehComplementar = verificarSeEhComplementar(orcamento);
+
+        if (ehComplementar) {
+            ordemServico.atualizarStatus(StatusOS.AGUARDANDO_APROVACAO, "OS pausada: Aguardando aprovação de orçamento complementar.");
+        } else {
+            ordemServico.atualizarStatus(StatusOS.AGUARDANDO_APROVACAO, "Orçamento criado. Aguardando aprovação do cliente.");
+        }
+
+        ordemServicoRepositoryPort.save(ordemServico);
+    }
+
+    private boolean verificarSeEhComplementar(Orcamento orcamento) {
+        return orcamento.getTipoOrcamento() != null &&
+                orcamento.getTipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR");
+    }
 
     private void validarEstadoEValidadeOrcamento(Orcamento orcamento, StatusOrcamento novoStatus) {
         if (orcamento.getStatus() != StatusOrcamento.PENDENTE) {
@@ -195,8 +205,7 @@ public class OrcamentoUseCaseImpl implements
         orcamento.aprovar();
 
         if (ordemServicoPersistida != null) {
-            boolean ehComplementar = orcamento.getTipoOrcamento() != null &&
-                    orcamento.getTipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR");
+            boolean ehComplementar = verificarSeEhComplementar(orcamento);
 
             if (ehComplementar) {
                 ordemServicoPersistida.atualizarStatus(StatusOS.EM_EXECUCAO, "Orçamento complementar aprovado. Retomando execução.");
@@ -228,10 +237,6 @@ public class OrcamentoUseCaseImpl implements
         }
         orcamentoRepositoryPort.save(orcamento);
     }
-
-    // =========================================================================
-    // MÉTODOS AUXILIARES - ESTOQUE E REGRAS
-    // =========================================================================
 
     private void deduzirItensDoEstoque(Orcamento orcamento) {
         if (orcamento.getServicos() != null) {
@@ -280,8 +285,7 @@ public class OrcamentoUseCaseImpl implements
     }
 
     private void processarRegraTipoOrcamento(Orcamento orcamento, OrdemServico ordemServico) {
-        boolean ehComplementar = orcamento.getTipoOrcamento() != null &&
-                orcamento.getTipoOrcamento().name().equalsIgnoreCase("COMPLEMENTAR");
+        boolean ehComplementar = verificarSeEhComplementar(orcamento);
 
         if (ehComplementar) {
             boolean temOrcamentoAprovado = ordemServico.getIdsOrcamento().stream()

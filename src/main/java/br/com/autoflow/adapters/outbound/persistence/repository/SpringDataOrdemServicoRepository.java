@@ -51,4 +51,21 @@ public interface SpringDataOrdemServicoRepository extends JpaRepository<OrdemSer
             @Param("statusExcluidos") List<StatusOS> statusExcluidos,
             Pageable pageable
     );
+
+    @Query(
+            value = "SELECT os FROM OrdemServicoEntity os " +
+                    "ORDER BY CASE os.statusOS " +
+                    "  WHEN 'RECEBIDA' THEN 1 " +
+                    "  WHEN 'EM_DIAGNOSTICO' THEN 2 " +
+                    "  WHEN 'AGUARDANDO_APROVACAO' THEN 3 " +
+                    "  WHEN 'ORCAMENTO_APROVADO' THEN 4 " +
+                    "  WHEN 'EM_EXECUCAO' THEN 5 " +
+                    "  WHEN 'FINALIZADA' THEN 6 " +
+                    "  WHEN 'ENTREGUE' THEN 7 " +
+                    "  WHEN 'CANCELADA' THEN 8 " +
+                    "  ELSE 9 END ASC, " +
+                    "os.dtAberturaOs ASC",
+            countQuery = "SELECT COUNT(os) FROM OrdemServicoEntity os"
+    )
+    Page<OrdemServicoEntity> findAllComOrdenacaoCustomizada(Pageable pageable);
 }
