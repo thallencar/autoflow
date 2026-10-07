@@ -41,6 +41,7 @@ public class Orcamento {
         this.dataDecisao = dataDecisao;
         this.ordemServico = ordemServico;
         this.servicos = servicos != null ? servicos : new ArrayList<>();
+        setServicos(servicos);
         this.itens = itens != null ? itens : new ArrayList<>();
         vincularFilhos();
         recalcularTotais();
@@ -144,7 +145,28 @@ public class Orcamento {
     public void setDataDecisao(LocalDateTime dataDecisao) { this.dataDecisao = dataDecisao; }
 
     public void setServicos(List<OrcamentoServico> servicos) {
-        this.servicos = servicos != null ? servicos : new ArrayList<>();
+        if (servicos == null || servicos.isEmpty()) {
+            this.servicos = new ArrayList<>();
+        } else {
+            this.servicos = new ArrayList<>(
+                    servicos.stream()
+                            .filter(s -> s.getServico() != null && s.getServico().getIdServico() != null)
+                            .collect(java.util.stream.Collectors.toMap(
+                                    s -> s.getServico().getIdServico(),
+                                    s -> s,
+                                    (existente, novo) -> {
+                                        // Se o existente veio sem itens e o novo veio com itens, aproveita os itens do novo
+                                        if ((existente.getItens() == null || existente.getItens().isEmpty())
+                                                && (novo.getItens() != null && !novo.getItens().isEmpty())) {
+                                            existente.setItens(novo.getItens());
+                                        }
+                                        return existente;
+                                    },
+                                    java.util.LinkedHashMap::new
+                            ))
+                            .values()
+            );
+        }
         vincularFilhos();
         recalcularTotais();
     }

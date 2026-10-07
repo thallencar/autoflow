@@ -50,7 +50,7 @@ public class OrcamentoUseCaseImpl implements
         vincularOrcamentoNaOrdemServico(ordemServico, orcamentoSalvo);
         atualizarStatusOrdemServicoAposCriacao(ordemServico, orcamentoSalvo);
 
-        return orcamentoSalvo;
+        return buscarPorId(orcamentoSalvo.getId());
     }
 
     @Override
