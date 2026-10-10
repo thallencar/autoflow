@@ -38,7 +38,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint
 
-    # Defina aqui se houver variáveis sensíveis vindas dos Secrets do repositório
     env:
       API_SECURITY_TOKEN_SECRET: ${{ secrets.API_SECURITY_TOKEN_SECRET }}
 
@@ -54,8 +53,6 @@ jobs:
           cache: 'maven'
 
       - name: 🧪 Executar Testes e Gerar Cobertura (JaCoCo)
-        # Se você usa variáveis de ambiente mapeadas para application.properties,
-        # ou pode passar diretamente via parâmetro do Maven (-D):
         run: mvn clean test -Dapi.security.token.secret="${{ secrets.API_SECURITY_TOKEN_SECRET }}"
 
   # Job 3: Build do Projeto (Empacotamento .jar)
@@ -93,32 +90,32 @@ jobs:
           echo "**Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
           echo "**Artefato**: Gerado com sucesso em target/" >> $GITHUB_STEP_SUMMARY
 
-# Job 4: Build e Deploy da Imagem Docker para a AWS ECR
-deploy-aws:
-  name: 🚀 Enviar Imagem para AWS ECR
-  runs-on: ubuntu-latest
-  needs: build # Só executa se o build e os testes passarem
+  # Job 4: Build e Deploy da Imagem Docker para a AWS ECR
+  deploy-aws:
+    name: 🚀 Enviar Imagem para AWS ECR
+    runs-on: ubuntu-latest
+    needs: build
 
-  steps:
-    - name: 📥 Checkout
-      uses: actions/checkout@v4
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
 
-    - name: 🔑 Configurar Credenciais da AWS
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
+      - name: 🔑 Configurar Credenciais da AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-    - name: 🔓 Login no Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+      - name: 🔓 Login no Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-    - name: 🐳 Build e Push da Imagem Docker
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: app-autoflow # Nome do seu repositório no ECR
-        IMAGE_TAG: latest
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: 🐳 Build e Push da Imagem Docker
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: app-autoflow
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
