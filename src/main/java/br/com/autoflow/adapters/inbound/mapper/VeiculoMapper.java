@@ -23,4 +23,8 @@ public interface VeiculoMapper {
     @Mapping(target = "clienteId", source = "clienteId")
     @Mapping(target = "placa", expression = "java(request.placa() != null ? request.placa().toUpperCase() : null)")
     void updateDomainFromDto(VeiculoRequest request, @MappingTarget Veiculo veiculo);
+
+    default void updateEntityFromDto(VeiculoRequest request, @MappingTarget Veiculo veiculo) {
+        updateDomainFromDto(request, veiculo);
+    }
 }

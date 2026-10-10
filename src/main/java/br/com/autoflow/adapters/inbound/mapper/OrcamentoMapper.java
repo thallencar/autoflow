@@ -27,7 +27,7 @@ public interface OrcamentoMapper {
     OrcamentoServicoResponse toResponse(OrcamentoServico orcamentoServico);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "status", expression = "java(StatusOrcamento.PENDENTE)")
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataDecisao", ignore = true)
     @Mapping(target = "subtotalPecas", ignore = true)

@@ -2,6 +2,7 @@ package br.com.autoflow.application.validator;
 
 import java.util.Set;
 import org.springframework.stereotype.Component;
+import br.com.autoflow.adapters.inbound.controller.dto.EnderecoRequest;
 import br.com.autoflow.domain.model.Endereco;
 import br.com.autoflow.domain.exception.RegraNegocioException;
 
@@ -15,8 +16,15 @@ public class EnderecoValidator {
     );
 
     public void validarUf(Endereco endereco) {
-        if (endereco.getUf() == null || !ufsValidas.contains(endereco.getUf().toUpperCase())) {
-            throw new RegraNegocioException("UF inválida: " + endereco.getUf());
+        if (endereco == null || endereco.getUf() == null || !ufsValidas.contains(endereco.getUf().toUpperCase())) {
+            throw new RegraNegocioException("UF inválida: " + (endereco == null ? null : endereco.getUf()));
+        }
+    }
+
+    public void validarUf(EnderecoRequest request) {
+        String uf = request == null ? null : request.uf();
+        if (uf == null || !ufsValidas.contains(uf.toUpperCase())) {
+            throw new RegraNegocioException("UF inválida: " + uf);
         }
     }
 }

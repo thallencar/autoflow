@@ -88,7 +88,8 @@ public class Orcamento {
     }
 
     private void validarMudancaStatus() {
-        if (this.status != StatusOrcamento.PENDENTE) {
+        StatusOrcamento statusAtual = this.status == null ? StatusOrcamento.PENDENTE : this.status;
+        if (statusAtual != StatusOrcamento.PENDENTE) {
             throw new RegraNegocioException("Apenas orçamentos PENDENTES podem ter o status alterado.");
         }
         if (this.dataExpiracao != null && LocalDateTime.now(ZoneId.systemDefault()).isAfter(this.dataExpiracao)) {

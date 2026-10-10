@@ -35,6 +35,7 @@ public class SecurityConfigurations {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         try {
             return http
+                    // NOSONAR - API stateless com JWT em header; não usa sessão nem cookies, então CSRF não é necessário.
                     .csrf(csrf -> csrf.disable())
                     .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                     .authorizeHttpRequests(authorize -> authorize

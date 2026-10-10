@@ -81,15 +81,15 @@ class EnderecoControllerTest {
     }
 
     private Endereco criarDominioExemplo(UUID id) {
-        return  new Endereco(
+        return new Endereco(
                 id,
-                "Rua Principal",
+                "93520000",
                 "RS",
-                "Apto 101",
-                "Centro",
                 "Novo Hamburgo",
+                "Centro",
+                "Rua Principal",
                 123,
-                "93520000"
+                "Apto 101"
         );
     }
 

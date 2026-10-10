@@ -34,7 +34,7 @@ class OrdemServicoControllerTest {
     private OrdemServicoUseCase service;
 
     @InjectMocks
-    private br.com.autoflow.adapter.inbound.controller.OrdemServicoController controller;
+    private br.com.autoflow.adapters.inbound.controller.OrdemServicoController controller;
 
     @Test
     void deveListarTodas() {

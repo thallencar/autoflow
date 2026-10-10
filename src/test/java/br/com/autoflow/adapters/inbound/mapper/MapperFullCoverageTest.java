@@ -90,9 +90,9 @@ class MapperFullCoverageTest {
                 null,
                 null,
                 null,
-                (OrdemServico) List.of(item),
+                null,
                 List.of(orcServ),
-                null
+                List.of(item)
         );
 
         orcServ.setOrcamento(orc);

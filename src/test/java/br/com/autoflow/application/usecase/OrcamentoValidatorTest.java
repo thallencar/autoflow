@@ -82,7 +82,6 @@ class OrcamentoValidatorTest {
 
         when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(os));
         when(orcamentoRepository.findByOrdemServicoIdOs(idOs)).thenReturn(Collections.emptyList());
-        when(estoqueRepository.findById(idEstoque)).thenReturn(Optional.of(estoque));
 
         assertDoesNotThrow(() -> validator.validarCriacao(idOs, orcamento));
     }

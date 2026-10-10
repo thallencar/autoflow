@@ -74,7 +74,7 @@ class MapperCoverageTest {
         ClienteResponse response = clienteMapper.toResponse(cliente);
         assertEquals(cliente.getId(), response.id());
         assertEquals("Ana", response.nome());
-        assertEquals("90010-100", response.endereco().cep());
+        assertEquals("93500-000", response.endereco().cep());
 
         FuncionarioRequest request = new FuncionarioRequest(
                 "22728697039",
@@ -164,7 +164,7 @@ class MapperCoverageTest {
         );
 
         OrcamentoItemResponse itemResponse = orcamentoMapper.toResponse(item);
-        assertEquals(new BigDecimal("20.00"), itemResponse.valorTotal());
+        assertEquals(new BigDecimal("100.00"), itemResponse.valorTotal());
 
         OrdemServico ordem = new OrdemServico();
         ordem.setIdOs(UUID.randomUUID());

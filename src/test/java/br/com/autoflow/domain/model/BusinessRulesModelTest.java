@@ -232,6 +232,8 @@ class BusinessRulesModelTest {
                 new ArrayList<>()              // servicosExecucao
         );
 
+        abandono.setStatusOS(StatusOS.AGUARDANDO_APROVACAO);
+        abandono.setDtFimDiagnostico(LocalDateTime.now().minusDays(3));
         abandono.verificarAbandonoTecnico(2);
         assertEquals(StatusOS.ABANDONADO, abandono.getStatusOS());
     }

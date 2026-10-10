@@ -27,7 +27,7 @@ public interface OrcamentoServicoMapper {
     @AfterMapping
     default void vincularItens(@MappingTarget OrcamentoServico servico) {
         if (servico.getItens() != null) {
-            // Ajuste caso utilize itens convertidos via domain
+            servico.getItens().forEach(item -> item.setOrcamentoServico(servico));
         }
     }
 }

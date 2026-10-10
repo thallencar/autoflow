@@ -1,5 +1,6 @@
 package br.com.autoflow.application.validator;
 
+import br.com.autoflow.adapters.inbound.controller.dto.FuncionarioRequest;
 import br.com.autoflow.domain.exception.DadosJaCadastradosException;
 import br.com.autoflow.domain.exception.RegraNegocioException;
 import br.com.autoflow.domain.model.Funcionario;
@@ -23,10 +24,28 @@ public class FuncionarioValidator {
         validarEmailUnico(funcionario.getEmail());
     }
 
+    public void validarParaCriar(FuncionarioRequest request) {
+        if (request == null) {
+            throw new RegraNegocioException("O funcionário é obrigatório.");
+        }
+        validarIdadeMinima(request.dataNascimento());
+        validarCpfUnico(request.cpf());
+        validarEmailUnico(request.email());
+    }
+
     public void validarParaAtualizar(UUID id, Funcionario funcionario) {
         validarIdadeMinima(funcionario.getDataNascimento());
         validarCpfUnicoParaOutroFuncionario(id, funcionario.getCpf());
         validarEmailUnicoParaOutroFuncionario(id, funcionario.getEmail());
+    }
+
+    public void validarParaAtualizar(UUID id, FuncionarioRequest request) {
+        if (request == null) {
+            throw new RegraNegocioException("O funcionário é obrigatório.");
+        }
+        validarIdadeMinima(request.dataNascimento());
+        validarCpfUnicoParaOutroFuncionario(id, request.cpf());
+        validarEmailUnicoParaOutroFuncionario(id, request.email());
     }
 
     private void validarIdadeMinima(LocalDate dataNascimento) {

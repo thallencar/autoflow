@@ -82,8 +82,13 @@ class OrcamentoUseCaseImplTest {
         UUID idOs = UUID.randomUUID();
         Orcamento orcamento = criarOrcamentoMock();
         orcamento.setTipoOrcamento(TipoOrcamento.COMPLEMENTAR);
+
+        Orcamento inicial = criarOrcamentoMock();
+        inicial.setStatus(StatusOrcamento.APROVADO);
+
         OrdemServico ordemServico = new OrdemServico();
         ordemServico.setStatusOS(StatusOS.EM_EXECUCAO);
+        ordemServico.setIdsOrcamento(List.of(inicial));
 
         when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(ordemServico));
         doNothing().when(orcamentoValidator).validarCriacao(eq(idOs), any(Orcamento.class));

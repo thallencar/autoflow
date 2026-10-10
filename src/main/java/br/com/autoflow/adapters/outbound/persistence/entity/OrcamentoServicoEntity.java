@@ -39,7 +39,7 @@ public class OrcamentoServicoEntity {
     public void setOrcamento(OrcamentoEntity orcamento) {
         this.orcamento = orcamento;
         if (this.itens != null) {
-            this.itens.forEach(item -> item.setOrcamento(orcamento));
+            this.itens.forEach(item -> item.setOrcamentoServico(this));
         }
     }
 }

@@ -95,9 +95,9 @@ class TokenServiceTest {
                 UUID.randomUUID(),
                 "usuario@autoflow.com",
                 "senha123",
-                Perfil.MECANICO,
-                null,        // cliente
-                funcionario  // funcionario
+                Perfil.CLIENTE,
+                cliente,
+                null
         );
 
         // Act
@@ -108,7 +108,7 @@ class TokenServiceTest {
         DecodedJWT jwt = JWT.decode(token);
         assertEquals("autoflow-api", jwt.getIssuer());
         assertEquals("usuario@autoflow.com", jwt.getSubject());
-        assertEquals("MECANICO", jwt.getClaim("perfil").asString());
+        assertEquals("CLIENTE", jwt.getClaim("perfil").asString());
         assertEquals(clienteId.toString(), jwt.getClaim("clienteId").asString());
         assertTrue(jwt.getClaim("funcionarioId").isMissing());
     }
