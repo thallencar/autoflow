@@ -1,0 +1,50 @@
+name: CI/CD Pipeline Java 25
+
+on:
+  push:
+    branches: [ "developer", "master" ] # Roda sempre que você fizer push na branch principal
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Baixa o código do seu projeto no servidor do GitHub
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      # 2. Configura o Java 25 (usando Eclipse Temurin, que suporta versões recentes)
+      - name: Configurar o Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+          cache: 'maven' # ou 'gradle' se você usar gradle
+
+      # 3. Executa os testes e o build da aplicação Java
+      # (Se usa Maven, use 'mvn clean package'. Se usa Gradle, use './gradlew build')
+      - name: Build com Maven
+        run: mvn clean package -DskipTests=false
+
+      # 4. Configura as credenciais da AWS para o GitHub conseguir enviar a imagem
+      - name: Configurar Credenciais da AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: sa-east-1 # Coloque a região da sua conta AWS (ex: us-east-1)
+
+      # 5. Faz o login no Amazon ECR (Registry de Containers da AWS)
+      - name: Login no Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 6. Constrói a imagem Docker e envia (push) para o ECR da AWS
+      - name: Build e Push da Imagem Docker
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: nome-do-seu-repositorio-no-ecr # MUDE AQUI para o nome exato do seu ECR na AWS
+          IMAGE_TAG: latest
+        run: |
+          docker build -t $ECR_REGISTRY/$app-autoflow:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$app-autoflow:$IMAGE_TAG
