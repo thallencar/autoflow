@@ -155,6 +155,20 @@ Esse fluxo deixa a aplicação flexível para trocar:
 
 ---
 
+## Infraestrutura e entrega
+
+O repositório também inclui componentes de automação e infraestrutura para entrega contínua:
+
+- GitHub Actions para CI/CD;
+- build e testes automatizados;
+- empacotamento do artefato em Docker;
+- publicação da imagem no Amazon ECR;
+- provisioning de infraestrutura na AWS com Terraform.
+
+Atualmente, a infraestrutura provisionada é baseada em ECS/Fargate e ECR, e não em um cluster Kubernetes ativo no repositório.
+
+---
+
 ## Estrutura real do projeto
 
 ```text

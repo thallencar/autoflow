@@ -129,6 +129,23 @@ Em cenários excepcionais, a OS pode ir para cancelamento ou replanejamento conf
 - Lombok
 - Maven / Maven Wrapper
 - OpenAPI / Swagger
+- GitHub Actions
+- Terraform
+- AWS ECS / ECR
+
+### Pipeline de CI/CD
+
+O repositório já possui uma pipeline em GitHub Actions para executar:
+
+- validação do projeto;
+- testes unitários;
+- build da aplicação;
+- empacotamento da imagem Docker;
+- push da imagem para Amazon ECR.
+
+O provisionamento da infraestrutura AWS é realizado com Terraform, com foco em ECS/Fargate e ECR.
+
+Observação: o projeto não inclui manifests ou configuração de Kubernetes no repositório no momento. Se a intenção for migrar para Kubernetes, isso deve ser implementado como etapa adicional.
 
 ---
 
