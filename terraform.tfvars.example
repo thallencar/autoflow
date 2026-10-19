@@ -1,11 +1,8 @@
 aws_region = "us-east-1"
-app_name = "autoflow-us"
 app_image_tag = "latest"
 app_port = 8080
 
-app_environment = {
-  DB_URL      = "jdbc:postgresql://<host>:5432/<database>"
-  DB_USER     = "<usuario>"
-  DB_PASSWORD = "<senha>"
-  JWT_SECRET  = "<segredo-jwt>"
-}
+db_url = "jdbc:postgresql://<host>:5432/<database>"
+db_user = "<usuario>"
+db_password = "<senha>"
+jwt_secret = "<segredo-jwt>"
