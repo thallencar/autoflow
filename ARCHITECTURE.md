@@ -1,263 +1,189 @@
-# 🏛️ Documentação Arquitetural - Sistema Autoflow
+# Documentação arquitetural - AutoFlow
 
-Este documento descreve a arquitetura de software do sistema **Autoflow** utilizando a metodologia do **Modelo C4** com gráficos renderizados via Mermaid.
-
----
-
-## 🗺️ Nível 1: Contexto do Sistema (System Context)
-
-O Autoflow é uma plataforma centralizada para o gerenciamento de oficinas mecânicas. Neste nível macro, o sistema é tratado como uma caixa preta única, detalhando apenas como os atores interagem com ele.
-
-```mermaid
-graph TD
-    admin["Administrador (Pessoa) - Gerencia a oficina, usuários, estoque e configurações do sistema."]
-    mecanico["Mecânico (Pessoa) - Gerencia e atualiza ordens de serviço e veículos sob manutenção."]
-    cliente["Cliente da Oficina (Pessoa) - Acompanha o status de veículos, ordens de serviço e orçamentos."]
-
-    autoflow["Sistema Autoflow (Sistema de Software) - Plataforma central para gerenciamento de oficinas mecânicas, controlando fluxos de ordens, orçamentos e estoque."]
-
-    admin -->|HTTPS / JSON| autoflow
-    mecanico -->|HTTPS / JSON| autoflow
-    cliente -->|HTTPS / JSON| autoflow
-
-    classDef person fill:#08427b,stroke:#073b6f,color:#fff;
-    classDef system fill:#1168bd,stroke:#0f5da9,color:#fff;
-    class admin,mecanico,cliente person;
-    class autoflow system;
-```
+Este documento descreve a arquitetura atual do projeto, que foi reorganizada para seguir o padrão de arquitetura hexagonal (Ports and Adapters).
 
 ---
 
-## 📦 Nível 2: Contêineres (Containers)
+## Visão geral
 
-Neste nível, dividimos o Sistema Autoflow nas suas aplicações executáveis e armazenamentos de dados reais encontrados no repositório do projeto.
+A aplicação mantém o núcleo de negócio isolado de detalhes externos, como:
+
+- framework web;
+- persistência em banco;
+- segurança;
+- mapeamento DTO/entity;
+- integrações com infraestrutura.
+
+Assim, as regras de negócio ficam no domínio e na aplicação, enquanto os adaptadores conectam o sistema com o mundo externo.
+
+---
+
+## Diagrama de arquitetura
 
 ```mermaid
-graph TD
-    users["Usuários da Oficina (Pessoa) - Administradores, Mecânicos e Clientes."]
+graph LR
+    Client[Cliente / API / Usuário]
 
-    subgraph Fronteira do Sistema Autoflow
-        api["Autoflow API (Contêiner: Java 25 / Spring Boot 4.1) - Fornece os endpoints REST para o domínio da oficina, valida regras de negócio e executa rotinas agendadas."]
-        db[("Banco de Dados PostgreSQL (Contêiner: Supabase Host) - Armazena as informações persistentes do sistema.")]
+    subgraph Hexagon[Arquitetura Hexagonal]
+        Controller[Adapters Inbound\nControllers / REST]
+        UseCase[Application\nUse Cases]
+        Domain[Domain\nModel + Rules]
+        PortOut[Ports Outbound\nRepositories / Infra]
     end
 
-    users -->|HTTP / JSON - Porta 8080| api
-    api -->|JDBC / Spring Data JPA| db
+    DB[(Banco de dados)]
+    Security[Security / Auth]
 
-    classDef person fill:#08427b,stroke:#073b6f,color:#fff;
-    classDef container fill:#438dd5,stroke:#3b7bba,color:#fff;
-    classDef db fill:#438dd5,stroke:#3b7bba,color:#fff;
-    class users person;
-    class api container;
-    class db db;
+    Client --> Controller
+    Controller --> UseCase
+    UseCase --> Domain
+    UseCase --> PortOut
+    PortOut --> DB
+
+    Controller --> Security
 ```
 
 ---
 
-## 🧩 Nível 3: Componentes (Components)
+## Camadas da aplicação
 
-Detalhamento interno do contêiner **Autoflow API**, demonstrando como as pastas e pacotes estruturais do Spring Boot se comunicam internamente.
+### 1. Domain
 
-```mermaid
-graph TD
-    client["Browser / API Client (Aplicação Externa) - Interface que dispara as requisições."]
-    db_ext[("Banco de Dados PostgreSQL (Contêiner: Supabase) - Armazenamento relacional.")]
+Responsável pelo modelo de negócio, enums e regras centrais.
 
-    subgraph Autoflow API [Contêiner Spring Boot]
-        security["Filtro de Segurança (Spring Security / java-jwt) - Intercepta requisições, valida tokens JWT e gerencia perfis (ADMIN, MECANICO, CLIENTE)."]
-        controllers["Controllers REST (Spring MVC @RestController) - Expõe as rotas públicas e privadas (/auth, /veiculos, /ordens-servico)."]
-        services["Services de Aplicação (Spring @Service) - Orquestra e executa o fluxo das regras de negócio e validações."]
-        scheduler["Agendador de Tarefas (Spring @Scheduled) - Rotinas assíncronas (cancelamentos automáticos)."]
-        mappers["Mappers de Dados (MapStruct) - Converte objetos DTO para Entidades e vice-versa."]
-        repos["Repositórios (Spring Data JPA) - Abstrai as operações de CRUD no banco."]
-    end
+Pacotes principais:
 
-    client -->|HTTP / JSON| security
-    security --> controllers
-    controllers --> services
-    scheduler --> services
-    services --> mappers
-    services --> repos
-    repos --> db_ext
+- `br.com.autoflow.domain.model`
+- `br.com.autoflow.domain.enums`
+- `br.com.autoflow.domain.exception`
 
-    classDef ext fill:#,stroke:#888888,color:#fff;
-    classDef comp fill:#438dd5,stroke:#3b7bba,color:#fff;
-    class client,db_ext ext;
-    class security,controllers,services,scheduler,mappers,repos comp;
+Exemplos:
+
+- `Cliente`, `Veiculo`, `Funcionario`, `OrdemServico`, `Orcamento`, `Servico`
+- enums como `StatusOS`, `StatusOrcamento`, `Perfil`, `TipoItemEstoque`
+
+### 2. Application
+
+Responsável por orquestrar casos de uso e validações da aplicação.
+
+Pacotes principais:
+
+- `br.com.autoflow.application.usecase`
+- `br.com.autoflow.application.validator`
+
+Esses módulos coordenam operações e aplicam regras específicas do sistema, sem depender diretamente de banco ou framework.
+
+### 3. Ports
+
+Os ports definem contratos de entrada e saída da aplicação.
+
+Pacotes principais:
+
+- `br.com.autoflow.ports.inbound`
+- `br.com.autoflow.ports.outbound`
+
+Exemplos:
+
+- `ClienteRepositoryPort`
+- `OrdemServicoRepositoryPort`
+- `ServicoRepositoryPort`
+- `UsuarioRepositoryPort`
+
+### 4. Adapters
+
+Os adaptadores conectam a aplicação ao mundo externo.
+
+#### Inbound adapters
+
+- controllers REST
+- DTOs de entrada/saída
+- mappers de entrada/saída
+- autenticação/autorização
+
+Pacotes principais:
+
+- `br.com.autoflow.adapters.inbound`
+- `br.com.autoflow.adapters.config`
+
+#### Outbound adapters
+
+- persistência com JPA
+- implementação de repositórios
+- integrações com serviços externos
+
+Pacotes principais:
+
+- `br.com.autoflow.adapters.outbound.persistence`
+- `br.com.autoflow.adapters.outbound.security`
+
+---
+
+## Fluxo funcional principal
+
+```text
+Cliente envia requisição HTTP
+    ↓
+Controller recebe a requisição
+    ↓
+Use case executa regra de negócio
+    ↓
+Domínio processa o caso de uso
+    ↓
+Port outbound invoca a implementação de persistência
+    ↓
+Adapter de banco grava/consulta os dados
+    ↓
+Resposta retorna ao cliente
+```
+
+Esse fluxo deixa a aplicação flexível para trocar:
+
+- banco de dados;
+- mecanismo de autenticação;
+- camada de web;
+- implementações de infraestrutura.
+
+---
+
+## Vantagens da arquitetura aplicada
+
+- baixo acoplamento entre domínio e infraestrutura;
+- maior testabilidade;
+- separação clara de responsabilidades;
+- facilitação de evolução da aplicação;
+- manutenção do núcleo do negócio independente de frameworks.
+
+---
+
+## Estrutura real do projeto
+
+```text
+src/main/java/br/com/autoflow/
+├── adapters/
+│   ├── config/
+│   ├── inbound/
+│   └── outbound/
+├── application/
+│   ├── usecase/
+│   └── validator/
+├── domain/
+│   ├── enums/
+│   ├── exception/
+│   └── model/
+├── ports/
+│   ├── inbound/
+│   └── outbound/
+├── AutoflowApplication.java
+└── resources/
+    └── application.properties
 ```
 
 ---
 
-## Nível 4 : Código
+## Observação final
 
-Este documento representa o mapeamento detalhado do código atual da API, com foco no nível C4 (código). Ele descreve as classes principais, atributos, métodos relevantes, relações entre classes e os fluxos de execução mais importantes do sistema.
+A arquitetura hexagonal não remove o uso de Spring Boot, JPA ou REST. O que ela faz é deixar esses recursos funcionando como adaptadores externos, enquanto o centro da aplicação fica concentrado em regras e comportamento do negócio.
 
-## 1. Visão geral da arquitetura
-
-A API está organizada em camadas bem definidas:
-
-- Domain model: entidades JPA e enums do negócio
-- Domain repository: interfaces de persistência com JPA
-- Application service: regras de negócio e orquestração
-- Application dto: objetos de entrada/saída da API
-- Infrastructure mapper: conversão entre DTO e entidade
-- Interfaces controller: endpoints REST
-- Infrastructure security: autenticação/autorização via JWT
-- Exceptions: tratamento centralizado de erros
-
-A arquitetura segue um padrão MVC/clean-ish, com foco em Spring Boot + JPA + Spring Security.
-
----
-
-## 2. Entidades do domínio
-
-### 2.1 Cliente
-Package: `br.com.autoflow.domain_clean.model`
-
-Atributos:
-- `UUID id`
-- `String nome`
-- `String documento`
-- `String email`
-- `LocalDate dataNascimento`
-- `String telefone`
-- `Genero genero`
-- `Endereco endereco`
-
-Relacionamentos:
-- `@ManyToOne` com `Endereco`
-- `@OneToMany` com veículos e ordens de serviço, conforme o modelo JPA
-
-Métodos principais:
-- Não há lógica de negócio complexa no modelo; a entidade funciona como estrutura principal de cliente.
-
----
-
-### 2.2 Endereco
-Atributos:
-- `UUID id`
-- `String cep`
-- `String uf`
-- `String cidade`
-- `String bairro`
-- `String logradouro`
-- `String numero`
-- `String complemento`
-
-Observações:
-- Estrutura essencial para cadastro de cliente e funcionário.
-- Pode ser usada por múltiplas entidades conforme a relação JPA.
-
----
-
-### 2.3 Funcionario
-Atributos:
-- `UUID idFuncionario`
-- `String cpf`
-- `String nome`
-- `String telefone`
-- `String email`
-- `Genero genero`
-- `LocalDate dataNascimento`
-- `Cargo cargo`
-- `Endereco endereco`
-- `boolean ocupado`
-- `int nr_advertencias`
-
-Métodos principais:
-- `void ocupar()`
-    - marca `ocupado = true`
-- `void liberar()`
-    - marca `ocupado = false`
-- `void adicionarAdvertencia()`
-    - incrementa `nr_advertencias`
-- `boolean deveSerDemitido()`
-    - retorna `true` quando `nr_advertencias >= 3`
-
-Responsabilidade:
-- Representa o colaborador que executa serviços/diagnósticos e pode ser vinculado a uma conta de usuário.
-
----
-
-### 2.4 Usuario
-Package: `br.com.autoflow.domain.model`
-
-Atributos:
-- `UUID id`
-- `String login`
-- `String senha`
-- `Perfil perfil`
-- `Cliente cliente`
-- `Funcionario funcionario`
-
-Implementa:
-- `UserDetails`
-
-Métodos/overrides importantes:
-- `Collection<? extends GrantedAuthority> getAuthorities()`
-    - traduz o `Perfil` para roles Spring Security, por exemplo `ROLE_ADMIN`, `ROLE_FUNCIONARIO`, `ROLE_CLIENTE`
-- `String getUsername()`
-- `String getPassword()`
-- `boolean isAccountNonExpired()`
-- `boolean isAccountNonLocked()`
-- `boolean isCredentialsNonExpired()`
-- `boolean isEnabled()`
-
-Métodos auxiliares:
-- `static Usuario criarUsuarioParaFuncionario(Funcionario funcionario, Perfil perfil, PasswordEncoder passwordEncoder)`
-- `void atualizarDadosAcesso(String novoEmail, Perfil novoPerfil)`
-
-Responsabilidade:
-- Entidade de autenticação e autorização do sistema.
-
----
-
-### 2.5 Veiculo
-Atributos:
-- `UUID idVeiculo`
-- `String placa`
-- `String modelo`
-- `String marca`
-- `BigDecimal kmAtual`
-- `Integer anoFabricacao`
-- `String cor`
-- `Cliente cliente`
-
-Métodos principais:
-- `void atualizarDados(VeiculoRequest request, Cliente cliente)`
-    - atualiza os dados do veículo para o cliente informado
-
-Responsabilidade:
-- Representa o automóvel relacionado a um cliente e a uma OS.
-
----
-
-### 2.6 Servico
-Atributos:
-- `UUID idServico`
-- `String dsServico`
-- `BigDecimal vlServico`
-- `Integer qtTempoEstimadoMin`
-
-Responsabilidade:
-- Define o catálogo de serviços disponíveis para orçamento e OS.
-
----
-
-### 2.7 Estoque
-Atributos:
-- `UUID id`
-- `String nomeItem`
-- `String nomeMarca`
-- `BigDecimal valorUnitario`
-- `Integer quantidadeEstoque`
-- `Integer quantidadeMinima`
-- `TipoItemEstoque tipoCategoria`
-
-Métodos principais:
-- `boolean deveDispararAlertaEstoqueBaixo()`
-    - retorna `true` quando:
-        - `quantidadeEstoque <= quantidadeMinima`
         - e `tipoCategoria` pertence a `INSUMO` ou `PECA_COMPARTILHADA`
 - `boolean deveGerarAlertaEstoqueBaixo()`
     - delega para `deveDispararAlertaEstoqueBaixo()`

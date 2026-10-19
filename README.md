@@ -1,149 +1,172 @@
 # AutoFlow
-Sistema para gerenciamento dos processos de uma oficina mecânica, centralizando o ciclo de vida das Ordens de Serviço (OS), desde a abertura até a entrega do veículo.
 
-## Contexto
-O AutoFlow foi desenvolvido para substituir processos manuais e descentralizados, como anotações e planilhas, por um fluxo centralizado de atendimento e execução de serviços.
+Sistema para gestão de oficina mecânica, com foco no ciclo completo da Ordem de Serviço (OS): recebimento do veículo, diagnóstico, orçamento, execução, pagamento e entrega.
 
-O sistema fornece suporte para:
+## Visão geral
 
-- Cadastro e gerenciamento de clientes e veículos;
+O AutoFlow foi pensado para substituir processos manuais e descentralizados por um fluxo centralizado de atendimento. A aplicação organiza o domínio de oficina em módulos de cliente, veículo, funcionário, serviço, orçamento, estoque e ordem de serviço.
+
+### Funcionalidades principais
+
+- Cadastro e gestão de clientes, funcionários e veículos;
 - Abertura e acompanhamento de Ordens de Serviço;
-- Registro de diagnóstico e serviços necessários;
-- Elaboração e acompanhamento de orçamentos;
-- Reserva, baixa e devolução de peças e insumos;
-- Registro e acompanhamento da execução dos serviços;
-- Controle do pagamento da OS;
-- Registro da entrega do veículo;
-- Notificações relacionadas ao andamento da OS;
-- Registro de informações necessárias para acompanhamento do tempo de execução.
+- Registro de diagnóstico e serviços executados;
+- Criação e acompanhamento de orçamentos;
+- Controle de peças, reservas e estoque;
+- Registro de execução do serviço e indicadores de tempo;
+- Controle de pagamento e entrega do veículo;
+- Autenticação e autorização por perfil.
+
+---
+
+## Arquitetura atual
+
+O projeto foi reorganizado para seguir a abordagem de arquitetura hexagonal (Ports and Adapters), com o núcleo de negócio independente de frameworks e infraestrutura.
+
+### Principio
+
+- O domínio não conhece detalhes de banco, web ou frameworks externos;
+- os adaptadores conectam a aplicação ao mundo externo;
+- os ports definem as interfaces de entrada e saída da aplicação.
+
+### Estrutura principal
+
+```text
+src/main/java/br/com/autoflow/
+├── adapters/
+│   ├── inbound/      # controllers, mappers e integração HTTP
+│   ├── outbound/     # persistência e integrações externas
+│   └── config/       # configuração do Spring
+├── application/
+│   ├── usecase/      # casos de uso da aplicação
+│   └── validator/    # validações de regras de aplicação
+├── domain/
+│   ├── model/        # entidades de domínio
+│   ├── enums/        # enums do negócio
+│   └── exception/    # exceções de domínio
+├── ports/
+│   ├── inbound/      # interfaces de entrada (casos de uso / serviços)
+│   └── outbound/     # interfaces de persistência e integrações
+├── AutoflowApplication.java
+└── resources/
+   └── application.properties
+```
+
+### Fluxo de execução
+
+```text
+HTTP Request
+   ↓
+Controller (adapter inbound)
+   ↓
+Use Case (application)
+   ↓
+Domain model / business rules
+   ↓
+Port outbound
+   ↓
+Persistence adapter / JPA / database
+```
+
+Esse desenho deixa o núcleo do negócio protegido de detalhes de tecnologia e facilita troca de infraestrutura sem impactar a lógica principal.
 
 ---
 
 ## Fluxo da Ordem de Serviço
 
-A OS representa o principal fluxo do sistema:
-
 ```text
 Recebida
-   ↓
+ ↓
 Em diagnóstico
-   ↓
+ ↓
 Aguardando aprovação
-   ↓
+ ↓
 Em execução
-   ↓
+ ↓
 Finalizada
-   ↓
+ ↓
 Entregue
 ```
 
-Em determinadas situações, como fluxos e exceções. a OS pode assumir o status de ``Cancelada``.
+Em cenários excepcionais, a OS pode ir para cancelamento ou replanejamento conforme regras do negócio.
 
-## Principais Atores
+---
+
+## Principais atores
 
 ### Cliente
-Interage com o sistema para:
+- acompanha OS;
+- aprova ou rejeita orçamento;
+- retira o veículo;
+- acompanha histórico e status.
 
-- Acompanhar sua Ordem de Serviço;
-- Receber orçamentos;
-- Aprovar ou rejeitar orçamentos;
-- Realizar o pagamento;
-- Retirar o veículo.
+### Recepcionista
+- cadastra clientes e veículos;
+- abre ordens de serviço;
+- acompanha andamento da OS;
+- registra dados de pagamento e entrega.
 
-## Recepcionista
-Utiliza o sistema para:
+### Mecânico
+- realiza diagnóstico;
+- define serviços e peças necessárias;
+- registra execução;
+- acompanha alertas de estoque.
 
-- Cadastrar e identificar clientes;
-- Cadastrar e vincular veículos;
-- Abrir Ordens de Serviço;
-- Acompanhar o andamento das OS;
-- Registrar e confirmar informações relacionadas ao pagamento;
-- Registrar ou confirmar a entrega do veículo.
+---
 
-## Mecânico
-Utiliza o sistema para:
+## Tecnologias
 
-- Consultar novas Ordens de Serviço;
-- Registrar diagnósticos;
-- Identificar serviços, peças e insumos necessários;
-- Participar da elaboração de orçamentos;
-- Registrar necessidades adicionais durante a execução;
-- Registrar informações da execução dos serviços;
-- Acompanhar alertas relacionados ao estoque.
+- Java 25
+- Spring Boot 4.1
+- Spring Web MVC
+- Spring Validation
+- Spring Security
+- JWT (java-jwt)
+- Spring Data JPA
+- Hibernate
+- PostgreSQL
+- MapStruct
+- Lombok
+- Maven / Maven Wrapper
+- OpenAPI / Swagger
 
-## Regras de Negócio
+---
 
+## Como executar
 
-## Linguagem do Domínio
-| Termo                      | Significado                                                           |
-| -------------------------- | --------------------------------------------------------------------- |
-| **OS / Ordem de Serviço**  | Registro que acompanha o atendimento e execução do serviço do veículo |
-| **Diagnóstico**            | Avaliação técnica para identificar necessidades do veículo            |
-| **Orçamento**              | Proposta de serviços e peças para a OS                                |
-| **Orçamento inicial**      | Proposta baseada no diagnóstico inicial                               |
-| **Orçamento complementar** | Proposta para necessidades identificadas durante a execução           |
-| **Serviço**                | Trabalho realizado no veículo                                         |
-| **Peça**                   | Item utilizado durante a execução                                     |
-| **Insumo**                 | Material consumível utilizado durante a execução                      |
-| **Reserva**                | Separação temporária de itens do estoque para uma OS                  |
-| **Baixa**                  | Retirada definitiva de itens do estoque                               |
-| **Estoque mínimo**         | Limite utilizado para geração de alertas                              |
-| **Aguardando peça**        | Situação em que a execução depende da disponibilidade de uma peça     |
-| **Aprovação**              | Aceite do orçamento pelo cliente                                      |
-| **Rejeição**               | Recusa do orçamento pelo cliente                                      |
-| **Pagamento**              | Quitação do valor devido pela OS                                      |
-| **Entrega**                | Devolução do veículo ao cliente                                       |
+### Requisitos
 
-## Métricas
+- JDK 25
+- Maven Wrapper ou Maven instalado
+- Banco PostgreSQL disponível
 
-## Notificações
+### Comandos
 
-## Arquitetura
-
-O projeto é implementado como um **monolito em arquitetura em camadas**, organizado em:
-
-```text
-src/main/java/br/com/autoflow/
-
-├── interface/
-├── application/
-├── domain/
-└── infrastructure/
-```
-A aplicação possui uma única unidade de execução e deploy, mantendo a separação de responsabilidades entre as camadas.
-
-```text
-Interface → Application → Domain
-                  ↓
-           Infrastructure
+```bash
+./mvnw clean install
+./mvnw spring-boot:run
 ```
 
-As regras de negócio são mantidas no domínio, enquanto detalhes de persistência e infraestrutura permanecem isolados das regras centrais da aplicação.
+Se o ambiente usa Docker, também é possível levantar a infraestrutura com o compose disponível no projeto.
 
-## Estrutura do projeto
+---
 
-```text
-src/
-└── main/
-    ├── java/
-    │   └── br/com/autoflow/
-    │       ├── interface/
-    │       ├── application/
-    │       ├── domain/
-    │       └── infrastructure/
-    │
-    └── resources/
-        └── application.properties
-```
+## Observações de domínio
 
-### Tecnologias
-- **Java 25** — linguagem principal
-- **Spring Boot 4** — framework da aplicação
-- **Spring Web** — API REST
-- **Spring Data JPA** — persistência
-- **Hibernate** — ORM
-- **PostgreSQL** — banco de dados relacional
-- **Supabase** — hospedagem inicial do PostgreSQL
-- **Maven** — build e gerenciamento de dependências
-- **Maven Wrapper** — execução padronizada do Maven
-- **OpenAPI / Swagger** — documentação da API
+### Linguagem do domínio
+
+- OS / Ordem de Serviço
+- Diagnóstico
+- Orçamento
+- Serviço
+- Peça / item de estoque
+- Reserva de estoque
+- Aprovação do orçamento
+- Pagamento
+- Entrega do veículo
+
+---
+
+## Status da estrutura
+
+Este README foi atualizado para refletir a arquitetura hexagonal adotada no projeto e a organização real dos pacotes do código-fonte.
