@@ -13,7 +13,7 @@ import org.mapstruct.MappingTarget;
 
 import java.time.LocalDateTime;
 
-@Mapper(componentModel = "spring", imports = {StatusOrcamento.class, LocalDateTime.class, OrdemServico.class, OsServicoMapper.class})
+@Mapper(componentModel = "spring", unmappedTargetPolicy = org.mapstruct.ReportingPolicy.IGNORE, imports = {StatusOrcamento.class, LocalDateTime.class, OrdemServico.class, OsServicoMapper.class})
 public interface OrcamentoMapper {
 
     @Mapping(source = "ordemServico.idOs", target = "idOs")
