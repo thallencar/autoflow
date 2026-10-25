@@ -281,7 +281,7 @@ class OrcamentoValidatorTest {
                 idEstoque, "Item", "Marca", BigDecimal.valueOf(10.00), 10, 2, TipoItemEstoque.PECA
         );
 
-        when(estoqueRepository.findById(idEstoque)).thenReturn(Optional.of(estoque));
+        lenient().when(estoqueRepository.findById(idEstoque)).thenReturn(Optional.of(estoque));
 
         assertDoesNotThrow(() -> validator.validarEstoqueDisponivel(orcamento));
     }

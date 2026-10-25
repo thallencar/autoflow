@@ -138,10 +138,13 @@ public class OrcamentoUseCaseImpl implements
     private void atualizarStatusOrdemServicoAposCriacao(OrdemServico ordemServico, Orcamento orcamento) {
         boolean ehComplementar = verificarSeEhComplementar(orcamento);
 
-        if (ehComplementar) {
-            ordemServico.atualizarStatus(StatusOS.AGUARDANDO_APROVACAO, "OS pausada: Aguardando aprovação de orçamento complementar.");
-        } else {
-            ordemServico.atualizarStatus(StatusOS.AGUARDANDO_APROVACAO, "Orçamento criado. Aguardando aprovação do cliente.");
+        StatusOS statusDesejado = StatusOS.AGUARDANDO_APROVACAO;
+        String mensagem = ehComplementar
+                ? "OS pausada: Aguardando aprovação de orçamento complementar."
+                : "Orçamento criado. Aguardando aprovação do cliente.";
+
+        if (ordemServico.getStatusOS() != statusDesejado) {
+            ordemServico.atualizarStatus(statusDesejado, mensagem);
         }
 
         ordemServicoRepositoryPort.save(ordemServico);
