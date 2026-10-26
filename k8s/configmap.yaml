@@ -6,3 +6,4 @@ metadata:
 
 data:
   SPRING_DATASOURCE_URL: 'jdbc:postgresql://aws-0-ca-central-1.pooler.supabase.com:5432/postgres'
+  API_SECURITY_TOKEN_EXPIRATION_MINUTES: "15"

@@ -24,12 +24,27 @@ spec:
           ports:
             - containerPort: 8080
 
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
           env:
             - name: SPRING_DATASOURCE_URL
               valueFrom:
                 configMapKeyRef:
                   name: autoflow-config
                   key: SPRING_DATASOURCE_URL
+
+
+            - name: API_SECURITY_TOKEN_EXPIRATION_MINUTES
+              valueFrom:
+                configMapKeyRef:
+                  name: autoflow-config
+                  key: API_SECURITY_TOKEN_EXPIRATION_MINUTES
 
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
