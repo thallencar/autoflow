@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: autoflow
-          image: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/autoflow-us:latest
+          image: 447488717019.dkr.ecr.us-east-1.amazonaws.com/autoflow-us:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
