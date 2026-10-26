@@ -100,11 +100,12 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🔑 Configurar Credenciais da AWS
+      - name: 🔑 Configurar Credenciais da AWS Academy
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.AWS_ACADEMY_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_ACADEMY_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_ACADEMY_SESSION_TOKEN }}
           aws-region: us-east-1
 
       - name: 🔓 Login no Amazon ECR
@@ -119,3 +120,14 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: ☸️ Configurar acesso ao EKS
+        run: |
+          aws eks update-kubeconfig \
+            --region us-east-1 \
+            --name autoflow-us-eks
+
+      - name: 🚀 Atualizar aplicação no Kubernetes
+        run: |
+          kubectl rollout restart deployment/autoflow
+          kubectl rollout status deployment/autoflow --timeout=300s
