@@ -8,7 +8,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: RollingUpdate
+    type: Recreate
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
@@ -42,7 +42,7 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8080
-            initialDelaySeconds: 45
+            initialDelaySeconds: 60
             periodSeconds: 10
           livenessProbe:
             httpGet:
