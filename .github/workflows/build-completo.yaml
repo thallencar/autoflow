@@ -151,7 +151,7 @@ jobs:
         env:
           ECR_IMAGE: ${{ secrets.AWS_ACCOUNT_ID_BRUNA }}.dkr.ecr.us-east-1.amazonaws.com/autoflow-us:latest
         run: |
-          sed -i "s|image:.*|image: $ECR_IMAGE|g" k8s/deployment.yaml
+         # sed -i "s|image:.*|image: $ECR_IMAGE|g" k8s/deployment.yaml
 
           kubectl apply -f k8s/configmap-secret.yaml
           kubectl apply -f k8s/deployment.yaml
