@@ -103,6 +103,7 @@ class OrcamentoUseCaseImplTest {
         ordemServico.setStatusOS(StatusOS.EM_EXECUCAO);
         ordemServico.setIdsOrcamento(new ArrayList<>(List.of(orcamentoInicial)));
 
+
         when(ordemServicoRepository.findById(idOs)).thenReturn(Optional.of(ordemServico));
         doNothing().when(orcamentoValidator).validarCriacao(eq(idOs), any(Orcamento.class));
 

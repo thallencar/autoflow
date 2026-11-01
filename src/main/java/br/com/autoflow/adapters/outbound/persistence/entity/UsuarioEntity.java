@@ -36,4 +36,9 @@ public class UsuarioEntity {
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "id_funcionario")
     private FuncionarioEntity funcionario;
+
+    public ClienteEntity getCliente() { return cliente; }
+    public FuncionarioEntity getFuncionario() { return funcionario; }
+    public void setCliente(ClienteEntity cliente) { this.cliente = cliente; }
+    public void setFuncionario(FuncionarioEntity funcionario) { this.funcionario = funcionario; }
 }

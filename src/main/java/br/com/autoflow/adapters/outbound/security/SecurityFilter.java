@@ -36,11 +36,11 @@ public class SecurityFilter  extends OncePerRequestFilter {
                 Optional<Usuario> usuarioOpt = usuarioRepository.findByLogin(login);
 
                 if (usuarioOpt.isPresent()) {
-                    // Cria o adapter do Spring Security
-                    UserDetailsImpl userDetails = new UserDetailsImpl(usuarioOpt.get());
+                    Usuario usuario = usuarioOpt.get();
+                    UserDetailsImpl userDetails = new UserDetailsImpl(usuario);
 
                     var authentication = new UsernamePasswordAuthenticationToken(
-                            userDetails,
+                            usuario,
                             null,
                             userDetails.getAuthorities()
                     );

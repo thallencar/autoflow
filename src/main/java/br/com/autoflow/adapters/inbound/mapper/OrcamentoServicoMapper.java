@@ -10,7 +10,8 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {OrcamentoItemMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, unmappedTargetPolicy = org.mapstruct.ReportingPolicy.IGNORE)
+
 public interface OrcamentoServicoMapper {
 
     @Mapping(target = "id", ignore = true)
@@ -28,7 +29,10 @@ public interface OrcamentoServicoMapper {
     @AfterMapping
     default void vincularItens(@MappingTarget OrcamentoServico servico) {
         if (servico.getItens() != null) {
+
             servico.getItens().forEach(item -> item.associarOrcamentoServico(servico));
+            servico.getItens().forEach(item -> item.setOrcamentoServico(servico));
+
         }
     }
 }

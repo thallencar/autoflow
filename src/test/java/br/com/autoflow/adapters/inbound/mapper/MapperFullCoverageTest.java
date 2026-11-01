@@ -80,10 +80,24 @@ class MapperFullCoverageTest {
         item.associarOrcamentoServico(orcServ);
         orcServ.getItens().add(item);
 
-        Orcamento orc = new Orcamento();
-        orc.setId(UUID.randomUUID());
-        orc.setServicos(List.of(orcServ));
-        orcServ.associarOrcamento(orc);
+        orcServ.setItens(List.of(item));
+
+        Orcamento orc = new Orcamento(
+                UUID.randomUUID(),
+                TipoOrcamento.INICIAL,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(orcServ),
+                List.of(item)
+        );
+
+        orcServ.setOrcamento(orc);
 
         OrdemServico os = new OrdemServico(
                 UUID.randomUUID(),

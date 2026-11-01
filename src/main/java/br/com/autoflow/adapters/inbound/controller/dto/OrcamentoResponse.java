@@ -5,11 +5,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import br.com.autoflow.domain.enums.StatusOrcamento;
+
 public record OrcamentoResponse(
         UUID id,
         UUID idOs,
         String tipoOrcamento,
-        String status,
+        StatusOrcamento status,
         LocalDateTime dataCriacao,
         LocalDateTime dataExpiracao,
         LocalDateTime dataDecisao,

@@ -35,4 +35,12 @@ public class OrcamentoServicoEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_orcamento")
     private OrcamentoEntity orcamento;
+
+    public void setOrcamento(OrcamentoEntity orcamento) {
+        this.orcamento = orcamento;
+        if (this.itens != null) {
+            this.itens.forEach(item -> item.setOrcamentoServico(this));
+        }
+    }
+
 }

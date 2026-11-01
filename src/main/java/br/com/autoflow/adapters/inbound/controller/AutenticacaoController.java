@@ -25,17 +25,20 @@ public class AutenticacaoController {
         var usernamePassword = new UsernamePasswordAuthenticationToken(request.login(), request.senha());
         var auth = authenticationManager.authenticate(usernamePassword);
 
-        if (auth.getPrincipal() instanceof UserDetailsImpl userDetails) {
-            Usuario usuario = userDetails.getUsuario();
+        Usuario usuario = null;
+        Object principal = auth.getPrincipal();
 
-            if (usuario == null) {
-                throw new EntidadeNaoEncontradaException("Usuário não encontrado no contexto de autenticação.", null);
-            }
-
-            String token = tokenService.gerarToken(usuario);
-            return new TokenResponse(token);
+        if (principal instanceof UserDetailsImpl userDetails) {
+            usuario = userDetails.getUsuario();
+        } else if (principal instanceof Usuario u) {
+            usuario = u;
         }
 
-        throw new EntidadeNaoEncontradaException("Não foi possível autenticar o usuário.", null);
+        if (usuario == null) {
+            throw new EntidadeNaoEncontradaException("Não foi possível autenticar o usuário.", null);
+        }
+
+        String token = tokenService.gerarToken(usuario);
+        return new TokenResponse(token);
     }
 }

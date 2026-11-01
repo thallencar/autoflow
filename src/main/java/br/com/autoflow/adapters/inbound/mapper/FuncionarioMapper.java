@@ -8,7 +8,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.MappingTarget; // <--- Importante
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {EnderecoMapper.class})
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {EnderecoMapper.class}, unmappedTargetPolicy = org.mapstruct.ReportingPolicy.IGNORE)
 public interface FuncionarioMapper {
 
     @Mapping(target = "id", ignore = true)

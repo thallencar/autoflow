@@ -6,7 +6,14 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 
-@Mapper(componentModel = MappingConstants.ComponentModel.SPRING, uses = {ServicoEntityMapper.class, OrcamentoItemEntityMapper.class})
+
+@Mapper(
+    componentModel = MappingConstants.ComponentModel.SPRING,
+    uses = {
+        ServicoEntityMapper.class,
+        OrcamentoItemEntityMapper.class
+    }
+)
 public interface OrcamentoServicoEntityMapper {
 
     @Mapping(target = "orcamento", ignore = true)

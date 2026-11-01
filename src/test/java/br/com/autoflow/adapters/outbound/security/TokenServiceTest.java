@@ -89,16 +89,13 @@ class TokenServiceTest {
         Cliente cliente = new Cliente();
         cliente.setId(clienteId);
 
-        Funcionario funcionario = new Funcionario();
-        funcionario.setId(UUID.randomUUID());
-
         Usuario usuario = new Usuario(
                 UUID.randomUUID(),
                 "usuario@autoflow.com",
                 "senha123",
-                Perfil.MECANICO,
+                Perfil.CLIENTE,
                 cliente,
-                funcionario
+                null
         );
 
         // Act
@@ -109,34 +106,34 @@ class TokenServiceTest {
         DecodedJWT jwt = JWT.decode(token);
         assertEquals("autoflow-api", jwt.getIssuer());
         assertEquals("usuario@autoflow.com", jwt.getSubject());
-        assertEquals("MECANICO", jwt.getClaim("perfil").asString());
+        assertEquals("CLIENTE", jwt.getClaim("perfil").asString());
         assertEquals(clienteId.toString(), jwt.getClaim("clienteId").asString());
     }
-        @Test
-        @DisplayName("Deve retornar mensagem de erro para token malformatado ou assinado com outra chave secret")
-        void deveRetornarMensagemErroParaTokenInvalido() {
-            // Arrange
-            String tokenInvalido = "header.payloadComAssinaturaInvalida.signature";
+    @Test
+    @DisplayName("Deve retornar mensagem de erro para token malformatado ou assinado com outra chave secret")
+    void deveRetornarMensagemErroParaTokenInvalido() {
+        // Arrange
+        String tokenInvalido = "header.payloadComAssinaturaInvalida.signature";
 
-            // Act
-            String resultado = tokenService.validarToken(tokenInvalido);
+        // Act
+        String resultado = tokenService.validarToken(tokenInvalido);
 
-            // Assert
-            assertEquals("", resultado);
-        }
-
-        @Test
-        @DisplayName("Deve retornar mensagem de erro quando o token estiver expirado")
-        void deveRetornarMensagemErroParaTokenExpirado() {
-            // Arrange: Força o tempo de expiração para um valor negativo (-10 min)
-            ReflectionTestUtils.setField(tokenService, "expirationMinutes", -10L);
-            Usuario usuario = criarUsuarioBase(Perfil.ADMIN);
-            String tokenExpirado = tokenService.gerarToken(usuario);
-
-            // Act
-            String resultado = tokenService.validarToken(tokenExpirado);
-
-            // Assert
-            assertEquals("", resultado);
-        }
+        // Assert
+        assertEquals("", resultado);
     }
+
+    @Test
+    @DisplayName("Deve retornar mensagem de erro quando o token estiver expirado")
+    void deveRetornarMensagemErroParaTokenExpirado() {
+        // Arrange: Força o tempo de expiração para um valor negativo (-10 min)
+        ReflectionTestUtils.setField(tokenService, "expirationMinutes", -10L);
+        Usuario usuario = criarUsuarioBase(Perfil.ADMIN);
+        String tokenExpirado = tokenService.gerarToken(usuario);
+
+        // Act
+        String resultado = tokenService.validarToken(tokenExpirado);
+
+        // Assert
+        assertEquals("", resultado);
+    }
+}

@@ -50,9 +50,11 @@ public class FuncionarioEntity implements Serializable {
     @JoinColumn(name = "id_endereco", nullable = false)
     private EnderecoEntity endereco;
 
+    @Builder.Default
     @Column(name = "st_ocupado")
     private boolean ocupado = false;
 
+    @Builder.Default
     @Column(name = "nr_advertencias")
     private int nrAdvertencias = 0;
 }

@@ -1,6 +1,7 @@
 package br.com.autoflow.adapters.inbound.mapper;
 
 import br.com.autoflow.adapters.inbound.controller.dto.*;
+import br.com.autoflow.domain.enums.StatusOrcamento;
 import br.com.autoflow.domain.model.Orcamento;
 import br.com.autoflow.domain.model.OrcamentoItem;
 import org.mapstruct.AfterMapping;
@@ -13,12 +14,13 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(
         componentModel = MappingConstants.ComponentModel.SPRING,
         uses = {OrcamentoServicoMapper.class},
-        unmappedTargetPolicy = ReportingPolicy.IGNORE
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        imports = {StatusOrcamento.class}
 )
 public interface OrcamentoMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "status", expression = "java(StatusOrcamento.PENDENTE)")
     @Mapping(target = "dataCriacao", ignore = true)
     @Mapping(target = "dataDecisao", ignore = true)
     @Mapping(target = "subtotalPecas", ignore = true)

@@ -9,8 +9,11 @@ import org.mapstruct.MappingConstants;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface OrcamentoItemEntityMapper {
 
+    @Mapping(target = "orcamentoServico", ignore = true)
     @Mapping(target = "orcamento", ignore = true)
     OrcamentoItemEntity toEntity(OrcamentoItem orcamentoItem);
 
+    @Mapping(target = "orcamentoServico", ignore = true)
+    @Mapping(target = "orcamento", ignore = true)
     OrcamentoItem toDomain(OrcamentoItemEntity entity);
 }
