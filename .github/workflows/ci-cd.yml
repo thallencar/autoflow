@@ -129,5 +129,10 @@ jobs:
 
       - name: 🚀 Atualizar aplicação no Kubernetes
         run: |
+          kubectl apply -f k8s/configmap.yaml
+          kubectl apply -f k8s/service.yaml
+          kubectl apply -f k8s/deployment.yaml
+          kubectl apply -f k8s/hpa.yaml
+
           kubectl rollout restart deployment/autoflow
           kubectl rollout status deployment/autoflow --timeout=300s
