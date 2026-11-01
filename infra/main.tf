@@ -15,7 +15,7 @@ provider "aws" {
 
 variable "aws_region" {
   type    = string
-  default = "us-east-1"
+  default = "us-east-2"
 }
 
 variable "app_name" {
@@ -60,7 +60,7 @@ data "aws_subnets" "default" {
 
   filter {
     name   = "availability-zone"
-    values = ["us-east-1a", "us-east-1c"]
+    values = ["us-east-2a", "us-east-2b"]
   }
 }
 
@@ -69,11 +69,11 @@ data "aws_availability_zones" "available" {
 }
 
 data "aws_iam_role" "eks_cluster" {
-  name = "c227945a5749351l17470365t1w846866-LabEksClusterRole-EeRENUZ66DqJ"
+  name = "AutoFlowEksClusterRole"
 }
 
 data "aws_iam_role" "eks_nodes" {
-  name = "c227945a5749351l17470365t1w846866515-LabEksNodeRole-qGy1RJpKUVdD"
+  name = "AutoFlowEksNodeRole"
 }
 
 resource "aws_eks_cluster" "main" {
@@ -91,7 +91,7 @@ resource "aws_eks_node_group" "main" {
   node_role_arn   = data.aws_iam_role.eks_nodes.arn
   subnet_ids      = data.aws_subnets.default.ids
 
-  instance_types = ["t3.medium"]
+  instance_types = ["m7i-flex.large"]
   capacity_type  = "ON_DEMAND"
 
   scaling_config {
