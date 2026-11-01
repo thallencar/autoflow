@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: teste-carga
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+
+  containers:
+    - name: gerador
+      image: curlimages/curl:8.12.1
+
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          TOKEN=$(cat /app/secrets/token)
+
+          echo "Iniciando teste com 3 requisições paralelas..."
+
+          END=$(( $(date +%s) + 60 ))
+
+          while [ "$(date +%s)" -lt "$END" ]; do
+            for i in 1 2 3; do
+              curl -s -o /dev/null \
+                --max-time 5 \
+                -H "Authorization: Bearer $TOKEN" \
+                http://autoflow-service:8080/enderecos &
+            done
+
+            wait
+            sleep 0.2
+          done
+
+          echo "Teste finalizado."
+
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+
+      volumeMounts:
+        - name: jwt
+          mountPath: /app/secrets
+          readOnly: true
+
+  volumes:
+    - name: jwt
+      secret:
+        secretName: teste-hpa-token
