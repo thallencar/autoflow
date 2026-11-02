@@ -130,7 +130,7 @@ class OrcamentoControllerTest {
 
         OrcamentoResponse result = controller.atualizarStatus(id, request);
 
-        assertEquals(StatusOrcamento.APROVADO.name(), result.status());
+        assertEquals(StatusOrcamento.APROVADO, result.status());
 
         verify(atualizarStatusOrcamentoUseCase).atualizarStatus(eq(id), eq(StatusOrcamento.APROVADO));
     }

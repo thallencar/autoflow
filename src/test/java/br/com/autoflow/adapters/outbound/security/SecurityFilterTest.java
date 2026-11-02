@@ -75,9 +75,7 @@ class SecurityFilterTest {
         // Assert
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         assertNotNull(authentication);
-        assertInstanceOf(UserDetailsImpl.class, authentication.getPrincipal());
-
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        assertSame(usuarioMock, authentication.getPrincipal());
 
         verify(tokenService).validarToken(token);
         verify(usuarioRepository).findByLogin(login);
