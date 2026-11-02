@@ -1,189 +1,234 @@
 # AutoFlow
 
-Sistema para gestão de oficina mecânica, com foco no ciclo completo da Ordem de Serviço (OS): recebimento do veículo, diagnóstico, orçamento, execução, pagamento e entrega.
+![V1.2.0](https://img.shields.io/badge/V1.2.0-gray?style=for-the-badge)
 
-## Visão geral
-
-O AutoFlow foi pensado para substituir processos manuais e descentralizados por um fluxo centralizado de atendimento. A aplicação organiza o domínio de oficina em módulos de cliente, veículo, funcionário, serviço, orçamento, estoque e ordem de serviço.
-
-### Funcionalidades principais
-
-- Cadastro e gestão de clientes, funcionários e veículos;
-- Abertura e acompanhamento de Ordens de Serviço;
-- Registro de diagnóstico e serviços executados;
-- Criação e acompanhamento de orçamentos;
-- Controle de peças, reservas e estoque;
-- Registro de execução do serviço e indicadores de tempo;
-- Controle de pagamento e entrega do veículo;
-- Autenticação e autorização por perfil.
+_Sistema para gerenciamento dos processos de oficinas mecânicas, centralizando o ciclo de vida das Ordens de Serviço (OS), desde a abertura até a entrega do veículo._
 
 ---
 
-## Arquitetura atual
+## 👥 Equipe e Materiais
 
-O projeto foi reorganizado para seguir a abordagem de arquitetura hexagonal (Ports and Adapters), com o núcleo de negócio independente de frameworks e infraestrutura.
+### Participantes
 
-### Principio
+| Participante | Discord |
+| --- | --- |
+| Thalita de Alencar | Thalita. (`thalita_`) |
+| Bruna Zorzanello | Bruna Zorzanello (`brunazorzanello`) |
+| Caroline Lampert | Carolsla (`carolsla`) |
 
-- O domínio não conhece detalhes de banco, web ou frameworks externos;
-- os adaptadores conectam a aplicação ao mundo externo;
-- os ports definem as interfaces de entrada e saída da aplicação.
+### Materiais do Projeto
 
-### Estrutura principal
-
-```text
-src/main/java/br/com/autoflow/
-├── adapters/
-│   ├── inbound/      # controllers, mappers e integração HTTP
-│   ├── outbound/     # persistência e integrações externas
-│   └── config/       # configuração do Spring
-├── application/
-│   ├── usecase/      # casos de uso da aplicação
-│   └── validator/    # validações de regras de aplicação
-├── domain/
-│   ├── model/        # entidades de domínio
-│   ├── enums/        # enums do negócio
-│   └── exception/    # exceções de domínio
-├── ports/
-│   ├── inbound/      # interfaces de entrada (casos de uso / serviços)
-│   └── outbound/     # interfaces de persistência e integrações
-├── AutoflowApplication.java
-└── resources/
-   └── application.properties
-```
-
-### Fluxo de execução
-
-```text
-HTTP Request
-   ↓
-Controller (adapter inbound)
-   ↓
-Use Case (application)
-   ↓
-Domain model / business rules
-   ↓
-Port outbound
-   ↓
-Persistence adapter / JPA / database
-```
-
-Esse desenho deixa o núcleo do negócio protegido de detalhes de tecnologia e facilita troca de infraestrutura sem impactar a lógica principal.
+- **Documentação DDD:** [Board no Miro](https://miro.com/app/board/uXjVH7ifFEw=/?share_link_id=371619344967)
+    - **Storytelling:** [Storytelling](./docs/assets/storytelling.jpg)
+- **Pitch do MVP:** [AutoFlow - Demonstração do Projeto](https://www.youtube.com/watch?v=LDuQph48AqU)
 
 ---
 
-## Fluxo da Ordem de Serviço
+## 🗄️ Seções do Documento
 
-```text
-Recebida
- ↓
-Em diagnóstico
- ↓
-Aguardando aprovação
- ↓
-Em execução
- ↓
-Finalizada
- ↓
-Entregue
-```
-
-Em cenários excepcionais, a OS pode ir para cancelamento ou replanejamento conforme regras do negócio.
+| Seção                                             | Subseções                                                                                |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [🎯 Visão Geral](#-visão-geral)                   | [Objetivo](#objetivo-do-sistema), [Stack](#stack-tecnológica), [Fluxo](#fluxo-principal),  [DDD](#domain-driven-design)|
+| [🏗️ Arquitetura](#️-arquitetura)                   | [Estrutura](#estrutura-da-solução), [Diagrama](#diagrama-de-alto-nível), [HLD](#diagrama-de-alto-nível-high-level-designhld)                  |
+| [💼 Regras de Negócio](#-regras-de-negócio)       | [Principais Regras Implementadas](#principais-regras-implementadas)                                            |
+| [📚 Documentação Oficial](#-documentação-oficial) | [Negócio](#negócio), [Técnica](#técnica), [Arquitetura](#arquitetura-1)                  |
+| [⚙️ Execução](#-execução)                         | [Comandos rápidos](#comandos-rápidos), [Docker](#docker), [SonarQube](#sonarqube)        |
+| [✅ Observações](#-observações)                   | [Importantes](#observações-importantes), [Execução local](#execução-local)               |
 
 ---
 
-## Principais atores
+## 🎯 Visão Geral
 
-### Cliente
-- acompanha OS;
-- aprova ou rejeita orçamento;
-- retira o veículo;
-- acompanha histórico e status.
+### Objetivo do Sistema
 
-### Recepcionista
-- cadastra clientes e veículos;
-- abre ordens de serviço;
-- acompanha andamento da OS;
-- registra dados de pagamento e entrega.
+O AutoFlow foi desenvolvido para substituir processos manuais e descentralizados por um fluxo centralizado de atendimento e execução de serviços em oficinas mecânicas. 
 
-### Mecânico
-- realiza diagnóstico;
-- define serviços e peças necessárias;
-- registra execução;
-- acompanha alertas de estoque.
+Ele tem como propósito:
 
----
+- **Centralizar** o ciclo de vida da Ordem de Serviço;
+- **Controlar** o fluxo entre recebimento, diagnóstico, aprovação, execução e entrega;
+- **Apoiar** a gestão de estoque, orçamento, pagamento e histórico operacional;
+- **Fornecer** histórico e métricas para acompanhamento operacional.
 
-## Tecnologias
+### Stack Tecnológica
 
 - Java 25
-- Spring Boot 4.1
+- Spring Boot 4.1.0
 - Spring Web MVC
-- Spring Validation
-- Spring Security
-- JWT (java-jwt)
 - Spring Data JPA
-- Hibernate
+- Spring Security
 - PostgreSQL
-- MapStruct
-- Lombok
-- Maven / Maven Wrapper
-- OpenAPI / Swagger
-- GitHub Actions
-- Terraform
-- AWS ECS / ECR
+- JWT
+- Springdoc OpenAPI / Swagger UI
+- Lombok + MapStruct
+- Maven
+- Docker / Docker Compose
+- SonarQube
+- JaCoCo
 
-### Pipeline de CI/CD
+### Fluxo Principal
 
-O repositório já possui uma pipeline em GitHub Actions para executar:
+```text
+RECEBIDA
+  ↓
+EM_DIAGNOSTICO
+  ↓
+AGUARDANDO_APROVACAO
+  ↓
+ORCAMENTO_APROVADO
+  ↓
+EM_EXECUCAO
+  ↓
+FINALIZADA
+  ↓
+ENTREGUE
+```
 
-- validação do projeto;
-- testes unitários;
-- build da aplicação;
-- empacotamento da imagem Docker;
-- push da imagem para Amazon ECR.
+### Domain Driven Design
+A descoberta e modelagem do domínio foram realizadas utilizando práticas de DDD, incluindo:
 
-O provisionamento da infraestrutura AWS é realizado com Terraform, com foco em ECS/Fargate e ECR.
+- **Brainstorming;**
+- **Domain Storytelling;**
+- **Eventos Pivotais;**
+- **Linha do Tempo;**
+- **Event Storming.**
 
-Observação: o projeto não inclui manifests ou configuração de Kubernetes no repositório no momento. Se a intenção for migrar para Kubernetes, isso deve ser implementado como etapa adicional.
+Os diagramas e o detalhamento da descoberta do domínio estão concentrados na [Documentação de Negócio](./docs/BUSINESS.md).
+
+<p>
+  <img src="docs/assets/event_storming.jpg" alt="DDD Event Storming" width="820" />
+</p>
 
 ---
 
-## Como executar
+## 🏗️ Arquitetura
 
-### Requisitos
+### Estrutura da Solução
 
-- JDK 25
-- Maven Wrapper ou Maven instalado
-- Banco PostgreSQL disponível
+O sistema segue uma arquitetura monolítica modular em Spring Boot, organizada em camadas de domínio, aplicação, interface e infraestrutura. A documentação detalhada está em:
 
-### Comandos
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [DAS.md](docs/DAS.md)
+- [ADR.md](docs/ADR.md)
 
-```bash
-./mvnw clean install
+### Diagrama de Alto Nível (High Level Design/HLD)
+
+```mermaid
+flowchart LR
+    Cliente[Cliente] --> API[API REST]
+    Recepcionista[Recepcionista / Perfil Administrativo] --> API
+    Funcionario[Mecânico / Funcionário] --> API
+
+    API --> OS[Ordem de Serviço]
+    OS --> Orcamento[Orçamento]
+    OS --> Estoque[Estoque]
+    OS --> Pagamento[Pagamento]
+    OS --> Historico[Histórico e Métricas]
+
+    API --> JWT[Segurança JWT]
+    API --> DB[(PostgreSQL)]
+```
+
+---
+
+## 💼 Regras de Negócio
+
+### Principais Regras Implementadas
+
+As regras abaixo refletem o comportamento identificado no código e na lógica de domínio do projeto. Entre as principais regras, estão:
+
+- **Início por agendamento e limite de pátio:** A Ordem de Serviço (OS) exige agendamento prévio para ser iniciada e está sujeita ao limite de capacidade do pátio.
+- **Ciclo de vida do orçamento:** O orçamento transita entre os status: Pendente, Aprovado, Recusado, Expirado e Cancelado.
+- **Aprovação via app:** A aprovação do orçamento é realizada diretamente pelo cliente através do aplicativo.
+- **Bloqueio de liberação:** A entrega do veículo permanece bloqueada enquanto houver pendência financeira/pagamento em aberto.
+- **Precedência do orçamento complementar:** Um orçamento complementar exige a existência e validação prévia de um orçamento inicial.
+- **Alerta de estoque crítico:** O sistema dispara alertas para estoque baixo focado exclusivamente em peças compartilhadas.
+- **Histórico e métrica operacional:** O sistema consolida o histórico completo por veículo e registra as métricas de tempo de execução e finalização.
+
+O detalhamento completo das regras de negócio está disponível em [BUSINESS.md](./docs/BUSINESS.md).
+
+---
+
+## 📚 Documentação Oficial
+
+### Negócio
+
+- [BUSINESS.md](docs/BUSINESS.md)
+
+### Técnica
+
+- [TECHNICAL.md](docs/TECHNICAL.md)
+
+### Arquitetura
+
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [DAS.md](docs/DAS.md)
+- [ADR.md](docs/ADR.md)
+
+---
+
+## ⚙️ Execução
+
+### Pré-requisitos
+
+- JDK 25;
+- PostgreSQL configurado conforme as variáveis de ambiente da aplicação.
+- Docker e Docker Compose, caso utilize a execução por containers;
+- Sonar.
+
+> ###### NOTA: O Maven Wrapper está disponível no projeto. A instalação global do Maven é necessária apenas caso você opte por utilizar o Maven diretamente no terminal ou na IDE.
+
+### Terminal ou IDE
+
+#### Linux/macOS
+```
+./mvnw clean package
 ./mvnw spring-boot:run
 ```
 
-Se o ambiente usa Docker, também é possível levantar a infraestrutura com o compose disponível no projeto.
+#### Windows
+```
+./mvnw clean package
+./mvnw spring-boot:run
+```
+
+### Docker
+
+```
+docker compose up -d
+```
+
+```bash
+# Para acompanhar os logs
+docker compose logs -f autoflow-app
+```
+
+### SonarQube
+
+```
+docker compose up -d sonarqube
+./mvnw clean verify
+./mvnw sonar:sonar -Dsonar.host.url=http://localhost:9000
+```
+
+### Swagger UI
+
+Com a aplicação em execução, acesse a documentação interativa da API no navegador através do link abaixo:
+
+- **Swagger UI:** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
 ---
 
-## Observações de domínio
+## ✅ Observações
 
-### Linguagem do domínio
+### Observações Importantes
 
-- OS / Ordem de Serviço
-- Diagnóstico
-- Orçamento
-- Serviço
-- Peça / item de estoque
-- Reserva de estoque
-- Aprovação do orçamento
-- Pagamento
-- Entrega do veículo
+- O projeto usa autenticação stateless com JWT e autorização por perfil.
+- A API é documentada utilizando Springdoc OpenAPI e disponibilizada através do Swagger UI;
+- Há testes automatizados em `src/test/java` e cobertura via JaCoCo.
+- O banco principal é PostgreSQL.
+- O sistema possui regras agendadas para cancelamento e abandono técnico.
+- A operação administrativa da oficina é realizada pela recepcionista, representada no sistema pelo perfil administrativo;
+- O o sistema possui controle de estoque mínimo com geração de alertas para reposição.
 
 ---
-
-## Status da estrutura
-
-Este README foi atualizado para refletir a arquitetura hexagonal adotada no projeto e a organização real dos pacotes do código-fonte.
