@@ -1,12 +1,19 @@
 services:
   autoflow-app:
     build:
-      context: .
+      context: ..
+      dockerfile: k8s/Dockerfile
     container_name: autoflow-app
     ports:
       - "8080:8080"
     env_file:
       - .env
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:?Set SPRING_DATASOURCE_URL in k8s/.env}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:?Set DB_USERNAME in k8s/.env}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in k8s/.env}
+      API_SECURITY_TOKEN_SECRET: ${JWT_SECRET:?Set JWT_SECRET in k8s/.env}
+      API_SECURITY_TOKEN_EXPIRATION_MINUTES: ${API_SECURITY_TOKEN_EXPIRATION_MINUTES:-15}
     restart: unless-stopped
 
   sonarqube:
