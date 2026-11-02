@@ -2,9 +2,9 @@ name: 🚀 CI Completo - AutoFlow
 
 on:
   push:
-    branches: [ main, develop, dev_carol_newArq, dev_thalita_newArq, dev_bruna_newArq ]
+    branches: [ master, main, develop, dev_carol_newArq, dev_thalita_newArq, dev_bruna_newArq ]
   pull_request:
-    branches: [ main ]
+    branches: [ master, main ]
   workflow_dispatch:
 
 env:
