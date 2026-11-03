@@ -1,6 +1,6 @@
 # Documentação Arquitetural - AutoFlow
 
-![V1.2.0](https://img.shields.io/badge/V1.2.0-gray?style=for-the-badge)
+![V2.0.0](https://img.shields.io/badge/V2.0.0-gray?style=for-the-badge)
 
 Arquitetura técnica do sistema AutoFlow, incluindo visão de alto e baixo nível, estrutura da aplicação, persistência, segurança, testes e infraestrutura.
 
@@ -10,15 +10,14 @@ Arquitetura técnica do sistema AutoFlow, incluindo visão de alto e baixo níve
 | Seção | Subseções |
 | --- | --- |
 | [🎯 Visão Geral](#-visão-geral) | [Objetivo](#objetivo), [Stack Tecnológica](#stack-tecnológica) |
-| [🗺️ High Level Design - HLD](#️-high-level-design---hld) | [Visão de Alto Nível](#visão-de-alto-nível), [Blocos da Arquitetura](#blocos-da-arquitetura), [Modelo C4](#️-modelo-c4) |
+| [🗺️ High Level Design - HLD](#️-high-level-design---hld) | [Visão de Alto Nível](#visão-de-alto-nível), [Blocos da Arquitetura](#blocos-da-arquitetura) |
 | [🗺️ Modelo C4](#️-modelo-c4) | [Nível 1: Contexto do Sistema](#nível-1-contexto-do-sistema), [Nível 2: Contêineres](#nível-2-contêineres), [Nível 3: Componentes](#nível-3-componentes) |
-| [🏗️ Arquitetura da Aplicação](#️-arquitetura-da-aplicação) | [Organização Arquitetural](#organização-arquitetural), [Arquitetura em Camadas](#arquitetura-em-camadas), [Organização do Código](#organização-do-código) |
-| [🔎 Low Level Design - LLD](#-low-level-design---lld) | [Componentes da Aplicação](#componentes-da-aplicação), [Controllers REST](#controllers-rest), [Fluxos Técnicos](#fluxos-técnicos) |
+| [🏗️ Arquitetura da Aplicação](#️-arquitetura-da-aplicação) | [Organização Arquitetural](#organização-arquitetural), [Arquitetura Hexagonal](#arquitetura-hexagonal), [Organização do Código](#organização-do-código) |
+| [🔎 Low Level Design - LLD](#-low-level-design---lld) | [Componentes da Aplicação](#componentes-da-aplicação), [Entidades do Domínio](#entidades-do-domínio), [Enums do Sistema](#enums-do-sistema), [Repositórios](#repositórios), [DTOs](#dtos), [Mappers](#mappers), [Casos de Uso](#casos-de-uso), [Segurança Interna](#segurança-interna), [Controllers REST](#controllers-rest), [Fluxos Técnicos](#fluxos-técnicos) |
 | [🗃️ Banco de Dados](#️-banco-de-dados) | [Escolha do PostgreSQL](#escolha-do-postgresql), [Persistência](#persistência), [Modelo Entidade-Relacionamento](#modelo-entidade-relacionamento), [Consistência e Transações](#consistência-e-transações) |
 | [🔐 Segurança](#-segurança) | [Autenticação](#autenticação), [Autorização](#autorização), [Validações](#validações), [Tratamento de Erros](#tratamento-de-erros) |
 | [🧪 Testes e Qualidade](#-testes-e-qualidade) | [Estratégia de Testes](#estratégia-de-testes), [Cobertura de Testes](#cobertura-de-testes), [JaCoCo](#jacoco), [SonarQube](#sonarqube) |
-| [🐳 Infraestrutura e Operação](#-infraestrutura-e-operação) | [Docker](#docker), [Docker Compose](#docker-compose), [Configuração por Ambiente](#configuração-por-ambiente) |
-| [⚠️ Pontos de Evolução](#️-pontos-de-evolução) | [Evoluções Arquiteturais](#evoluções-arquiteturais) |
+| [🐳 Infraestrutura e Operação](#-infraestrutura-e-operação) | [Docker](#docker), [Docker Compose](#docker-compose), [Configuração por Ambiente](#configuração-por-ambiente), [Provisionamento com Terraform](#provisionamento-com-terraform), [Kubernetes e Escalabilidade](#kubernetes-e-escalabilidade), [Integração e Entrega Contínua (CI/CD)](#integração-e-entrega-contínua-cicd), [Operação e Observabilidade](#operação-e-observabilidade), [Custos e Desmobilização](#custos-e-desmobilização) |
 | [📚 Referências](#-referências) | [ADR](#adr), [DAS](#das) |
 ---
 
@@ -32,21 +31,25 @@ A documentação apresenta a solução em diferentes níveis de abstração, des
 
 ### Stack Tecnológica
 
-| Categoria           | Tecnologia                     |
-| ------------------- | ------------------------------ |
-| Linguagem           | Java 25                        |
-| Framework principal | Spring Boot 4.1.0              |
-| Web                 | Spring Web MVC                 |
-| Persistência        | Spring Data JPA                |
-| Banco de dados      | PostgreSQL                     |
-| Segurança           | Spring Security + JWT          |
+| Categoria | Tecnologia |
+| --- | --- |
+| Linguagem | Java 25 |
+| Framework principal | Spring Boot 4.1.0 |
+| Web | Spring Web MVC |
+| Persistência | Spring Data JPA + Hibernate |
+| Banco de dados | PostgreSQL (Supabase) |
+| Segurança | Spring Security + JWT |
 | Documentação da API | Springdoc OpenAPI / Swagger UI |
-| Mapeamento          | MapStruct                      |
-| Boilerplate         | Lombok                         |
-| Build               | Maven                          |
-| Conteinerização     | Docker / Docker Compose        |
-| Qualidade           | SonarQube + JaCoCo             |
-| Testes              | JUnit / Spring Boot Test       |
+| Mapeamento | MapStruct |
+| Boilerplate | Lombok |
+| Build | Maven |
+| Conteinerização | Docker / Docker Compose |
+| Infraestrutura como código | Terraform |
+| Nuvem | AWS (ECR, EKS, EC2 e VPC) |
+| Orquestração | Kubernetes (Deployment, Service e HPA) |
+| CI/CD | GitHub Actions |
+| Qualidade | SonarQube + JaCoCo |
+| Testes | JUnit / Spring Boot Test |
 
 ---
 
@@ -58,50 +61,70 @@ O AutoFlow é uma aplicação Java com Spring Boot que centraliza os processos o
 
 A Ordem de Serviço representa o principal elemento do fluxo operacional e conecta funcionalidades relacionadas a cliente, veículo, mecânico, orçamento, estoque, pagamento, histórico e métricas.
 
-A solução é mantida em uma única aplicação executável, com separação de responsabilidades por camadas e módulos internos.
+A solução é mantida em uma única aplicação executável, com separação de responsabilidades por casos de uso, portas de entrada, portas de saída e os adaptadores técnicos.
+
 
 ### Blocos da Arquitetura
 
-**Interface:** Responsável pela exposição das funcionalidades da aplicação.
+O AutoFlow adota a arquitetura hexagonal (Ports and Adapters), separando as regras de negócio dos mecanismos de entrada, saída e infraestrutura. Essa organização favorece a manutenção, os testes e a evolução da aplicação sem acoplamento direto do núcleo aos componentes externos.
+
+**Adaptadores de Entrada (Inbound Adapters):** Responsáveis por receber solicitações externas, interpretar os dados e encaminhar as operações aos casos de uso por meio das portas de entrada.
 
 - **Componentes:**
-    * Controllers REST;
-    * Endpoints de autenticação;
-    * Endpoints operacionais;
-    * Contratos de entrada e saída da API;
-    * Documentação OpenAPI disponibilizada pelo Swagger UI.
+    - Controllers REST;
+    - Endpoints de autenticação e operações da oficina;
+    - DTOs de requisição e resposta;
+    - Documentação OpenAPI disponibilizada pelo Swagger UI.
 
-**Aplicação:** Responsável pela coordenação dos casos de uso e fluxos da aplicação.
+**Portas de Entrada (Inbound Ports):** Definem os contratos de acesso às funcionalidades da aplicação, permitindo que os adaptadores de entrada acionem os casos de uso sem depender diretamente de suas implementações.
 
 - **Responsabilidades:**
-    * Serviços de aplicação;
-    * Orquestração das operações;
-    * Validação de pré-condições;
-    * Transições da Ordem de Serviço;
-    * Processamento de orçamento;
-    * Processamento de estoque;
-    * Métricas e histórico.
+    - Definir as operações disponíveis para os consumidores;
+    - Estabelecer os contratos dos casos de uso;
+    - Desacoplar os controllers das implementações internas.
 
-**Domínio:** Concentra os elementos que representam o negócio e parte das regras associadas às entidades.
+**Aplicação (Application):** Coordena a execução dos casos de uso e a interação entre o domínio e as portas de saída.
 
-- **Componentes:**
-    * Entidades;
-    * Enums;
-    * Estados e transições;
-    * Regras do ciclo de vida da OS;
-    * Regras de orçamento;
-    * Regras de estoque.
+- **Responsabilidades:**
+    - Orquestração dos fluxos operacionais;
+    - Validação de pré-condições;
+    - Gerenciamento das transições da Ordem de Serviço;
+    - Processamento de orçamentos e estoque;
+    - Consultas de métricas e histórico;
+    - Coordenação das operações de clientes, veículos e funcionários.
 
-**Infraestrutura:** Agrupa mecanismos técnicos necessários para suportar as demais camadas.
+**Domínio (Domain):** Concentra os conceitos e as regras de negócio da oficina, independentemente dos mecanismos de comunicação e persistência.
 
 - **Componentes:**
-    * Spring Data JPA;
-    * PostgreSQL;
-    * MapStruct;
-    * Spring Security;
-    * JWT;
-    * Filtros de autenticação;
-    * Processos agendados.
+    - Entidades e enums;
+    - Estados e transições;
+    - Regras do ciclo de vida da Ordem de Serviço;
+    - Regras de aprovação e recusa de orçamentos;
+    - Regras de reserva e movimentação de estoque.
+
+**Portas de Saída (Outbound Ports):** Definem os contratos utilizados pela aplicação para acessar recursos externos, sem depender diretamente das tecnologias empregadas.
+
+- **Responsabilidades:**
+    - Abstrair operações de persistência;
+    - Definir interfaces para consultas e gravações;
+    - Desacoplar os casos de uso das implementações de infraestrutura.
+
+**Adaptadores de Saída (Outbound Adapters):** Implementam as portas de saída e realizam a integração com os mecanismos externos necessários à aplicação.
+
+- **Componentes:**
+    - Implementações de persistência;
+    - Spring Data JPA e Hibernate;
+    - Integração JDBC com PostgreSQL hospedado no Supabase;
+    - Mapeamento entre objetos de domínio e persistência, quando aplicável.
+
+**Adapters de Configuração e Segurança:** Reúnem os componentes transversais responsáveis pela integração técnica e pela proteção da aplicação.
+
+- **Componentes:**
+    - Configuração e injeção de dependências do Spring;
+    - Spring Security;
+    - Autenticação e autorização JWT;
+    - Filtros de segurança;
+    - Configuração dos adaptadores e suas dependências.
 
 ---
 
@@ -112,6 +135,8 @@ O Modelo C4 é utilizado para representar a arquitetura em diferentes níveis de
 ### Nível 1: Contexto do Sistema
 
 Neste nível, o AutoFlow é tratado como uma única unidade de software e são representados apenas os atores que interagem diretamente com ele.
+
+---
 
 ```mermaid
 graph TD
@@ -131,9 +156,13 @@ graph TD
     class autoflow system;
 ```
 
+---
+
 ### Nível 2: Contêineres
 
 Neste nível, o AutoFlow é decomposto em seus principais contêineres executáveis e de persistência, evidenciando como os usuários interagem com a API e como a aplicação se comunica com o banco de dados.
+
+---
 
 ```mermaid
 graph TD
@@ -155,36 +184,39 @@ graph TD
     class db db;
 ```
 
+---
+
 ### Nível 3: Componentes
 
-Detalhamento interno do contêiner **Autoflow API**, demonstrando como as pastas e pacotes estruturais do Spring Boot se comunicam internamente.
+Detalhamento interno do contêiner **AutoFlow API**, refletindo a separação atual entre adaptadores, portas, aplicação e domínio.
+
+---
 
 ```mermaid
-graph TD
-    client["Browser / API Client (Aplicação Externa) - Interface que dispara as requisições."]
-    db_ext[("Banco de Dados PostgreSQL (Contêiner: Supabase) - Armazenamento relacional.")]
+flowchart TB
+    CLIENT["Cliente HTTP / Swagger / Postman"]
+    DB[("Supabase / PostgreSQL")]
 
-    subgraph Autoflow API [Contêiner Spring Boot]
-        security["Filtro de Segurança (Spring Security / java-jwt) - Intercepta requisições, valida tokens JWT e gerencia perfis (ADMIN, MECANICO, CLIENTE)."]
-        controllers["Controllers REST (Spring MVC @RestController) - Expõe as rotas públicas e privadas (/auth, /veiculos, /ordens-servico)."]
-        services["Services de Aplicação (Spring @Service) - Orquestra e executa o fluxo das regras de negócio e validações."]
-        scheduler["Agendador de Tarefas (Spring @Scheduled) - Rotinas assíncronas (cancelamentos automáticos)."]
-        mappers["Mappers de Dados (MapStruct) - Converte objetos DTO para Entidades e vice-versa."]
-        repos["Repositórios (Spring Data JPA) - Abstrai as operações de CRUD no banco."]
+    subgraph API["AutoFlow API — Spring Boot"]
+        SEC["Spring Security / JWT"]
+        CTRL["Adaptadores inbound<br/>Controllers REST + DTOs"]
+        PIN["Portas inbound<br/>Contratos dos casos de uso"]
+        UC["Application<br/>Use cases"]
+        DOMAIN["Domain<br/>Entidades e regras"]
+        POUT["Portas outbound<br/>Contratos de persistência"]
+        ADAPT["Adaptadores outbound<br/>Persistência / JPA"]
+        JOBS["Rotinas agendadas"]
     end
 
-    client -->|HTTP / JSON| security
-    security --> controllers
-    controllers --> services
-    scheduler --> services
-    services --> mappers
-    services --> repos
-    repos --> db_ext
+    CLIENT --> SEC --> CTRL --> PIN --> UC
+    JOBS --> UC
+    UC --> DOMAIN
+    UC --> POUT --> ADAPT --> DB
 
-    classDef ext fill:#,stroke:#888888,color:#fff;
+    classDef ext fill:#08427b,stroke:#073b6f,color:#fff;
     classDef comp fill:#438dd5,stroke:#3b7bba,color:#fff;
-    class client,db_ext ext;
-    class security,controllers,services,scheduler,mappers,repos comp;
+    class CLIENT,DB ext;
+    class SEC,CTRL,PIN,UC,JOBS,POUT,ADAPT comp;
 ```
 
 ---
@@ -195,60 +227,102 @@ graph TD
 
 A aplicação está organizada em responsabilidades técnicas bem definidas:
 
-- **Domain model:** Entidades JPA e enums do negócio;
-- **Domain repository:** Interfaces de persistência com JPA;
-- **Application service:** Regras de negócio e orquestração;
-- **Application DTO:** Objetos de entrada e saída da API;
-- **Infrastructure mapper:** Conversão entre DTO e entidade;
-- **Interfaces controller:** Endpoints REST;
-- **Infrastructure security:** Autenticação e autorização via JWT;
-- **Exceptions:** Tratamento centralizado de erros.
+- **Adaptadores de Entrada (Inbound Adapters):** Recepção das requisições HTTP, controllers e DTOs de API;
+- **Portas de Entrada (Inbound Ports):** Contratos para acionamento dos casos de uso;
+- **Application Usecases (Casos de Uso):** Coordenação e execução dos casos de uso;
+- **Domain:** Entidades, enums e regras de negócio;
+- **Portas de Saída (Outbound Ports):** Contratos exigidos pela aplicação para persistência e integrações;
+- **Adaptadores de Saída (Outbound Adapters):** Implementações técnicas das portas de saída;
+- **Adapters de Configuração e Segurança:** Configuração de componentes e integrações Spring;
 
-### Arquitetura em Camadas
+### Arquitetura Hexagonal
 
-A aplicação distribui suas responsabilidades entre as seguintes áreas:
+A aplicação implementa a arquitetura hexagonal por meio de portas de entrada e saída, casos de uso e adaptadores:
 
-```text
-Interfaces
-    ↓
-Application
-    ↓
-Domain
-    ↓
-Infrastructure / Persistence
+---
+
+```mermaid
+flowchart TB
+    HTTP["HTTP / JSON"] --> IN["Adaptadores de entrada"]
+    IN --> PI["Portas de entrada"]
+    PI --> APP["Casos de uso"]
+    APP --> DOM["Domínio"]
+    APP --> PO["Portas de saída"]
+    OUT["Adaptadores de saída"] -.->|implementam| PO
+    OUT --> DB[("PostgreSQL / Supabase")]
 ```
 
-| Camada           | Responsabilidade                                                      |
-| ---------------- | --------------------------------------------------------------------- |
-| `interfaces`     | Exposição dos endpoints REST e comunicação com os consumidores da API |
-| `application`    | Orquestração dos casos de uso, services e DTOs                        |
-| `domain`         | Entidades, enums, repositories e regras associadas ao domínio         |
-| `infrastructure` | Segurança, mapeamento e componentes técnicos                          |
-| `exception`      | Tratamento centralizado de erros da aplicação                         |
+---
 
-###### NOTA: A classificação descreve a organização observada no projeto e suas responsabilidades, sem assumir aderência integral a um padrão arquitetural específico.
+| Área | Responsabilidade |
+| --- | --- |
+| `adapters/inbound` | Recepção das requisições HTTP, controllers e DTOs de API |
+| `ports/inbound` | Contratos para acionamento dos casos de uso |
+| `application/usecase` | Coordenação e execução dos casos de uso |
+| `domain` | Entidades, enums e regras de negócio |
+| `ports/outbound` | Contratos exigidos pela aplicação para persistência e integrações |
+| `adapters/outbound` | Implementações técnicas das portas de saída |
+| `adapters/config` | Configuração de componentes e integrações Spring |
 
 ### Organização do Código
 
 ```text
-src/
-├── main/
-│   └── java/br/com/autoflow/
-│       ├── application/
-│       │   ├── dto/
-│       │   └── service/
-│       ├── domain/
-│       │   ├── enums/
-│       │   ├── model/
-│       │   └── repository/
-│       ├── exception/
-│       ├── infrastructure/
-│       │   ├── mapper/
-│       │   └── security/
-│       └── interfaces/
-│           └── controller/
+├── infra/
+│   ├── estado-aws-academy/     # Ambiente AWS Academy
+│   └── main.tf
+│
+├── k8s/
+│   ├── tests/load/
+│   ├── configmap.yaml
+│   ├── deployment.yaml
+│   ├── docker-compose.yaml
+│   ├── Dockerfile
+│   ├── hpa.yaml
+│   ├── secret.yaml
+│   └── service.yaml
+│
+├── src/
+│   └── main/
+│       └── java/br/com/autoflow/
+│           ├── adapters/
+│           │   ├── config/
+│           │   ├── inbound/
+│           │   │   ├── controller/
+│           │   │   └── mapper/
+│           │   └── outbound/
+│           │       ├── persistence/
+│           │       └── security/
+│           ├── application/
+│           │   ├── usecase/
+│           │   └── validator/
+│           ├── domain/
+│           │   ├── enums/
+│           │   ├── exception/
+│           │   └── model/
+│           └── ports/
+│                ├── inbound/
+│                └── outbound/
+│
 └── test/
-    └── java/
+    └── java/br/com/autoflow/
+        ├── adapters/
+        │   ├── config/
+        │   ├── inbound/
+        │   │   ├── controller/
+        │   │   └── mapper/
+        │   └── outbound/
+        │       ├── persistence/
+        │       └── security/
+        ├── application/
+        │   ├── usecase/
+        │   └── validator/
+        ├── domain/
+        │   ├── enums/
+        │   ├── exception/
+        │   └── model/
+        └── ports/
+             ├── inbound/
+             └── outbound/
 ```
 
 ---
@@ -257,7 +331,7 @@ src/
 
 O Low Level Design detalha a implementação interna da aplicação, seus componentes e as interações entre as camadas.
 
-O inventário técnico de entidades, enums, repositories, DTOs, mappers, services e componentes internos de segurança está disponível de forma expansível para preservar o detalhamento da implementação sem comprometer a leitura principal do documento.
+O inventário técnico de entidades, enums, portas de repositório, DTOs, mappers, casos de uso e componentes internos de segurança está disponível de forma expansível para preservar o detalhamento da implementação sem comprometer a leitura principal do documento.
 
 Os controllers, endpoints e fluxos técnicos permanecem visíveis por representarem os principais contratos e caminhos de execução da aplicação.
 
@@ -287,8 +361,8 @@ Os controllers, endpoints e fluxos técnicos permanecem visíveis por representa
 
 **Relacionamentos:**
 
-- `@ManyToOne` com `Endereco`;
-- `@OneToMany` com veículos e ordens de serviço, conforme o modelo JPA.
+- Mantém o endereço como objeto de domínio;
+- Ordens de serviço e veículos são associados por seus identificadores nos fluxos da aplicação.
 
 **Métodos principais:**
 
@@ -304,19 +378,19 @@ Os controllers, endpoints e fluxos técnicos permanecem visíveis por representa
 - `String cidade`
 - `String bairro`
 - `String logradouro`
-- `String numero`
+- `Integer numero`
 - `String complemento`
 
 **Observações:**
 
-- estrutura utilizada nos cadastros de cliente e funcionário;
-- pode ser relacionada a múltiplas entidades conforme o modelo JPA.
+- Objeto de domínio utilizado nos cadastros de cliente e funcionário;
+- Os mapeamentos JPA ficam nas classes de persistência, não neste modelo.
 
 #### Funcionario
 
 **Atributos:**
 
-- `UUID idFuncionario`
+- `UUID id`
 - `String cpf`
 - `String nome`
 - `String telefone`
@@ -326,14 +400,14 @@ Os controllers, endpoints e fluxos técnicos permanecem visíveis por representa
 - `Cargo cargo`
 - `Endereco endereco`
 - `boolean ocupado`
-- `int nr_advertencias`
+- `int nrAdvertencias`
 
 **Métodos principais:**
 
 - `void ocupar()` → marca `ocupado = true`;
 - `void liberar()` → marca `ocupado = false`;
-- `void adicionarAdvertencia()` → incrementa `nr_advertencias`;
-- `boolean deveSerDemitido()` → retorna `true` quando `nr_advertencias >= 3`.
+- `void adicionarAdvertencia()` → incrementa `nrAdvertencias`;
+- `boolean deveSerDemitido()` → retorna `true` quando `nrAdvertencias >= 3`.
 
 **Responsabilidade:**
 
@@ -352,17 +426,7 @@ Representa o colaborador responsável por serviços e diagnósticos e que pode s
 - `Cliente cliente`
 - `Funcionario funcionario`
 
-**Implementa:** `UserDetails`
-
-**Métodos principais:**
-
-- `Collection<? extends GrantedAuthority> getAuthorities()`
-- `String getUsername()`
-- `String getPassword()`
-- `boolean isAccountNonExpired()`
-- `boolean isAccountNonLocked()`
-- `boolean isCredentialsNonExpired()`
-- `boolean isEnabled()`
+**Observação:** `Usuario` é um modelo de domínio simples. A implementação de `UserDetails` fica no adaptador `UserDetailsImpl`, em `adapters.outbound.security`.
 
 **Responsabilidade:**
 
@@ -372,14 +436,14 @@ Entidade utilizada no processo de autenticação e autorização do sistema.
 
 **Atributos:**
 
-- `UUID idVeiculo`
+- `UUID id`
 - `String placa`
 - `String modelo`
 - `String marca`
-- `BigDecimal kmAtual`
-- `Integer anoFabricacao`
+- `Integer kmAtual`
+- `Short anoFabricacao`
 - `String cor`
-- `Cliente cliente`
+- `UUID clienteId`
 
 **Responsabilidade:**
 
@@ -413,7 +477,6 @@ Representa o catálogo de serviços disponíveis para composição dos orçament
 **Métodos principais:**
 
 - `boolean deveDispararAlertaEstoqueBaixo()`
-- `boolean deveGerarAlertaEstoqueBaixo()`
 
 **Responsabilidade:**
 
@@ -490,9 +553,9 @@ Representa um serviço incluído em determinado orçamento.
 - `StatusOS statusOS`
 - `String dsRelatoCliente`
 - `String dsDiagnostico`
-- `boolean stTermoAceito`
+- `Boolean stTermoAceito`
 - `LocalDateTime dtAceiteTermo`
-- `BigDecimal nrKmEntrada`
+- `Integer nrKmEntrada`
 - `LocalDateTime dtAberturaOs`
 - `LocalDateTime dtInicioDiagnostico`
 - `LocalDateTime dtFimDiagnostico`
@@ -512,7 +575,7 @@ Representa um serviço incluído em determinado orçamento.
 
 **Métodos principais:**
 
-- `void prePersist()`
+- `void inicializarDadosPadrao()`
 - `void carregarServicosDosOrcamentosAprovados()`
 - `void atualizarStatus(StatusOS novoStatus, String observacao)`
 - `Long getTempoTotalExecucaoMinutos()`
@@ -526,6 +589,10 @@ Representa um serviço incluído em determinado orçamento.
 **Responsabilidade:**
 
 Representa o centro do processo operacional da oficina e coordena o ciclo de vida do atendimento.
+
+#### OrdemHistoricoDomain
+
+Record de domínio que representa o resumo de uma OS e seus serviços e peças na consulta paginada de histórico por veículo.
 
 #### OsServico
 
@@ -561,46 +628,26 @@ Esses elementos representam estados, classificações e permissões utilizadas p
 
 ### Repositórios
 
-Os repositories utilizam `JpaRepository<T, UUID>` para acesso à persistência.
+As portas em `br.com.autoflow.ports.outbound` definem os contratos usados pelos casos de uso. Os adaptadores em `adapters.outbound.persistence` convertem modelos de domínio em entidades e delegam a persistência às interfaces Spring Data JPA em `adapters.outbound.persistence.repository`.
 
-#### EstoqueRepository
-
-**Métodos relevantes:**
-
-- `List<Estoque> findByNomeItemContainingIgnoreCase(String nome)`
-
-**Responsabilidade:**
-
-Acesso e consulta dos itens de estoque.
-
-#### OrcamentoRepository
-
-**Métodos relevantes:**
-
-- `boolean existsByIdAndOrdemServicoIsNotNull(UUID idOrcamento)`
-- `List<Orcamento> findByOrdemServicoIdOs(UUID idOs)`
-- `void deletarItensDiretosPorOrcamento(UUID id)`
-- `void deletarItensPorServicosDoOrcamento(UUID id)`
-- `void deletarServicosPorOrcamento(UUID id)`
-
-**Responsabilidade:**
-
-Persistência dos orçamentos e gerenciamento das relações com seus itens e serviços.
-
-#### OrdemServicoRepository
-
-**Responsabilidade:**
-
-Consultas relacionadas a:
-
-- métricas;
-- histórico por veículo;
-- filtros por status;
-- processamento das Ordens de Serviço.
+| Port | Adapter de persistência |
+| --- | --- |
+| `ClienteRepositoryPort` | `ClienteRepositoryAdapter` |
+| `EnderecoRepositoryPort` | `EnderecoRepositoryAdapter` |
+| `EstoqueRepositoryPort` | `EstoqueRepositoryAdapter` |
+| `FuncionarioRepositoryPort` | `FuncionarioRepositoryAdapter` |
+| `OrcamentoItemRepositoryPort` | `OrcamentoItemRepositoryAdapter` |
+| `OrcamentoRepositoryPort` | `OrcamentoRepositoryAdapter` |
+| `OrcamentoServicoRepositoryPort` | `OrcamentoServicoRepositoryAdapter` |
+| `OrdemServicoRepositoryPort` | `OrdemServicoRepositoryAdapter` |
+| `OsServicoRepositoryPort` | `OsServicoRepositoryAdapter` |
+| `ServicoRepositoryPort` | `ServicoRepositoryAdapter` |
+| `UsuarioRepositoryPort` | `UsuarioRepositoryAdapter` |
+| `VeiculoRepositoryPort` | `VeiculoRepositoryAdapter` |
 
 ### DTOs
 
-Os DTOs ficam em `br.com.autoflow.application.dto`.
+Os DTOs da API ficam em `br.com.autoflow.adapters.inbound.controller.dto`.
 
 #### Estoque
 
@@ -627,11 +674,20 @@ Os DTOs ficam em `br.com.autoflow.application.dto`.
 - `AtualizarStatusPagamentoRequest`
 - `MetricaOsResponse`
 - `HistoricoVeiculoResponse`
+- `OsServicoResponse`
 
 #### Autenticação
 
 - `LoginRequest`
 - `TokenResponse`
+
+#### Cliente e endereço
+
+- `ClienteRequest`
+- `ClienteResponse`
+- `ClienteUpdateRequest`
+- `EnderecoRequest`
+- `EnderecoResponse`
 
 #### Serviço, Veículo e Funcionário
 
@@ -644,7 +700,7 @@ Os DTOs ficam em `br.com.autoflow.application.dto`.
 
 ### Mappers
 
-Os mappers ficam em `br.com.autoflow.infrastructure.mapper` e utilizam majoritariamente MapStruct.
+Os mappers da API ficam em `adapters.inbound.mapper` e convertem DTOs em modelos de domínio e vice-versa. Os mappers em `adapters.outbound.persistence.mapper` convertem modelos de domínio em entidades JPA e vice-versa. Ambos utilizam MapStruct.
 
 **Mappers principais:**
 
@@ -660,122 +716,35 @@ Os mappers ficam em `br.com.autoflow.infrastructure.mapper` e utilizam majoritar
 - `EnderecoMapper`
 - `OsServicoMapper`
 
+Os mappers de persistência têm versões correspondentes para as entidades de cliente, endereço, estoque, funcionário, orçamento, itens e serviços do orçamento, ordem de serviço, serviço, usuário e veículo.
+
 **Responsabilidades:**
 
-- converter entidades em DTOs;
-- converter DTOs em entidades;
-- apoiar atualizações dos objetos sem expor diretamente o modelo persistido.
+- converter DTOs da API em modelos de domínio e respostas;
+- converter modelos de domínio em entidades JPA e vice-versa;
+- manter os modelos de domínio independentes dos detalhes de persistência.
 
-### Services
+### Casos de Uso
 
-#### EstoqueService
+As implementações ficam em `br.com.autoflow.application.usecase` e implementam contratos das portas inbound.
 
-**Dependências principais:**
+| Implementação | Responsabilidade |
+| --- | --- |
+| `ClienteUseCaseImpl` e `EnderecoUseCaseImpl` | Cadastro, consulta, atualização e exclusão de clientes e endereços |
+| `EstoqueUseCaseImpl` | Cadastro, consulta, atualização de quantidade e preço e alerta de estoque baixo |
+| `FuncionarioUseCaseImpl` | Cadastro, consulta, atualização, exclusão e registro de advertência |
+| `OrcamentoUseCaseImpl` | Criação, consulta, exclusão e atualização do status de orçamentos, incluindo interação com estoque |
+| `OrdemServicoUseCaseImpl` | Ciclo de vida da OS, alocação de funcionário, métricas, histórico e rotinas agendadas |
+| `ServicoUseCaseImpl` e `VeiculoUseCaseImpl` | Operações de cadastro e consulta de serviços e veículos |
+| `OrcamentoExpiradoUseCase` | Persistência do orçamento expirado em transação independente |
 
-- `EstoqueRepository`
-- `EstoqueMapper`
-
-**Métodos principais:**
-
-- `criar`
-- `listarTodos`
-- `buscarPorId`
-- `adicionarQuantidade`
-- `atualizarValorUnitario`
-- `atualizar`
-- `listarInsumosComEstoqueBaixo`
-- `reservarEstoqueParaItens`
-- `devolverEstoqueDeItens`
-
-**Responsabilidade:**
-
-Gerenciar o estoque, incluindo cadastro, movimentação, reserva, devolução e identificação de itens em nível baixo.
-
-#### OrcamentoService
-
-**Dependências principais:**
-
-- `OrcamentoRepository`
-- `OrcamentoMapper`
-- `OrdemServicoRepository`
-- `EstoqueRepository`
-- `OrcamentoExpiradoService`
-
-**Métodos principais:**
-
-- `criar`
-- `listarTodos`
-- `buscarPorId`
-- `listarPorOrdemServico`
-- `delete`
-- `atualizarStatus`
-- `deduzirItensDoEstoque`
-- `verificarAvisosEstoque`
-- `mapToResponseComAvisos`
-
-**Responsabilidade:**
-
-Gerenciar o ciclo do orçamento e sua integração com OS e estoque.
-
-#### OrdemServicoService
-
-**Dependências principais:**
-
-- `OrdemServicoRepository`
-- `OrdemServicoMapper`
-- `FuncionarioRepository`
-- `OrcamentoService`
-
-**Métodos principais:**
-
-- `listarTodas`
-- `buscarPorId`
-- `criar`
-- `atualizar`
-- `atualizarStatusPagamento`
-- `deletar`
-- `atualizarStatus`
-- `obterMetricasPorOS`
-- `buscarMetricasComFiltro`
-- `obterHistoricoPorVeiculo`
-- `processarCancelamentosAutomaticos`
-
-**Responsabilidade:**
-
-Gerenciar o ciclo de vida da Ordem de Serviço e coordenar sua integração com orçamento, pagamento, funcionários e processos operacionais.
-
-#### ServicoService
-
-**Métodos principais:**
-
-- `criar`
-- `listarTodos`
-- `buscarPorId`
-- `atualizar`
-- `deletar`
-
-#### VeiculoService
-
-**Métodos principais:**
-
-- `criar`
-- `listar`
-- `buscarPorId`
-- `atualizar`
-- `deletar`
-
-#### FuncionarioService
-
-**Métodos principais:**
-
-- `criar`
-- `listar`
-- `buscar`
-- `atualizar`
-- `deletar`
-- `registrarAdvertencia`
+As validações específicas ficam em `br.com.autoflow.application.validator`, com validadores para cliente, endereço, funcionário, orçamento, ordem de serviço, serviço e veículo.
 
 ### Segurança Interna
+
+#### AutenticacaoService e UserDetailsImpl
+
+`AutenticacaoService` implementa `UserDetailsService`, busca o usuário por login usando `UsuarioRepositoryPort` e o adapta para `UserDetailsImpl`. Esse adaptador fornece as authorities correspondentes ao perfil do usuário.
 
 #### TokenService
 
@@ -797,7 +766,7 @@ Gerar e validar tokens JWT utilizados pela API.
 
 **Métodos principais:**
 
-- `String recuperarToken(HttpServletRequest request)`
+- recuperação privada do token Bearer do cabeçalho `Authorization`
 - `doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)`
 
 **Responsabilidade:**
@@ -808,20 +777,21 @@ Interceptar as requisições e aplicar o processo de autenticação.
 
 **Responsabilidade:**
 
-Definir as regras de autorização e os endpoints públicos ou protegidos.
+Definir a política stateless, os endpoints públicos e as autorizações por método HTTP e perfil.
 
 **Regras relevantes:**
 
-- `POST /auth/login` → público;
-- operações de exclusão → restritas ao perfil autorizado;
-- endpoints de operação e consulta → acesso conforme perfil;
-- demais recursos protegidos → usuário autenticado.
+- `POST /auth/login`, documentação OpenAPI/Swagger e `/actuator/**` → públicos;
+- operações `DELETE` → perfil `ADMIN`;
+- consultas de OS, veículos, orçamentos e serviços → perfis `ADMIN`, `MECANICO` ou `CLIENTE`;
+- criação e atualização de OS, veículos, orçamentos e serviços → perfis `ADMIN` ou `MECANICO`;
+- demais endpoints → exigem autenticação.
 
 </details>
 
 ### Controllers REST
 
-Os controllers representam a interface HTTP da aplicação e delegam a execução dos casos de uso aos respectivos services.
+Os controllers representam a interface HTTP e delegam a execução às portas inbound, mapeando os DTOs para os modelos de domínio.
 
 ###### NOTA: Os contratos completos, schemas, payloads e respostas HTTP permanecem disponíveis através do Springdoc OpenAPI e Swagger UI.
 
@@ -839,6 +809,7 @@ Os controllers representam a interface HTTP da aplicação e delegam a execuçã
 | --- | --- | --- |
 | `POST` | `/estoque` | Cadastrar item |
 | `GET` | `/estoque` | Listar itens |
+| `GET` | `/estoque/estoque-baixo` | Listar insumos com estoque baixo |
 | `GET` | `/estoque/{id}` | Consultar item |
 | `PATCH` | `/estoque/{id}/adicionar-quantidade` | Adicionar quantidade |
 | `PATCH` | `/estoque/{id}/valor-unitario` | Atualizar valor unitário |
@@ -856,6 +827,32 @@ Os controllers representam a interface HTTP da aplicação e delegam a execuçã
 | `DELETE` | `/orcamentos/{id}` | Excluir orçamento |
 | `PATCH` | `/orcamentos/{id}/status` | Alterar status |
 | `GET` | `/orcamentos/ordem-servico/{idOs}` | Consultar os orçamentos de uma OS |
+| `POST` | `/orcamentos/webhook/{id}/resposta?statusResposta={status}` | Receber resposta externa de aprovação ou recusa |
+
+#### Clientes
+
+**Base path:** `/clientes`
+
+| Método | Endpoint | Responsabilidade |
+| --- | --- | --- |
+| `POST` | `/clientes` | Cadastrar cliente |
+| `GET` | `/clientes` | Listar clientes |
+| `GET` | `/clientes/{id}` | Consultar cliente |
+| `GET` | `/clientes/documento/{documento}` | Consultar cliente pelo documento |
+| `PUT` | `/clientes/{id}` | Atualizar cliente |
+| `DELETE` | `/clientes/{id}` | Excluir cliente |
+
+#### Endereços
+
+**Base path:** `/enderecos`
+
+| Método | Endpoint | Responsabilidade |
+| --- | --- | --- |
+| `POST` | `/enderecos` | Cadastrar endereço |
+| `GET` | `/enderecos` | Listar endereços |
+| `GET` | `/enderecos/{id}` | Consultar endereço |
+| `PUT` | `/enderecos/{id}` | Atualizar endereço |
+| `DELETE` | `/enderecos/{id}` | Excluir endereço |
 
 #### Ordens de Serviço
 
@@ -863,17 +860,19 @@ Os controllers representam a interface HTTP da aplicação e delegam a execuçã
 
 | Método | Endpoint | Responsabilidade |
 | --- | --- | --- |
-| `GET` | `/ordens-servico` | Listar Ordens de Serviço |
+| `GET` | `/ordens-servico/ativas` | Listar OS ativas (paginado) |
+| `GET` | `/ordens-servico/todas` | Listar todas as OS (paginado) |
+| `GET` | `/ordens-servico/filtro-status?status={status}` | Filtrar OS por status |
 | `GET` | `/ordens-servico/{id}` | Consultar OS |
-| `POST` | `/ordens-servico?agendamento=false` | Criar OS |
+| `POST` | `/ordens-servico?agendamento={boolean}` | Criar OS; `agendamento` assume `false` por padrão |
 | `PUT` | `/ordens-servico/{id}` | Atualizar OS |
 | `PATCH` | `/ordens-servico/{id}/status` | Atualizar status |
 | `PATCH` | `/ordens-servico/{id}/pagamento` | Atualizar pagamento |
 | `GET` | `/ordens-servico/{idOs}/metricas` | Obter métricas da OS |
-| `GET` | `/ordens-servico/metricas` | Consultar métricas |
-| `GET` | `/ordens-servico/veiculo/{idVeiculo}/historico` | Consultar histórico do veículo |
+| `GET` | `/ordens-servico/metricas` | Consultar métricas (paginado e filtrável por datas/status) |
+| `GET` | `/ordens-servico/veiculo/{idVeiculo}/historico` | Consultar histórico do veículo (paginado) |
 | `DELETE` | `/ordens-servico/{id}` | Excluir OS |
-| `POST` | `/ordens-servico/processar-cancelamentos` | Executar processamento de cancelamentos |
+| `POST` | `/ordens-servico/processar-cancelamentos` | Acionar processamento de cancelamentos |
 
 #### Serviços
 
@@ -882,7 +881,7 @@ Os controllers representam a interface HTTP da aplicação e delegam a execuçã
 | Método | Endpoint | Responsabilidade |
 | --- | --- | --- |
 | `POST` | `/servicos` | Criar serviço |
-| `GET` | `/servicos` | Listar serviços |
+| `GET` | `/servicos` | Listar serviços (paginado) |
 | `GET` | `/servicos/{id}` | Consultar serviço |
 | `PUT` | `/servicos/{id}` | Atualizar serviço |
 | `DELETE` | `/servicos/{id}` | Excluir serviço |
@@ -896,6 +895,7 @@ Os controllers representam a interface HTTP da aplicação e delegam a execuçã
 | `POST` | `/veiculos` | Cadastrar veículo |
 | `GET` | `/veiculos` | Listar veículos |
 | `GET` | `/veiculos/{id}` | Consultar veículo |
+| `GET` | `/veiculos/placa/{placa}` | Consultar veículo pela placa |
 | `PUT` | `/veiculos/{id}` | Atualizar veículo |
 | `DELETE` | `/veiculos/{id}` | Excluir veículo |
 
@@ -908,6 +908,7 @@ Os controllers representam a interface HTTP da aplicação e delegam a execuçã
 | `POST` | `/funcionarios` | Cadastrar funcionário |
 | `GET` | `/funcionarios` | Listar funcionários |
 | `GET` | `/funcionarios/{id}` | Consultar funcionário |
+| `GET` | `/funcionarios/cpf/{cpf}` | Consultar funcionário pelo CPF |
 | `PUT` | `/funcionarios/{id}` | Atualizar funcionário |
 | `DELETE` | `/funcionarios/{id}` | Excluir funcionário |
 | `PATCH` | `/funcionarios/{id}/advertencia` | Registrar advertência |
@@ -916,25 +917,38 @@ Os controllers representam a interface HTTP da aplicação e delegam a execuçã
 
 #### Criação da Ordem de Serviço
 
+---
+
 ```mermaid
 sequenceDiagram
-    participant C as Controller
-    participant S as OrdemServicoService
+    participant C as OrdemServicoController
+    participant M as OrdemServicoMapper
+    participant P as Porta inbound
+    participant U as OrdemServicoUseCaseImpl
     participant V as Validator
-    participant M as Mapper
-    participant R as Repository
+    participant RP as RepositoryPort
+    participant A as RepositoryAdapter
+    participant SD as SpringDataRepository
     participant DB as PostgreSQL
 
-    C->>S: criar(request, agendamento)
-    S->>V: validarCriacao()
-    V-->>S: validação concluída
-    S->>M: toEntity(request)
-    M-->>S: OrdemServico
-    S->>R: save(os)
-    R->>DB: persistir
-    DB-->>R: resultado
-    R-->>S: OS persistida
-    S-->>C: OrdemServicoResponse
+    C->>M: toDomain(request)
+    M-->>C: OrdemServico
+    C->>P: criar(ordemServico, agendamento)
+    P->>U: executar caso de uso
+    U->>V: validarCriacao()
+    V-->>U: validação concluída
+    U->>RP: save(ordemServico)
+    RP->>A: persistir modelo de domínio
+    A->>SD: save(entidade JPA)
+    SD->>DB: persistir
+    DB-->>SD: resultado
+    SD-->>A: entidade persistida
+    A-->>RP: OrdemServico
+    RP-->>U: OS persistida
+    U-->>P: OS persistida
+    P-->>C: OrdemServico
+    C->>M: toResponse(ordemServico)
+    M-->>C: OrdemServicoResponse
 ```
 
 ---
@@ -968,13 +982,17 @@ A persistência utiliza:
 
 Os repositories abstraem as operações de persistência e concentram consultas específicas utilizadas pelos fluxos da aplicação.
 
+Os modelos em `domain.model` são objetos de domínio sem anotações JPA. O mapeamento relacional fica separado em `adapters.outbound.persistence.entity`, com entidades para clientes, endereços, estoque, funcionários, orçamentos, itens e serviços de orçamento, ordens de serviço, serviços executados, serviços, usuários e veículos. Os adapters e mappers de persistência fazem a conversão entre esses modelos.
+
 ### Modelo Entidade-Relacionamento
 
 O Modelo Entidade-Relacionamento representa a estrutura de persistência do AutoFlow e as relações entre as entidades armazenadas no PostgreSQL.
 
-<p>
-    <img src="./assets/database_mer.svg" alt="DDD Linha do Tempo" width="1000"/>
-</p>
+---
+
+![Modelo entidade-relacionamento do AutoFlow](./assets/database_mer.svg)
+
+---
 
 **Principais grupos representados:**
 
@@ -991,7 +1009,7 @@ O Modelo Entidade-Relacionamento representa a estrutura de persistência do Auto
 * Estoque;
 * Serviços em execução.
 
-###### NOTA: O diagrama deve refletir o modelo efetivamente persistido. Alterações nas entidades ou nos relacionamentos JPA devem ser acompanhadas pela atualização do modelo.
+###### NOTA: O diagrama deve refletir o modelo efetivamente persistido. As classes JPA ficam em `adapters.outbound.persistence.entity`; alterações nessas entidades ou em seus relacionamentos devem ser acompanhadas pela atualização do diagrama.
 
 ### Consistência e Transações
 
@@ -1015,7 +1033,7 @@ O Spring Data JPA e o gerenciamento transacional do Spring são utilizados para 
 
 ### Autenticação
 
-A aplicação utiliza Spring Security e JWT com política stateless.
+A aplicação utiliza Spring Security e JWT com política stateless. O token registra o login como subject, o perfil e, quando aplicável, o identificador do cliente ou funcionário.
 
 O token é validado antes do processamento das rotas protegidas e identifica o usuário e suas autorizações.
 
@@ -1041,7 +1059,7 @@ Os perfis representam:
 A aplicação possui validações distribuídas em diferentes níveis:
 
 * Bean Validation nos DTOs;
-* Validações nos services;
+* Validações nos casos de uso;
 * Validações específicas do domínio;
 * Validações de transição de status;
 * Restrições relacionadas ao estado atual das entidades.
@@ -1065,7 +1083,7 @@ Os testes automatizados estão localizados em:
 A suíte contempla componentes relacionados a:
 
 * Regras da aplicação;
-* Services;
+* Casos de uso;
 * Controllers;
 * Autenticação;
 * Autorização;
@@ -1109,48 +1127,107 @@ Os comandos necessários para execução dos testes, geração de cobertura e an
 
 ### Docker
 
-O projeto possui um `Dockerfile` multistage.
-
-O processo é dividido entre:
-
-* Etapa de build;
-* Etapa de runtime.
-
-A separação reduz a necessidade de manter ferramentas de compilação na imagem utilizada para execução da aplicação.
+O projeto mantém um `Dockerfile` multi-stage em `k8s/Dockerfile`, separando a etapa de compilação da etapa de execução da aplicação Java. A imagem resultante é publicada no Amazon ECR e consumida pelo Deployment Kubernetes.
 
 ### Docker Compose
 
-O Docker Compose é utilizado para orquestrar os componentes necessários ao ambiente local.
+O arquivo `k8s/docker-compose.yaml` reúne os serviços utilizados no ambiente local, incluindo `autoflow-app` e SonarQube. O contexto de build é a raiz do repositório (`..`) e o Dockerfile é `k8s/Dockerfile`. As variáveis locais são lidas de `k8s/.env`; `k8s/.env.example` documenta os nomes esperados sem fornecer credenciais.
 
-A configuração contempla a aplicação e os componentes de suporte utilizados no desenvolvimento e análise de qualidade.
-
-Os comandos de inicialização permanecem centralizados no `README.md`.
+Os comandos operacionais permanecem centralizados no `README.md`.
 
 ### Configuração por Ambiente
 
-Informações que variam entre ambientes são fornecidas externamente à aplicação.
+As configurações de execução são fornecidas externamente à aplicação, incluindo URL e credenciais PostgreSQL, segredo JWT e parâmetros operacionais. No Kubernetes, a configuração é distribuída entre `ConfigMap` e `Secret`.
 
-Entre elas estão:
+###### NOTA: Valores sensíveis não devem ser versionados em texto puro. O workflow de CI/CD não aplica `k8s/secret.yaml`; o Secret `autoflow-secrets` precisa existir no cluster antes da implantação da API.
 
-* URL de conexão com PostgreSQL;
-* Credenciais do banco;
-* Segredo JWT;
-* Parâmetros específicos de execução.
+### Provisionamento com Terraform
+
+A infraestrutura AWS é definida em `infra/main.tf` e provisionada na região `us-east-2` (Ohio).
+
+| Recurso | Configuração |
+| --- | --- |
+| Amazon ECR | Repositório `autoflow-us` |
+| Amazon EKS | Cluster `autoflow-us-eks` |
+| Managed Node Group | `autoflow-us-nodes` |
+| Instância EC2 | `m7i-flex.large` |
+| Capacidade do node group | Mínima 1, desejada 1 e máxima 2 |
+| Rede | VPC e sub-redes padrão da conta AWS |
+
+As roles IAM usadas pelo EKS e pelo grupo de nós são consultadas pelo Terraform e devem existir previamente. O banco PostgreSQL continua hospedado externamente no Supabase.
+
+### Kubernetes e Escalabilidade
+
+| Manifest | Responsabilidade |
+| --- | --- |
+| `k8s/deployment.yaml` | Implantação dos pods da API AutoFlow |
+| `k8s/service.yaml` | Service `autoflow-service`, tipo `ClusterIP`, porta 8080 |
+| `k8s/configmap.yaml` | Configurações não sensíveis da aplicação |
+| `k8s/secret.yaml` | Manifesto de referência para os dados sensíveis consumidos pelo Deployment |
+| `k8s/hpa.yaml` | Escalabilidade horizontal com 1 a 2 réplicas, alvo de 70% de CPU |
+
+O HPA utiliza métricas de utilização de CPU; para funcionar, depende da disponibilidade de métricas no cluster, fornecidas pelo Metrics Server. No ambiente utilizado para a Fase 2, o Metrics Server foi instalado separadamente, por meio de um add-on do EKS.
 
 ---
 
-## ⚠️ Pontos de Evolução
+```mermaid
+flowchart TB
+    CLIENT["Acesso local<br/>kubectl port-forward"] --> SVC["Service ClusterIP<br/>Porta 8080"]
+    subgraph EKS["Amazon EKS — autoflow-us-eks"]
+        SVC --> POD["Deployment AutoFlow<br/>Pods da API"]
+        HPA["HPA<br/>1–2 réplicas / CPU 70%"] -.-> POD
+        CFG["ConfigMap + Secret"] -.-> POD
+    end
+    ECR["Amazon ECR<br/>Imagem Docker"] -.-> POD
+    POD --> DB[("Supabase / PostgreSQL")]
+```
 
-### Evoluções Arquiteturais
+---
 
-Os seguintes pontos representam possibilidades de evolução da solução:
+O `ClusterIP` não expõe a API publicamente. Para acesso local ao cluster, é possível utilizar `kubectl port-forward service/autoflow-service 8080:8080`.
 
-* Integração com gateway externo de pagamento;
-* Integração completa com serviços externos de notificação;
-* Expansão dos mecanismos de observabilidade;
-* Evolução dos processos automatizados de build e deploy.
+### Integração e Entrega Contínua (CI/CD)
 
-Esses itens representam possibilidades futuras e não devem ser interpretados como funcionalidades atualmente implementadas.
+O workflow `.github/workflows/ci-cd.yml` é acionado por push em `master`, `main`, `develop`, `dev_carol_newArq`, `dev_thalita_newArq` e `dev_bruna_newArq`, pull requests para `master` ou `main` e execução manual. Os jobs são encadeados: testes aguardam a validação, o build aguarda os testes e o deploy aguarda o build.
+
+---
+
+```mermaid
+flowchart TD
+    START["Push / Pull Request / execução manual<br/>GitHub Actions"]
+    LINT["🔍 Validação Maven<br/>mvn validate"]
+    TEST["🧪 Testes Unitários<br/>Maven test + JaCoCo"]
+    BUILD["🏗️ Build AutoFlow<br/>Maven package + JAR"]
+    DEPLOY["🚀 Deploy AWS ECR + EKS<br/>Docker → ECR → kubectl → rollout"]
+    START --> LINT --> TEST --> BUILD --> DEPLOY
+```
+
+---
+
+| Job | Etapas principais | Resultado |
+| --- | --- | --- |
+| `lint` | Configura Java 25 e executa `mvn validate` | Validação Maven; falhas não interrompem este job |
+| `test` | Executa `mvn clean test` com a chave JWT configurada no GitHub Actions | Testes e relatório de cobertura JaCoCo |
+| `build` | Executa `mvn package -DskipTests` | JAR publicado como artefato por 14 dias |
+| `deploy-aws` | Autentica na AWS, constrói e envia a imagem Docker, aplica manifests no EKS e verifica o rollout | Atualização do Deployment e consulta de deployments, pods e HPA |
+
+O deploy constrói uma nova imagem usando `k8s/Dockerfile` e publica a tag mutável `latest`; não reutiliza o JAR publicado pelo job `build`. Em seguida, atualiza o kubeconfig, aplica ConfigMap, Service, Deployment e HPA, reinicia o Deployment e aguarda até cinco minutos pelo rollout. São necessárias credenciais AWS e permissões para publicar no ECR e operar o cluster.
+
+###### NOTA: O job denominado `lint` executa apenas `mvn validate`; o `pom.xml` não configura um plugin específico de lint ou análise estática, e a etapa está marcada com `continue-on-error: true`. O job de deploy não restringe evento ou branch, portanto também entra no fluxo de pull requests que atinjam essa etapa; sua execução depende da disponibilidade das credenciais AWS necessárias.
+
+### Operação e Observabilidade
+
+O estado dos pods e da implantação pode ser consultado por `kubectl get pods`, `kubectl rollout status deployment/autoflow` e `kubectl get hpa`. Os logs dos containers podem ser consultados por `kubectl logs`.
+
+A configuração do HPA permite demonstrar o ajuste automático da quantidade de réplicas de acordo com a utilização de CPU, dentro dos limites definidos no manifest.
+
+O `OrdemServicoUseCaseImpl` também executa duas rotinas agendadas: às 8h processa cancelamentos de OS aguardando aprovação há pelo menos três dias, e às 9h verifica abandono técnico após 60 dias.
+
+###### NOTA: Como as rotinas agendadas são executadas pela aplicação, múltiplas réplicas podem processar a mesma tarefa. O código não implementa mecanismo de eleição de líder ou trava distribuída; a configuração atual do HPA permite até duas réplicas.
+
+### Custos e Desmobilização
+
+O cluster EKS e as instâncias EC2 podem gerar custos enquanto permanecerem ativos. Após testes e demonstrações, a infraestrutura deve ser revisada e, quando não for mais necessária, desmobilizada por meio do Terraform, com conferência dos recursos remanescentes na conta AWS.
 
 ---
 

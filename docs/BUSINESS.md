@@ -183,18 +183,21 @@ Também foram identificados fluxos alternativos relacionados ao **orçamento com
 | RN-05         | Status do orçamento       | Apenas orçamentos pendentes e não expirados podem ser aprovados ou recusados.                                                        |
 | RN-06         | Recálculo financeiro      | O valor total do orçamento é calculado com base em mão de obra e itens associados.                                                   |
 | RN-07         | Aprovação do cliente      | O cliente pode consultar os detalhes e aprovar ou recusar o orçamento.                                                               |
-| RN-08         | Orçamento complementar    | Um orçamento complementar só pode ser criado após a existência de um orçamento inicial.                                              |
+| RN-08         | Orçamento complementar    | Um orçamento complementar só pode ser criado após a existência de um orçamento inicial aprovado para a OS. Além disso, não pode repetir serviços já incluídos em outros orçamentos daquela OS.              |
 | RN-09         | Pausa de complementar     | Quando um orçamento complementar é gerado, a OS aguarda a decisão do cliente.                                                        |
 | RN-10         | Expiração do complementar | O orçamento complementar possui prazo de 24 horas para aceite ou recusa.                                                             |
-| RN-11         | Retorno de estoque        | Se o cliente recusa o orçamento, os itens reservados são devolvidos ao estoque.                                                      |
+| RN-11         | Retorno de estoque        | Os itens recebem o estado de reserva enquanto o orçamento está pendente. A quantidade só é deduzida do estoque quando o orçamento é aprovado. Na recusa, a reserva é cancelada; não há devolução de quantidade, pois ela ainda não havia sido baixada.                                                      |
 | RN-12         | Reserva ativa             | A reserva de itens permanece vinculada enquanto a OS estiver ativa.                                                                  |
-| RN-13         | Limite do pátio           | Quando o limite operacional é atingido, a oficina deixa de receber veículos sem agendamento. O limite implementado é de 15 veículos. |
+| RN-13         | Limite do pátio           | A criação de OS exige agendamento. O limite é de 15 veículos no pátio; OS entregues e canceladas não entram nessa contagem. Ao atingir o limite, novas OS são bloqueadas, mesmo com agendamento. |
 | RN-14         | Peça encomendada          | Quando uma peça precisa ser encomendada, a OS pode ser suspensa até a disponibilidade do material.                                   |
 | RN-15         | Histórico por veículo     | O histórico de manutenções e atendimentos deve poder ser consultado pelo veículo.                                                    |
-| RN-16         | Cancelamento automático   | Uma rotina diária às 08:00 verifica orçamentos pendentes e aplica a regra de cancelamento quando o prazo é excedido.                 |
-| RN-17         | Abandono técnico          | Uma rotina diária às 09:00 verifica pendências prolongadas e pode marcar a situação como abandono técnico.                           |
+| RN-16         | Cancelamento automático   | Às 08:00, a rotina verifica OS aguardando aprovação há mais de três dias. Quando cancela a OS, aplica taxa de permanência de R$ 30 por dia excedente.                 |
+| RN-17         | Abandono técnico          | Às 09:00, a rotina marca como abandonada a OS que permanece aguardando aprovação por 60 dias ou mais.                           |
 | RN-18         | Métricas de tempo         | O sistema registra métricas relacionadas ao diagnóstico, execução e finalização da OS.                                               |
-| RN-19         | Estoque crítico           | O sistema possui controle de quantidade mínima e gera alertas quando o estoque atinge o limite configurado.                          |
+| RN-19         | Estoque crítico           | O alerta é aplicável a itens da categoria `INSUMO` cuja quantidade seja menor ou igual ao mínimo configurado. A informação é disponibilizada pela API; não há notificação externa automática.                          |  
+| RN-20    |	Aceite obrigatório  |	A criação da OS exige o termo de aceite assinado. A data do aceite deve ser informada, não pode estar no futuro nem ser anterior à abertura da OS. |   
+| RN-21    |	OS e veículo |	Não pode haver mais de uma OS em andamento para o mesmo veículo. O veículo informado deve pertencer ao cliente da OS, e a quilometragem de entrada não pode ser negativa nem menor que a registrada na OS anterior. |   
+| RN-22    |	Alteração do pagamento |	O status do pagamento só pode ser alterado após a OS ser finalizada. Um pagamento já marcado como pago não pode ser alterado. |  
                                                                                          
 
 ### Observações de Negócio

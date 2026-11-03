@@ -1,6 +1,6 @@
 # DAS - Design Approval Sheet
 
-![V1.2.0](https://img.shields.io/badge/V1.2.0-gray?style=for-the-badge)
+![V2.0.0](https://img.shields.io/badge/V2.0.0-gray?style=for-the-badge)
 
 Registro de avaliação e aprovação do design da solução AutoFlow, consolidando escopo, arquitetura proposta, requisitos atendidos, riscos, restrições e pendências.
 
@@ -14,7 +14,7 @@ Registro de avaliação e aprovação do design da solução AutoFlow, consolida
 | [🏗️ Solução Avaliada](#️-solução-avaliada) | [Visão resumida](#visão-resumida), [Arquitetura](#arquitetura), [Persistência](#persistência), [Segurança](#segurança) |
 | [✅ Critérios de Aprovação](#-critérios-de-aprovação) | [Requisitos funcionais](#requisitos-funcionais), [Requisitos técnicos](#requisitos-técnicos), [Qualidade](#qualidade) |
 | [⚠️ Riscos e Restrições](#️-riscos-e-restrições) | [Riscos identificados](#riscos-identificados), [Restrições atuais](#restrições-atuais) |
-| [📌 Pendências e Evoluções](#-pendências-e-evoluções) | [Pendências](#pendências), [Evoluções futuras](#evoluções-futuras) |
+| [📌 Pendências e Evoluções](#-pendências-e-evoluções) | [Evoluções futuras](#evoluções-futuras) |
 | [📝 Decisão](#-decisão) | [Resultado da avaliação](#resultado-da-avaliação), [Condições de aprovação](#condições-de-aprovação) |
 | [📚 Referências](#-referências) | [Documentação relacionada](#documentação-relacionada) |
 
@@ -72,16 +72,15 @@ A solução centraliza:
 
 ### Arquitetura
 
-A solução utiliza uma aplicação monolítica em Java com Spring Boot, organizada internamente por responsabilidades.
+A solução utiliza uma aplicação monolítica modular em Java com Spring Boot, seguindo arquitetura hexagonal (Ports and Adapters).
 
 Os principais elementos são:
 
-- controllers REST;
-- application services;
-- entidades de domínio;
-- repositories;
-- DTOs;
-- mappers;
+- adaptadores de entrada com controllers REST e DTOs;
+- portas de entrada e casos de uso da aplicação;
+- domínio com entidades e regras de negócio;
+- portas e adaptadores de persistência;
+- mappers para conversão entre contratos, domínio e entidades JPA;
 - componentes de segurança;
 - tratamento centralizado de exceções;
 - rotinas agendadas.
@@ -90,7 +89,7 @@ O detalhamento completo está disponível no ARCHITECTURE.md.
 
 ### Persistência
 
-A persistência utiliza PostgreSQL com Spring Data JPA.
+A persistência utiliza PostgreSQL hospedado no Supabase, com Spring Data JPA.
 
 O modelo relacional atende às principais relações do domínio, incluindo:
 
@@ -153,14 +152,16 @@ O perfil ADMIN é utilizado pela recepcionista para operações administrativas.
 
 | Critério | Situação |
 | --- | --- |
-| Back-end monolítico | Atendido |
-| Organização em camadas | Atendido |
+| Back-end monolítico modular | Atendido |
+| Arquitetura hexagonal (Ports and Adapters) | Atendido |
 | API REST | Atendido |
 | Documentação OpenAPI / Swagger UI | Atendido |
-| Banco de dados relacional | Atendido |
+| Banco de dados PostgreSQL hospedado no Supabase | Atendido |
 | Justificativa da escolha do banco | Atendido |
-| Dockerfile | Atendido |
-| Docker Compose | Atendido |
+| Containerização com Docker e execução local com Docker Compose | Atendido |
+| Infraestrutura AWS declarada com Terraform (ECR, EKS e node group) | Atendido |
+| Implantação Kubernetes com Deployment, Service e HPA | Atendido |
+| Pipeline GitHub Actions para testes, build e deploy | Atendido com ressalvas |
 | README com instruções | Atendido |
 | Documentação DDD | Atendido |
 | Collection para testes da API | Atendido |
@@ -173,13 +174,13 @@ A solução utiliza:
 - JUnit;
 - Spring Boot Test;
 - JaCoCo;
-- SonarQube.
+- SonarQube para análise local.
 
-Na análise realizada, foi registrada cobertura de *84,2%*.
+Na avaliação registrada para o MVP, foi medida cobertura de *84,2%*. 
 
-O resultado apresentado pelo SonarQube não indicou issues de Security, Reliability ou Maintainability no painel analisado.
+O painel do SonarQube consultado naquela avaliação não indicou issues de Security, Reliability ou Maintainability.
 
-O Quality Gate geral apresentou status Failed, devendo o detalhamento das condições configuradas ser consultado para identificação da causa específica.
+O Quality Gate geral apresentou status Failed naquela avaliação. O workflow atual não executa análise SonarQube nem bloqueia o pipeline por Quality Gate; o resultado precisa ser revalidado em uma nova análise.
 
 ---
 
@@ -190,10 +191,14 @@ O Quality Gate geral apresentou status Failed, devendo o detalhamento das condi�
 | Risco | Impacto |
 | --- | --- |
 | Dependência de uma única aplicação executável | Uma falha na aplicação pode impactar todos os módulos |
-| Processos agendados executados pela própria aplicação | Dependem da disponibilidade da instância |
-| Segredo JWT configurado externamente | Requer gerenciamento adequado nos ambientes |
+| Rotinas agendadas executadas em cada réplica | Com até duas réplicas e sem trava distribuída, uma tarefa pode ser processada mais de uma vez |
+| Deploy sem restrição de evento ou branch no workflow | Um pull request pode alcançar o job de deploy quando as credenciais AWS estiverem disponíveis |
+| Job `lint` não bloqueante | Falhas em `mvn validate` não interrompem o pipeline, e o job não executa uma ferramenta específica de lint |
+| Segredos e dependências de IAM pré-existentes | O Secret Kubernetes precisa estar configurado fora do workflow; roles IAM, VPC e sub-redes são pré-requisitos do Terraform |
+| Imagem publicada com tag mutável `latest` | A identificação e a reversão de versões da imagem ficam menos precisas |
+| Infraestrutura EKS e EC2 ativa | Pode gerar custos recorrentes até a desmobilização dos recursos |
 | Crescimento do domínio | Pode exigir revisão da separação modular |
-| Quality Gate não aprovado | Requer análise das condições responsáveis pelo resultado |
+| Quality Gate não aprovado na avaliação registrada | Requer nova análise e identificação das condições responsáveis pelo resultado |
 
 ### Restrições Atuais
 
@@ -206,20 +211,11 @@ A implementação atual não contempla:
 - rate limiting;
 - separação em serviços independentes.
 
-Esses itens não fazem parte do escopo obrigatório atual.
+O cluster Kubernetes utiliza um Service interno (`ClusterIP`), sem exposição pública configurada neste projeto. O workflow automatiza testes, build e deploy, mas não inclui análise SonarQube bloqueante nem validação de Quality Gate. Essas limitações não fazem parte do escopo obrigatório atual.
 
 ---
 
 ## 📌 Pendências e Evoluções
-
-### Pendências
-
-As principais pendências identificadas são:
-
-- verificar a condição responsável pelo Failed do Quality Gate;
-- manter documentação e diagramas sincronizados com a implementação;
-- garantir que alterações no modelo de dados sejam refletidas no MER;
-- manter testes e cobertura atualizados conforme evolução do código.
 
 ### Evoluções Futuras
 
@@ -228,8 +224,10 @@ Possíveis evoluções incluem:
 - gateway de pagamento;
 - notificações externas;
 - autenticação multifator;
-- observabilidade;
-- automação de CI/CD;
+- observabilidade avançada;
+- análise SonarQube e Quality Gate integrados à CI;
+- versionamento imutável de imagens e promoção controlada entre ambientes;
+- coordenação distribuída das tarefas agendadas;
 - políticas de segurança mais granulares;
 - revisão da modularização em caso de crescimento da solução.
 
@@ -253,6 +251,10 @@ A aprovação considera as seguintes ressalvas:
 
 - acompanhamento do Quality Gate do SonarQube;
 - manutenção da cobertura mínima de testes;
+- revisão das permissões e das condições que permitem a execução do deploy automático;
+- provisionamento seguro dos segredos necessários no cluster;
+- prevenção de processamento duplicado das rotinas caso o HPA aumente o número de réplicas;
+- controle dos custos e desmobilização da infraestrutura AWS quando não estiver em uso;
 - sincronização contínua entre código, modelo de dados e documentação;
 - registro de novas decisões arquiteturais relevantes no ADR.md.
 
